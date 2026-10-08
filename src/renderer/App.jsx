@@ -23,8 +23,31 @@ import SettingsGeneralPage from "./modules/settings/pages/SettingsGeneralPage.js
 import SettingsPricePendingPage from "./modules/settings/pages/SettingsPricePendingPage.jsx";
 import SettingsContactsPage from "./modules/settings/pages/SettingsContactsPage.jsx";
 import SettingsLayout from "./modules/settings/pages/SettingsLayout.jsx";
+import LoginPage from "./modules/auth/pages/LoginPage.jsx";
+import useAuth from "./modules/auth/hooks/useAuth.js";
 
-function App() {
+function LoadingScreen() {
+    return (
+        <div className="alfadime-loading-screen">
+            <span>Carregando Alfadime...</span>
+        </div>
+    );
+}
+
+function AuthenticatedRoutes() {
+    const {
+        loading,
+        isAuthenticated
+    } = useAuth();
+
+    if (loading) {
+        return <LoadingScreen />;
+    }
+
+    if (!isAuthenticated) {
+        return <LoginPage />;
+    }
+
     return (
         <HashRouter>
             <Routes>
@@ -120,6 +143,10 @@ function App() {
             </Routes>
         </HashRouter>
     );
+}
+
+function App() {
+    return <AuthenticatedRoutes />;
 }
 
 export default App;

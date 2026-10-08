@@ -83,6 +83,12 @@ const {
     "./modules/email-dispatch/email-dispatch-received.ipc"
 );
 
+const {
+    registerAuthIpc
+} = require(
+    "./modules/auth/auth.ipc"
+);
+
 let mainWindow = null;
 let appIpcRegistered = false;
 let updaterConfigured = false;
@@ -697,6 +703,10 @@ function registerAllIpc() {
     );
 
     registerAppIpc();
+
+    registerAuthIpc(
+    ipcMain
+);
 
     registerPricePendingIpc(
         ipcMain

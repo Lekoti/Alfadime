@@ -259,3 +259,51 @@
         font-size: 11px;
     }
 }
+
+.alfadime-user-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    min-height: 48px;
+    padding: 8px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+}
+
+.alfadime-user-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.alfadime-user-name {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.alfadime-logout-button {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #374151;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 7px 12px;
+}
+
+.alfadime-logout-button:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+}
+
+.alfadime-loading-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    color: #4b5563;
+    background: #f9fafb;
+}
