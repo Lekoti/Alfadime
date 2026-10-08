@@ -1,6 +1,6 @@
 {
     "name": "alfadime",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "description": "Sistema desktop de ferramentas empresariais.",
     "main": "src/main/main.js",
     "scripts": {
@@ -97,16 +97,9 @@
         "win": {
             "icon": "resources/Alfadime.ico",
             "signExecutable": false,
-            "signAndEditExecutable": false,
             "target": [
                 {
                     "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
-                },
-                {
-                    "target": "portable",
                     "arch": [
                         "x64"
                     ]
