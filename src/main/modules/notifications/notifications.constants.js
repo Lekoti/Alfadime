@@ -1,0 +1,41 @@
+const NOTIFICATION_TYPES = {
+    PRICE_PENDING: "PRICE_PENDING_STATUS",
+    PRODUCT_DIVERGENCE: "PRODUCT_DIVERGENCE",
+    SIRS_ERROR: "SIRS_ERROR",
+    INCOMPLETE_CONTACT: "INCOMPLETE_CONTACT"
+};
+
+const NOTIFICATION_STATUSES = {
+    PENDING: "pending",
+    READ: "read",
+    SENT: "sent",
+    ERROR: "error",
+    DISMISSED: "dismissed"
+};
+
+const NOTIFICATION_PRIORITIES = {
+    LOW: "low",
+    NORMAL: "normal",
+    HIGH: "high",
+    CRITICAL: "critical"
+};
+
+const NOTIFICATION_SOURCE_MODULES = {
+    PRICE_PENDING: "price-pending",
+    PRODUCTS: "products",
+    PRODUCT_AUDIT: "product-audit",
+    INDUSTRY_CONTACTS: "industry-contacts"
+};
+
+const NOTIFICATION_DEFAULTS = {
+    status: NOTIFICATION_STATUSES.PENDING,
+    priority: NOTIFICATION_PRIORITIES.NORMAL
+};
+
+module.exports = {
+    NOTIFICATION_TYPES,
+    NOTIFICATION_STATUSES,
+    NOTIFICATION_PRIORITIES,
+    NOTIFICATION_SOURCE_MODULES,
+    NOTIFICATION_DEFAULTS
+};

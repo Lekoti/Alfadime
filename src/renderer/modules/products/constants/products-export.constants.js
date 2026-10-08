@@ -1,0 +1,23 @@
+﻿export const PRODUCTS_EXPORT_COLUMNS = [
+    { key: "branch", label: "Filial", defaultSelected: true, width: 20 },
+    { key: "code", label: "Cod", defaultSelected: true, width: 14 },
+    { key: "sirius_code", label: "Cod Sirius", defaultSelected: true, width: 16 },
+    { key: "ean", label: "EAN", defaultSelected: true, width: 18 },
+    { key: "sap_code", label: "Codigo SAP", defaultSelected: true, width: 16 },
+    { key: "group_code", label: "Grupo", defaultSelected: false, width: 12 },
+    { key: "active_ingredient", label: "Principio Ativo", defaultSelected: true, width: 35 },
+    { key: "commercial_name", label: "Nome Comercial", defaultSelected: true, width: 42 },
+    { key: "manufacturer_code", label: "Codigo Fabricante", defaultSelected: false, width: 20 },
+    { key: "brand", label: "Marca", defaultSelected: true, width: 24 },
+    { key: "unit", label: "Unidade", defaultSelected: true, width: 12 },
+    { key: "standard_box", label: "Caixa Padrao", defaultSelected: false, width: 15 },
+    { key: "controls_lot", label: "Controla Lote", defaultSelected: true, width: 15 },
+    { key: "ms_registration", label: "Registro MS", defaultSelected: true, width: 22 },
+    { key: "reference_code", label: "Codigo Referencia", defaultSelected: false, width: 20 },
+    { key: "therapeutic_class_code", label: "Classe Terapeutica", defaultSelected: false, width: 22 },
+    { key: "height", label: "Altura", defaultSelected: false, width: 12 },
+    { key: "width", label: "Largura", defaultSelected: false, width: 12 },
+    { key: "length", label: "Comprimento", defaultSelected: false, width: 15 },
+    { key: "category_code", label: "Categoria", defaultSelected: true, width: 15 },
+    { key: "active", label: "Ativo", defaultSelected: true, width: 12 }
+];

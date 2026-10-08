@@ -1,0 +1,261 @@
+.alfadime-shell {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: #eef1f5;
+}
+
+
+
+
+.alfadime-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 218px;
+    min-width: 218px;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid #d5dbe3;
+    background: #ffffff;
+}
+
+
+
+
+.alfadime-navigation {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 3px;
+    padding: 19px 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+
+
+
+.alfadime-navigation-title {
+    flex-shrink: 0;
+    margin: 0 9px 8px;
+    color: #8a96a3;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+
+
+
+.alfadime-menu-item {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 35px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0 10px;
+    background: transparent;
+    color: #5e6b79;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+
+
+
+.alfadime-menu-item:hover {
+    background: #f0f4f8;
+    color: #344b65;
+}
+
+
+
+
+.alfadime-menu-item.active {
+    background: #e7edf4;
+    color: #344f6c;
+    font-weight: 700;
+}
+
+
+
+
+.alfadime-menu-icon {
+    display: grid;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 4px;
+    background: #f0f3f6;
+    color: #60758c;
+    font-size: 13px;
+}
+
+
+
+
+.alfadime-menu-item.active .alfadime-menu-icon {
+    background: #d1dce8;
+    color: #344f6c;
+}
+
+
+
+
+.alfadime-sidebar-footer {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 51px;
+    box-sizing: border-box;
+    border-top: 1px solid #e1e6ed;
+    padding: 10px 15px;
+    color: #7a8795;
+    font-size: 10px;
+}
+
+
+
+
+.alfadime-sidebar-footer small {
+    overflow: hidden;
+    color: #a0aab5;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+
+
+.alfadime-settings-button {
+    display: grid;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid #cdd6df;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #45515e;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+}
+
+
+
+
+.alfadime-settings-button:hover {
+    border-color: #3b5f86;
+    background: #f0f4f8;
+    color: #344b65;
+}
+
+
+
+
+.alfadime-settings-button.active {
+    border-color: #3b5f86;
+    background: #e7edf4;
+    color: #344f6c;
+}
+
+
+
+
+.alfadime-content {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+
+
+
+.alfadime-main {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+
+
+
+.alfadime-main > * {
+    min-width: 0;
+    min-height: 0;
+}
+
+
+
+
+@media (max-width: 900px) {
+    .alfadime-sidebar {
+        width: 185px;
+        min-width: 185px;
+    }
+
+
+
+
+    .alfadime-menu-item {
+        font-size: 10px;
+    }
+}
+
+
+
+
+@media (max-width: 680px) {
+    .alfadime-sidebar {
+        width: 168px;
+        min-width: 168px;
+    }
+
+
+
+
+    .alfadime-navigation {
+        padding-right: 7px;
+        padding-left: 7px;
+    }
+
+
+
+
+    .alfadime-menu-item {
+        gap: 6px;
+        padding: 0 7px;
+        font-size: 9px;
+    }
+
+
+
+
+    .alfadime-menu-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 11px;
+    }
+}

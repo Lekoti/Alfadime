@@ -1,0 +1,2 @@
+-- A limpeza dos registros historicos nao deve bloquear a inicializacao do app.
+-- A tela usa active = 1 por padrao e o sincronizador nao cria novas duplicatas.

@@ -1,0 +1,214 @@
+.purchases-page {
+    min-height: 100vh;
+    padding: 18px 22px;
+    background: #eef1f5;
+    color: #263241;
+}
+
+.purchases-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 14px;
+}
+
+.purchases-eyebrow {
+    display: block;
+    margin-bottom: 3px;
+    color: #3b5f86;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.purchases-header h1 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.purchases-header p {
+    margin: 4px 0 0;
+    color: #6b7785;
+    font-size: 12px;
+}
+
+.purchases-status {
+    border: 1px solid #b9cbdc;
+    border-radius: 999px;
+    padding: 7px 11px;
+    background: #edf4fa;
+    color: #345d82;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.purchases-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.purchases-summary-card {
+    display: flex;
+    min-height: 126px;
+    flex-direction: column;
+    gap: 7px;
+    border: 1px solid #d5dbe3;
+    border-radius: 7px;
+    padding: 13px;
+    background: #ffffff;
+}
+
+.purchases-summary-card span {
+    color: #6b7785;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.purchases-summary-card strong {
+    color: #344b65;
+    font-size: 20px;
+}
+
+.purchases-summary-card small {
+    color: #6b7785;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.purchases-summary-card button {
+    width: fit-content;
+    min-height: 29px;
+    margin-top: auto;
+    border: 1px solid #b9cbdc;
+    border-radius: 4px;
+    padding: 0 9px;
+    background: #edf4fa;
+    color: #345d82;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.purchases-summary-card button:hover:not(:disabled) {
+    background: #dfeaf4;
+}
+
+.purchases-summary-card button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.purchases-card {
+    overflow: hidden;
+    border: 1px solid #d5dbe3;
+    border-radius: 7px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgb(31 41 55 / 5%);
+}
+
+.purchases-card-header {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    border-bottom: 1px solid #d5dbe3;
+    padding: 0 13px;
+}
+
+.purchases-card-header div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.purchases-card-header strong {
+    color: #263241;
+    font-size: 12px;
+}
+
+.purchases-card-header span {
+    color: #6b7785;
+    font-size: 10px;
+}
+
+.purchases-steps {
+    display: grid;
+    gap: 0;
+}
+
+.purchases-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    border-bottom: 1px solid #e4e8ed;
+    padding: 13px;
+}
+
+.purchases-step:last-child {
+    border-bottom: 0;
+}
+
+.purchases-step > span {
+    display: grid;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.purchases-step.completed > span {
+    background: #d9f2df;
+    color: #176b2c;
+}
+
+.purchases-step.pending > span {
+    background: #edf1f5;
+    color: #667789;
+}
+
+.purchases-step strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #344b65;
+    font-size: 14px;
+}
+
+.purchases-step p {
+    margin: 0;
+    color: #6b7785;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.purchases-error {
+    margin-bottom: 12px;
+    border: 1px solid #e2b8bd;
+    border-radius: 5px;
+    padding: 9px 11px;
+    background: #fff7f8;
+    color: #9f414c;
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    .purchases-page {
+        padding: 14px;
+    }
+
+    .purchases-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .purchases-summary {
+        grid-template-columns: 1fr;
+    }
+}

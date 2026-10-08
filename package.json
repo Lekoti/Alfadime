@@ -1,0 +1,141 @@
+{
+    "name": "alfadime",
+    "version": "2.0.0",
+    "description": "Sistema desktop de ferramentas empresariais.",
+    "main": "src/main/main.js",
+    "scripts": {
+        "test": "node test.js",
+        "build": "vite build --config vite.config.mjs",
+        "start": "npm run build && electron .",
+        "rebuild": "electron-rebuild -f -w better-sqlite3",
+        "dist": "npm run build && electron-builder --win nsis --x64",
+        "dist:portable": "npm run build && electron-builder --win portable --x64",
+        "dist:all": "npm run build && electron-builder --win nsis portable --x64",
+        "dev": "concurrently -k \"vite --config vite.config.mjs\" \"wait-on http://127.0.0.1:5173 && set VITE_DEV_SERVER_URL=http://127.0.0.1:5173 && electron .\"",
+        "postinstall": "electron-builder install-app-deps"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "better-sqlite3": "^13.0.3",
+        "electron-updater": "^6.8.9",
+        "exceljs": "^4.4.0",
+        "imap": "^0.8.19",
+        "lucide-react": "^1.46.0",
+        "mailcomposer": "^4.0.2",
+        "mailparser": "^3.9.16",
+        "nodemailer": "^9.0.5",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "react-router-dom": "^7.18.2",
+        "xlsx": "^0.18.5"
+    },
+    "devDependencies": {
+        "@electron/rebuild": "^4.2.0",
+        "@vitejs/plugin-react": "^6.0.5",
+        "concurrently": "^10.0.4",
+        "electron": "^43.3.0",
+        "electron-builder": "^26.15.3",
+        "vite": "^8.2.2",
+        "wait-on": "^9.1.0"
+    },
+    "build": {
+        "appId": "com.alfadime.app",
+        "productName": "Alfadime",
+        "icon": "resources/Alfadime.ico",
+        "asar": true,
+        "asarUnpack": [
+            "**/*.node",
+            "**/node_modules/better-sqlite3/prebuilds/win32-x64/**/*"
+        ],
+        "files": [
+            "dist/**/*",
+            "src/main/**/*",
+            "src/preload/**/*",
+            "resources/**/*",
+            "package.json",
+            "database/migrations/**/*",
+            "database/seeds/**/*",
+            "!**/*.map",
+            "!**/.env",
+            "!**/.git/**",
+            "!**/node_modules/better-sqlite3/prebuilds/darwin-**",
+            "!**/node_modules/better-sqlite3/prebuilds/linux-**",
+            "!**/node_modules/better-sqlite3/prebuilds/linuxmusl-**",
+            "!**/node_modules/better-sqlite3/prebuilds/win32-arm64/**",
+            "!**/node_modules/better-sqlite3/build/**",
+            "!**/app-data/**",
+            "!**/dist/win-unpacked/**",
+            "!**/dist/*.exe",
+            "!**/*.bak",
+            "!**/*.backup",
+            "!**/*.xlsx",
+            "!**/project_documentation.txt",
+            "!**/alfadime-projeto-completo.txt",
+            "!**/check-*.js",
+            "!**/test-*.js",
+            "!**/verificar-*.js",
+            "!**/populate-*.js",
+            "!**/sync-product-codes*.js",
+            "!**/database.html",
+            "!**/database-*.css",
+            "!**/database-*.js"
+        ],
+        "extraResources": [
+            {
+                "filter": [
+                    "**/*.sql",
+                    "**/*.js",
+                    "**/*.json"
+                ],
+                "from": "database",
+                "to": "database"
+            }
+        ],
+        "win": {
+            "icon": "resources/Alfadime.ico",
+            "signExecutable": false,
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                },
+                {
+                    "target": "portable",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "Alfadime",
+            "artifactName": "${productName}-Setup-${version}.${ext}",
+            "deleteAppDataOnUninstall": false
+        },
+        "portable": {
+            "artifactName": "${productName}-Portable-${version}.${ext}"
+        },
+        "publish": {
+            "provider": "github",
+            "owner": "SEU_USUARIO",
+            "repo": "SEU_REPOSITORIO",
+            "releaseType": "release"
+        },
+        "mac": {
+            "icon": "resources/Alfadime.png"
+        },
+        "linux": {
+            "icon": "resources/Alfadime.png"
+        }
+    }
+}

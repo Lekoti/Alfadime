@@ -1,0 +1,853 @@
+.industry-contacts-page {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 18px clamp(14px, 2vw, 28px) 28px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #eef1f5;
+    color: #263241;
+}
+
+.industry-contacts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    margin: 0 auto 14px;
+}
+
+.industry-contacts-header h1 {
+    margin: 0;
+    color: #263241;
+    font-size: clamp(20px, 1.7vw, 26px);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.industry-contacts-header-button,
+.industry-contacts-action-button,
+.industry-contacts-save-button,
+.industry-contacts-cancel-button,
+.industry-contacts-clear-button,
+.industry-contacts-edit-button,
+.industry-contacts-delete-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 33px;
+    box-sizing: border-box;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.industry-contacts-header-button {
+    min-width: 150px;
+    border: 1px solid #b9cbdc;
+    padding: 0 12px;
+    background: #edf4fa;
+    color: #345d82;
+}
+
+.industry-contacts-header-button:hover {
+    border-color: #3b5f86;
+    background: #dfeaf4;
+    color: #304e6e;
+}
+
+.industry-contacts-actions-panel,
+.industry-contacts-list-panel {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto 12px;
+    border: 1px solid #d5dbe3;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgb(31 41 55 / 5%);
+}
+
+.industry-contacts-actions-panel {
+    padding: 6px 12px 12px;
+}
+
+.industry-contacts-actions-header {
+    display: flex;
+    justify-content: flex-end;
+    height: 0;
+    min-height: 0;
+    margin: 0;
+    overflow: visible;
+}
+
+.industry-contacts-actions-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.industry-contacts-action-button {
+    min-width: 142px;
+    border: 1px solid #b9cbdc;
+    padding: 0 13px;
+    background: #edf4fa;
+    color: #345d82;
+}
+
+.industry-contacts-action-button:hover:not(:disabled) {
+    border-color: #3b5f86;
+    background: #dfeaf4;
+    color: #304e6e;
+}
+
+.industry-contacts-action-button.primary,
+.industry-contacts-save-button {
+    border-color: #3b5f86;
+    background: #3b5f86;
+    color: #ffffff;
+}
+
+.industry-contacts-action-button.primary:hover:not(:disabled),
+.industry-contacts-save-button:hover:not(:disabled) {
+    border-color: #304e6e;
+    background: #304e6e;
+}
+
+.industry-contacts-action-button:disabled,
+.industry-contacts-save-button:disabled,
+.industry-contacts-cancel-button:disabled,
+.industry-contacts-edit-button:disabled,
+.industry-contacts-delete-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.industry-contacts-close-button {
+    display: grid;
+    width: 27px;
+    height: 27px;
+    place-items: center;
+    border: 1px solid #cdd6df;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #667482;
+    cursor: pointer;
+    font-size: 17px;
+    line-height: 1;
+}
+
+.industry-contacts-close-button:hover {
+    border-color: #3b5f86;
+    background: #edf4fa;
+    color: #345d82;
+}
+
+.industry-contacts-filter-panel {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+}
+
+.industry-contacts-filter-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
+    margin-bottom: 11px;
+}
+
+.industry-contacts-summary-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    align-items: center;
+    min-width: 0;
+    border: 1px solid #e0e5eb;
+    border-radius: 6px;
+    padding: 9px 10px;
+    background: #f9fbfc;
+}
+
+.industry-contacts-summary-icon {
+    display: grid;
+    grid-row: 1 / 3;
+    width: 29px;
+    height: 29px;
+    place-items: center;
+    border-radius: 6px;
+    background: #eef1f5;
+    color: #3b5f86;
+}
+
+.industry-contacts-summary-icon.warning {
+    background: #fff5df;
+    color: #9a6b18;
+}
+
+.industry-contacts-summary-card span:not(
+    .industry-contacts-summary-icon
+) {
+    color: #6b7785;
+    font-size: 10px;
+}
+
+.industry-contacts-summary-card strong {
+    color: #263241;
+    font-size: 17px;
+    line-height: 1.1;
+}
+
+.industry-contacts-filter-fields {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) 150px 170px 150px auto;
+    gap: 8px;
+    align-items: end;
+}
+
+.industry-contacts-filter-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.industry-contacts-filter-fields label > span {
+    color: #56616d;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.industry-contacts-filter-fields input,
+.industry-contacts-filter-fields select {
+    width: 100%;
+    min-height: 32px;
+    box-sizing: border-box;
+    border: 1px solid #cdd6df;
+    border-radius: 5px;
+    padding: 0 8px;
+    background: #ffffff;
+    color: #263241;
+    font-family: inherit;
+    font-size: 11px;
+    outline: none;
+}
+
+.industry-contacts-filter-fields input:focus,
+.industry-contacts-filter-fields select:focus {
+    border-color: #3b5f86;
+    box-shadow: 0 0 0 2px rgb(59 95 134 / 10%);
+}
+
+.industry-contacts-clear-button,
+.industry-contacts-cancel-button {
+    border: 1px solid #cdd6df;
+    padding: 0 10px;
+    background: #ffffff;
+    color: #45515e;
+}
+
+.industry-contacts-clear-button:hover,
+.industry-contacts-cancel-button:hover:not(:disabled) {
+    border-color: #3b5f86;
+    background: #edf4fa;
+    color: #345d82;
+}
+
+.industry-contacts-form-panel {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 12px;
+    border-top: 1px solid #e1e6ed;
+    padding-top: 12px;
+}
+
+.industry-contacts-panel-header,
+.industry-contacts-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.industry-contacts-panel-header {
+    margin-bottom: 10px;
+}
+
+.industry-contacts-panel-header h2,
+.industry-contacts-list-header h2 {
+    margin: 0;
+    color: #263241;
+    font-size: 14px;
+}
+
+.industry-contacts-panel-header span,
+.industry-contacts-list-header span {
+    display: block;
+    margin-top: 3px;
+    color: #8a96a3;
+    font-size: 10px;
+}
+
+.industry-contacts-form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 9px;
+    align-items: end;
+}
+
+.industry-contacts-form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    color: #56616d;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.industry-contacts-form-grid input,
+.industry-contacts-form-grid textarea {
+    width: 100%;
+    min-height: 32px;
+    box-sizing: border-box;
+    border: 1px solid #cdd6df;
+    border-radius: 5px;
+    padding: 0 8px;
+    background: #ffffff;
+    color: #263241;
+    font-family: inherit;
+    font-size: 11px;
+    outline: none;
+}
+
+.industry-contacts-form-grid input:focus,
+.industry-contacts-form-grid textarea:focus {
+    border-color: #3b5f86;
+    box-shadow: 0 0 0 2px rgb(59 95 134 / 10%);
+}
+
+.industry-contacts-form-grid textarea {
+    min-height: 32px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    resize: vertical;
+}
+
+.industry-contacts-notes-field {
+    grid-column: span 2;
+}
+
+.industry-contacts-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+    grid-column: span 2;
+}
+
+.industry-contacts-save-button,
+.industry-contacts-cancel-button {
+    padding: 0 11px;
+}
+
+.industry-contacts-list-panel {
+    overflow: hidden;
+}
+
+.industry-contacts-list-header {
+    padding: 12px 14px 10px;
+}
+
+.industry-contacts-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.industry-contacts-table {
+    width: 100%;
+    min-width: 1480px;
+    border-collapse: collapse;
+    table-layout: auto;
+    font-size: 10px;
+}
+
+.industry-contacts-table th,
+.industry-contacts-table td {
+    box-sizing: border-box;
+    border-top: 1px solid #e1e6ed;
+    padding: 7px 6px;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.industry-contacts-table th {
+    background: #f5f8fb;
+    color: #6b7785;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.industry-contacts-table td {
+    color: #45515e;
+}
+
+.industry-contacts-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.industry-contacts-laboratory {
+    color: #263241;
+    font-weight: 700;
+}
+
+.industry-contacts-observation-cell {
+    min-width: 220px;
+    max-width: 360px;
+    overflow: hidden;
+    color: #56616d;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.industry-contacts-row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: max-content;
+}
+
+.industry-contacts-status {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 20px;
+    border-radius: 999px;
+    padding: 0 6px;
+    overflow: hidden;
+    font-size: 9px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.industry-contacts-status.with-contact {
+    background: #eaf6ee;
+    color: #327247;
+}
+
+.industry-contacts-status.without-contact {
+    background: #fff4df;
+    color: #936519;
+}
+
+.industry-contacts-edit-button {
+    min-height: 25px;
+    border: 1px solid #cdd6df;
+    padding: 0 6px;
+    background: #ffffff;
+    color: #45515e;
+    font-size: 9px;
+}
+
+.industry-contacts-edit-button:hover:not(:disabled) {
+    border-color: #3b5f86;
+    background: #edf4fa;
+    color: #345d82;
+}
+
+.industry-contacts-delete-button {
+    min-height: 25px;
+    border: 1px solid #e2b8bd;
+    padding: 0 6px;
+    background: #fff7f8;
+    color: #9f414c;
+    font-size: 9px;
+}
+
+.industry-contacts-delete-button:hover:not(:disabled) {
+    border-color: #b85c67;
+    background: #fcecef;
+    color: #873640;
+}
+
+.industry-contacts-message {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto 10px;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 11px;
+}
+
+.industry-contacts-message.error {
+    border: 1px solid #e2b8bd;
+    background: #fff7f8;
+    color: #9f414c;
+}
+
+.industry-contacts-message.success {
+    border: 1px solid #b7dcc2;
+    background: #f1fbf4;
+    color: #276b3a;
+}
+
+.industry-contacts-empty-cell {
+    padding: 28px 10px !important;
+    color: #8a96a3;
+    text-align: center !important;
+}
+
+.industry-contacts-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.industry-contacts-table-wrapper::-webkit-scrollbar-track {
+    background: #eef1f5;
+}
+
+.industry-contacts-table-wrapper::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background: #aebdca;
+}
+
+.industry-contacts-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #8498aa;
+}
+
+@media (max-width: 1200px) {
+    .industry-contacts-filter-fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .industry-contacts-clear-button {
+        width: max-content;
+    }
+
+    .industry-contacts-form-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .industry-contacts-notes-field,
+    .industry-contacts-form-actions {
+        grid-column: span 3;
+    }
+}
+
+@media (max-width: 800px) {
+    .industry-contacts-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .industry-contacts-header-button {
+        width: 100%;
+    }
+
+    .industry-contacts-filter-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .industry-contacts-filter-fields,
+    .industry-contacts-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .industry-contacts-notes-field,
+    .industry-contacts-form-actions {
+        grid-column: span 2;
+    }
+
+    .industry-contacts-actions-buttons {
+        flex-wrap: wrap;
+    }
+
+    .industry-contacts-action-button {
+        min-width: 135px;
+    }
+
+    .industry-contacts-table-wrapper {
+        max-height: 60vh;
+    }
+}
+
+@media (max-width: 560px) {
+    .industry-contacts-page {
+        padding: 14px 10px 22px;
+    }
+
+    .industry-contacts-header-button {
+        width: 100%;
+    }
+
+    .industry-contacts-actions-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .industry-contacts-action-button {
+        width: 100%;
+    }
+
+    .industry-contacts-filter-fields,
+    .industry-contacts-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .industry-contacts-notes-field,
+    .industry-contacts-form-actions {
+        grid-column: auto;
+    }
+
+    .industry-contacts-form-actions {
+        justify-content: stretch;
+    }
+
+    .industry-contacts-form-actions button {
+        flex: 1;
+    }
+
+    .industry-contacts-table-wrapper {
+        max-height: 55vh;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+
+    .industry-contacts-table {
+        min-width: 1480px;
+    }
+}
+
+.industry-contacts-charge-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 25px;
+    box-sizing: border-box;
+    border: 1px solid #b9cbdc;
+    border-radius: 5px;
+    padding: 0 7px;
+    background: #edf4fa;
+    color: #345d82;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 9px;
+    font-weight: 700;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.industry-contacts-charge-button:hover:not(:disabled) {
+    border-color: #3b5f86;
+    background: #dfeaf4;
+    color: #304e6e;
+}
+
+.industry-contacts-charge-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.industry-contacts-charge-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 20px;
+    background: rgb(20 31 44 / 42%);
+}
+
+.industry-contacts-charge-modal {
+    width: min(100%, 620px);
+    max-height: calc(100vh - 40px);
+    box-sizing: border-box;
+    overflow-y: auto;
+    border: 1px solid #d5dbe3;
+    border-radius: 8px;
+    padding: 16px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgb(31 41 55 / 18%);
+}
+
+.industry-contacts-charge-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.industry-contacts-charge-header h2 {
+    margin: 0;
+    color: #263241;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.industry-contacts-charge-header span {
+    display: block;
+    margin-top: 4px;
+    color: #8a96a3;
+    font-size: 10px;
+}
+
+.industry-contacts-charge-modal > p {
+    margin: 0 0 11px;
+    color: #56616d;
+    font-size: 11px;
+}
+
+.industry-contacts-charge-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.industry-contacts-charge-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    box-sizing: border-box;
+    border: 1px solid #b9cbdc;
+    border-radius: 5px;
+    padding: 0 9px;
+    background: #edf4fa;
+    color: #345d82;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.industry-contacts-charge-option:hover:not(:disabled) {
+    border-color: #3b5f86;
+    background: #dfeaf4;
+    color: #304e6e;
+}
+
+.industry-contacts-charge-option.primary {
+    border-color: #3b5f86;
+    background: #3b5f86;
+    color: #ffffff;
+}
+
+.industry-contacts-charge-option.primary:hover:not(:disabled) {
+    border-color: #304e6e;
+    background: #304e6e;
+}
+
+.industry-contacts-charge-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.industry-contacts-charge-modal
+    > .industry-contacts-cancel-button {
+    margin-top: 14px;
+}
+
+.industry-contacts-charge-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.industry-contacts-charge-preview label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.industry-contacts-charge-preview label > span {
+    color: #56616d;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.industry-contacts-charge-preview input,
+.industry-contacts-charge-preview textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #cdd6df;
+    border-radius: 5px;
+    padding: 8px;
+    background: #f9fbfc;
+    color: #263241;
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 1.45;
+    outline: none;
+    resize: vertical;
+}
+
+.industry-contacts-charge-preview input {
+    min-height: 32px;
+}
+
+.industry-contacts-charge-preview textarea {
+    min-height: 56px;
+}
+
+.industry-contacts-charge-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+@media (max-width: 680px) {
+    .industry-contacts-charge-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    .industry-contacts-charge-overlay {
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .industry-contacts-charge-modal {
+        max-height: calc(100vh - 20px);
+        padding: 13px;
+    }
+
+    .industry-contacts-charge-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .industry-contacts-charge-actions button,
+    .industry-contacts-charge-modal
+        > .industry-contacts-cancel-button {
+        width: 100%;
+    }
+}
