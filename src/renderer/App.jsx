@@ -25,16 +25,23 @@ import SettingsContactsPage from "./modules/settings/pages/SettingsContactsPage.
 import SettingsLayout from "./modules/settings/pages/SettingsLayout.jsx";
 import LoginPage from "./modules/auth/pages/LoginPage.jsx";
 import useAuth from "./modules/auth/hooks/useAuth.js";
+import {
+    AuthProvider
+} from "./modules/auth/context/AuthContext.jsx";
+
 
 function LoadingScreen() {
     return (
         <div className="alfadime-loading-screen">
-            <span>Carregando Alfadime...</span>
+            <span>
+                Carregando Alfadime...
+            </span>
         </div>
     );
 }
 
-function AuthenticatedRoutes() {
+
+function ApplicationRoutes() {
     const {
         loading,
         isAuthenticated
@@ -49,104 +56,110 @@ function AuthenticatedRoutes() {
     }
 
     return (
-        <HashRouter>
-            <Routes>
+        <Routes>
+            <Route
+                path="/"
+                element={<MainLayout />}
+            >
                 <Route
-                    path="/"
-                    element={<MainLayout />}
+                    index
+                    element={<HomePage />}
+                />
+
+                <Route
+                    path="products"
+                    element={<ProductsPage />}
+                />
+
+                <Route
+                    path="product-audit"
+                    element={<ProductAuditPage />}
+                />
+
+                <Route
+                    path="product-corrections"
+                    element={<ProductCorrectionsPage />}
+                />
+
+                <Route
+                    path="price-pending"
+                    element={<PricePendingPage />}
+                />
+
+                <Route
+                    path="purchases"
+                    element={<PurchasesPage />}
+                />
+
+                <Route
+                    path="industry-contacts"
+                    element={<IndustryContactsPage />}
+                />
+
+                <Route
+                    path="notifications"
+                    element={<NotificationsPage />}
+                />
+
+                <Route
+                    path="email"
+                    element={<EmailCampaignsPage />}
+                />
+
+                <Route
+                    path="email/received"
+                    element={<EmailReceivedPage />}
+                />
+
+                <Route
+                    path="settings"
+                    element={<SettingsLayout />}
                 >
                     <Route
                         index
-                        element={<HomePage />}
+                        element={<SettingsGeneralPage />}
                     />
 
                     <Route
-                        path="products"
-                        element={<ProductsPage />}
-                    />
-
-                    <Route
-                        path="product-audit"
-                        element={<ProductAuditPage />}
-                    />
-
-                    <Route
-                        path="product-corrections"
-                        element={<ProductCorrectionsPage />}
+                        path="email-configs"
+                        element={<EmailConfigsPage />}
                     />
 
                     <Route
                         path="price-pending"
-                        element={<PricePendingPage />}
+                        element={<SettingsPricePendingPage />}
                     />
 
                     <Route
-                        path="purchases"
-                        element={<PurchasesPage />}
-                    />
-
-                    <Route
-                        path="industry-contacts"
-                        element={<IndustryContactsPage />}
-                    />
-
-                    <Route
-                        path="notifications"
-                        element={<NotificationsPage />}
-                    />
-
-                    <Route
-                        path="email"
-                        element={<EmailCampaignsPage />}
-                    />
-
-                    <Route
-                        path="email/received"
-                        element={<EmailReceivedPage />}
-                    />
-
-                    <Route
-                        path="settings"
-                        element={<SettingsLayout />}
-                    >
-                        <Route
-                            index
-                            element={<SettingsGeneralPage />}
-                        />
-
-                        <Route
-                            path="email-configs"
-                            element={<EmailConfigsPage />}
-                        />
-
-                        <Route
-                            path="price-pending"
-                            element={<SettingsPricePendingPage />}
-                        />
-
-                        <Route
-                            path="contacts"
-                            element={<SettingsContactsPage />}
-                        />
-                    </Route>
-
-                    <Route
-                        path="*"
-                        element={
-                            <Navigate
-                                to="/"
-                                replace
-                            />
-                        }
+                        path="contacts"
+                        element={<SettingsContactsPage />}
                     />
                 </Route>
-            </Routes>
-        </HashRouter>
+
+                <Route
+                    path="*"
+                    element={
+                        <Navigate
+                            to="/"
+                            replace
+                        />
+                    }
+                />
+            </Route>
+        </Routes>
     );
 }
 
+
 function App() {
-    return <AuthenticatedRoutes />;
+    return (
+        <AuthProvider>
+            <HashRouter>
+                <ApplicationRoutes />
+            </HashRouter>
+        </AuthProvider>
+    );
 }
+
 
 export default App;

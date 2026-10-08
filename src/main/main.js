@@ -94,6 +94,7 @@ let appIpcRegistered = false;
 let updaterConfigured = false;
 let updateDownloaded = false;
 
+
 function logStartup(
     step,
     extra = ""
@@ -107,6 +108,7 @@ function logStartup(
         `[STARTUP] ${new Date().toISOString()} | ${step}${suffix}`
     );
 }
+
 
 function showStartupError(
     title,
@@ -136,6 +138,7 @@ function showStartupError(
     }
 }
 
+
 function sendUpdateStatus(
     status,
     data = {}
@@ -157,6 +160,7 @@ function sendUpdateStatus(
         }
     );
 }
+
 
 function configureAutoUpdater() {
     if (
@@ -280,6 +284,7 @@ function configureAutoUpdater() {
     );
 }
 
+
 async function checkForUpdates() {
     if (
         !app.isPackaged
@@ -329,6 +334,7 @@ async function checkForUpdates() {
     }
 }
 
+
 function downloadUpdate() {
     if (
         !app.isPackaged
@@ -366,6 +372,7 @@ function downloadUpdate() {
         );
 }
 
+
 function installUpdate() {
     if (
         !updateDownloaded
@@ -391,6 +398,7 @@ function installUpdate() {
     };
 }
 
+
 process.on(
     "uncaughtException",
     (error) => {
@@ -401,6 +409,7 @@ process.on(
     }
 );
 
+
 process.on(
     "unhandledRejection",
     (error) => {
@@ -410,6 +419,7 @@ process.on(
         );
     }
 );
+
 
 function registerAppIpc() {
     if (
@@ -498,6 +508,7 @@ function registerAppIpc() {
     );
 }
 
+
 ipcMain.handle(
     "debug:get-db-path",
     () => {
@@ -512,6 +523,7 @@ ipcMain.handle(
         return dbPath;
     }
 );
+
 
 async function createMainWindow() {
     logStartup(
@@ -657,6 +669,7 @@ async function createMainWindow() {
     );
 }
 
+
 function initializeLocalServices() {
     try {
         logStartup(
@@ -682,8 +695,6 @@ function initializeLocalServices() {
             DEFAULT_SHARED_DATABASE_PATH
         );
 
-        ensureContactsDefaultDbConfig();
-
         logStartup(
             "Banco local e configurações prontos"
         );
@@ -697,6 +708,7 @@ function initializeLocalServices() {
     }
 }
 
+
 function registerAllIpc() {
     logStartup(
         "Registrando canais IPC"
@@ -705,8 +717,8 @@ function registerAllIpc() {
     registerAppIpc();
 
     registerAuthIpc(
-    ipcMain
-);
+        ipcMain
+    );
 
     registerPricePendingIpc(
         ipcMain
@@ -753,6 +765,7 @@ function registerAllIpc() {
     );
 }
 
+
 async function startAlfadime() {
     const startedAt =
         Date.now();
@@ -786,6 +799,7 @@ async function startAlfadime() {
     }
 }
 
+
 if (
     process.platform ===
     "win32"
@@ -795,9 +809,11 @@ if (
     );
 }
 
+
 app.whenReady().then(
     startAlfadime
 );
+
 
 app.on(
     "before-quit",
@@ -809,6 +825,7 @@ app.on(
         closeDatabase();
     }
 );
+
 
 app.on(
     "window-all-closed",

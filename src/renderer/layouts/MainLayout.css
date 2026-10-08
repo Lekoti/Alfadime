@@ -7,9 +7,6 @@
     background: #eef1f5;
 }
 
-
-
-
 .alfadime-sidebar {
     display: flex;
     flex-direction: column;
@@ -22,9 +19,6 @@
     background: #ffffff;
 }
 
-
-
-
 .alfadime-navigation {
     display: flex;
     flex: 1;
@@ -36,9 +30,6 @@
     overflow-y: auto;
 }
 
-
-
-
 .alfadime-navigation-title {
     flex-shrink: 0;
     margin: 0 9px 8px;
@@ -48,9 +39,6 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
-
-
-
 
 .alfadime-menu-item {
     display: flex;
@@ -73,25 +61,16 @@
         color 0.15s ease;
 }
 
-
-
-
 .alfadime-menu-item:hover {
     background: #f0f4f8;
     color: #344b65;
 }
-
-
-
 
 .alfadime-menu-item.active {
     background: #e7edf4;
     color: #344f6c;
     font-weight: 700;
 }
-
-
-
 
 .alfadime-menu-icon {
     display: grid;
@@ -105,24 +84,17 @@
     font-size: 13px;
 }
 
-
-
-
 .alfadime-menu-item.active .alfadime-menu-icon {
     background: #d1dce8;
     color: #344f6c;
 }
 
-
-
-
 .alfadime-sidebar-footer {
     display: flex;
     flex-shrink: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 51px;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 94px;
     box-sizing: border-box;
     border-top: 1px solid #e1e6ed;
     padding: 10px 15px;
@@ -130,19 +102,46 @@
     font-size: 10px;
 }
 
+.alfadime-sidebar-user {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+}
 
+.alfadime-sidebar-user-label {
+    color: #8a96a3;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
 
+.alfadime-sidebar-user-name {
+    overflow: hidden;
+    color: #45515e;
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-.alfadime-sidebar-footer small {
+.alfadime-sidebar-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.alfadime-sidebar-footer-actions small {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     color: #a0aab5;
     font-size: 9px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
-
-
 
 .alfadime-settings-button {
     display: grid;
@@ -159,17 +158,11 @@
     line-height: 1;
 }
 
-
-
-
 .alfadime-settings-button:hover {
     border-color: #3b5f86;
     background: #f0f4f8;
     color: #344b65;
 }
-
-
-
 
 .alfadime-settings-button.active {
     border-color: #3b5f86;
@@ -177,8 +170,24 @@
     color: #344f6c;
 }
 
+.alfadime-sidebar-footer .alfadime-logout-button {
+    flex-shrink: 0;
+    min-height: 30px;
+    border: 1px solid #cdd6df;
+    border-radius: 6px;
+    padding: 0 9px;
+    background: #ffffff;
+    color: #45515e;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+}
 
-
+.alfadime-sidebar-footer .alfadime-logout-button:hover {
+    border-color: #aab7c5;
+    background: #f0f4f8;
+    color: #344b65;
+}
 
 .alfadime-content {
     display: flex;
@@ -189,9 +198,6 @@
     overflow: hidden;
 }
 
-
-
-
 .alfadime-main {
     flex: 1;
     min-width: 0;
@@ -199,104 +205,9 @@
     overflow: hidden;
 }
 
-
-
-
 .alfadime-main > * {
     min-width: 0;
     min-height: 0;
-}
-
-
-
-
-@media (max-width: 900px) {
-    .alfadime-sidebar {
-        width: 185px;
-        min-width: 185px;
-    }
-
-
-
-
-    .alfadime-menu-item {
-        font-size: 10px;
-    }
-}
-
-
-
-
-@media (max-width: 680px) {
-    .alfadime-sidebar {
-        width: 168px;
-        min-width: 168px;
-    }
-
-
-
-
-    .alfadime-navigation {
-        padding-right: 7px;
-        padding-left: 7px;
-    }
-
-
-
-
-    .alfadime-menu-item {
-        gap: 6px;
-        padding: 0 7px;
-        font-size: 9px;
-    }
-
-
-
-
-    .alfadime-menu-icon {
-        width: 18px;
-        height: 18px;
-        font-size: 11px;
-    }
-}
-
-.alfadime-user-bar {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 16px;
-    min-height: 48px;
-    padding: 8px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #ffffff;
-}
-
-.alfadime-user-info {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #6b7280;
-    font-size: 13px;
-}
-
-.alfadime-user-name {
-    color: #1f2937;
-    font-weight: 600;
-}
-
-.alfadime-logout-button {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    background: #ffffff;
-    color: #374151;
-    cursor: pointer;
-    font-size: 13px;
-    padding: 7px 12px;
-}
-
-.alfadime-logout-button:hover {
-    border-color: #9ca3af;
-    background: #f9fafb;
 }
 
 .alfadime-loading-screen {
@@ -306,4 +217,58 @@
     min-height: 100vh;
     color: #4b5563;
     background: #f9fafb;
+}
+
+@media (max-width: 900px) {
+    .alfadime-sidebar {
+        width: 185px;
+        min-width: 185px;
+    }
+
+    .alfadime-menu-item {
+        font-size: 10px;
+    }
+
+    .alfadime-sidebar-user-name {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 680px) {
+    .alfadime-sidebar {
+        width: 168px;
+        min-width: 168px;
+    }
+
+    .alfadime-navigation {
+        padding-right: 7px;
+        padding-left: 7px;
+    }
+
+    .alfadime-menu-item {
+        gap: 6px;
+        padding: 0 7px;
+        font-size: 9px;
+    }
+
+    .alfadime-menu-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 11px;
+    }
+
+    .alfadime-sidebar-footer {
+        padding-right: 9px;
+        padding-left: 9px;
+    }
+
+    .alfadime-sidebar-footer-actions {
+        gap: 5px;
+    }
+
+    .alfadime-sidebar-footer .alfadime-logout-button {
+        padding-right: 6px;
+        padding-left: 6px;
+        font-size: 10px;
+    }
 }

@@ -1,20 +1,24 @@
-const getAuthApi = () => {
-    if (!window.alfadime?.auth) {
+function getAuthApi() {
+    if (
+        !window.alfadime ||
+        !window.alfadime.auth
+    ) {
         throw new Error(
             "API de autenticação não disponível."
         );
     }
 
     return window.alfadime.auth;
-};
+}
 
-export const authService = {
+
+const authService = {
     async login(
         username,
         isPersistent = false
     ) {
         return getAuthApi().login(
-            username.trim(),
+            username,
             isPersistent
         );
     },
@@ -38,6 +42,10 @@ export const authService = {
     async updateLastAccess() {
         return getAuthApi().updateLastAccess();
     }
+};
+
+export {
+    authService
 };
 
 export default authService;
