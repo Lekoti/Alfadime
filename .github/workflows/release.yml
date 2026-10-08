@@ -26,6 +26,9 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      - name: Gerar interface do aplicativo
+        run: npm run build
+
       - name: Gerar instalador Windows
         run: npx electron-builder --win nsis --x64 --publish never
 
