@@ -1,3 +1,36 @@
+name: Gerar e publicar Alfadime
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    name: Gerar Setup Windows e publicar Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar instalador Windows
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Gerar latest.yml
+        shell: powershell
         run: |
           $installer = Get-ChildItem -Path "dist" -Filter "Alfadime-Setup-*.exe" -File |
             Select-Object -First 1
@@ -45,3 +78,32 @@
           "@ | Set-Content -Path "dist\latest.yml" -Encoding utf8
 
           Get-Content "dist\latest.yml"
+
+      - name: Conferir arquivos gerados
+        shell: powershell
+        run: |
+          Get-ChildItem -Path dist -File |
+            Select-Object Name, Length
+
+          if (-not (Test-Path "dist\Alfadime-Setup-*.exe")) {
+            throw "O instalador .exe não foi gerado."
+          }
+
+          if (-not (Test-Path "dist\Alfadime-Setup-*.exe.blockmap")) {
+            throw "O arquivo .blockmap não foi gerado."
+          }
+
+          if (-not (Test-Path "dist\latest.yml")) {
+            throw "O latest.yml não foi gerado."
+          }
+
+      - name: Criar ou atualizar Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/Alfadime-Setup-*.exe
+            dist/Alfadime-Setup-*.exe.blockmap
+            dist/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
