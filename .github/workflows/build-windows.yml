@@ -3,9 +3,6 @@ name: Build Windows
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: windows-latest
@@ -23,17 +20,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish installer
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build; npx electron-builder --win nsis --x64 --publish always
+      - name: Build installer
+        run: npm run build; npx electron-builder --win nsis --x64 --publish never
 
       - name: Upload installer
         uses: actions/upload-artifact@v5
         with:
-          name: Alfadime-Windows
+          name: Alfadime-2.0.1-Windows
           path: |
-            dist/Alfadime-Setup-*.exe
+            dist/Alfadime-Setup-2.0.1.exe
+            dist/Alfadime-Setup-2.0.1.exe.blockmap
             dist/latest.yml
-            dist/*.blockmap
           if-no-files-found: error
