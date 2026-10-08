@@ -20,13 +20,35 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Instalar dependências
         run: npm ci
 
-      - name: Gerar instalador e publicar arquivos
-        run: npx electron-builder --win nsis --x64 --publish always
+      - name: Gerar instalador Windows
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Conferir arquivos gerados
+        shell: powershell
+        run: |
+          Get-ChildItem -Path dist -File |
+            Select-Object Name, Length
+
+          if (-not (Test-Path "dist\Alfadime-Setup-*.exe")) {
+            throw "O instalador .exe não foi gerado."
+          }
+
+          if (-not (Test-Path "dist\Alfadime-Setup-*.exe.blockmap")) {
+            throw "O arquivo .blockmap não foi gerado."
+          }
+
+      - name: Criar ou atualizar Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/Alfadime-Setup-*.exe
+            dist/Alfadime-Setup-*.exe.blockmap
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
