@@ -83,13 +83,6 @@ const {
     "./modules/email-dispatch/email-dispatch-received.ipc"
 );
 
-const {
-    ensureDefaultDbConfig:
-        ensureContactsDefaultDbConfig
-} = require(
-    "./modules/industry-contacts/industry-contacts-config.repository"
-);
-
 let mainWindow = null;
 let appIpcRegistered = false;
 let updaterConfigured = false;
@@ -117,10 +110,10 @@ function showStartupError(
         error && error.stack
             ? error.stack
             : String(
-                  error?.message ||
-                      error ||
-                      "Erro desconhecido."
-              );
+                error?.message ||
+                error ||
+                "Erro desconhecido."
+            );
 
     console.error(
         title,
@@ -229,7 +222,7 @@ function configureAutoUpdater() {
                     percent:
                         Number(
                             progress.percent ||
-                                0
+                            0
                         ),
                     transferred:
                         progress.transferred,
@@ -519,6 +512,12 @@ async function createMainWindow() {
         "Criando janela principal"
     );
 
+    const appIconPath =
+        path.join(
+            process.resourcesPath,
+            "Alfadime.ico"
+        );
+
     mainWindow =
         new BrowserWindow({
             width: 1400,
@@ -527,6 +526,7 @@ async function createMainWindow() {
             minHeight: 700,
             show: false,
             title: "Alfadime",
+            icon: appIconPath,
             webPreferences: {
                 preload: path.join(
                     __dirname,
@@ -537,6 +537,17 @@ async function createMainWindow() {
                 sandbox: false
             }
         });
+
+    if (
+        process.platform ===
+        "win32"
+    ) {
+        mainWindow.setAppDetails({
+            appId: "com.alfadime.app",
+            appIconPath,
+            appIconIndex: 0
+        });
+    }
 
     mainWindow.on(
         "closed",
@@ -603,7 +614,7 @@ async function createMainWindow() {
     const isDev =
         process.env.VITE_DEV_SERVER_URL ||
         process.env.NODE_ENV ===
-            "development" ||
+        "development" ||
         process.argv.includes(
             "--dev"
         );
@@ -686,33 +697,43 @@ function registerAllIpc() {
     );
 
     registerAppIpc();
+
     registerPricePendingIpc(
         ipcMain
     );
+
     registerProductsIpc(
         ipcMain
     );
+
     registerIndustryContactsIpc(
         ipcMain
     );
+
     registerNotificationsIpc(
         ipcMain
     );
+
     registerProductCorrectionsIpc(
         ipcMain
     );
+
     registerPurchasesIpc(
         ipcMain
     );
+
     registerProductAuditIpc(
         ipcMain
     );
+
     registerExportIpc(
         ipcMain
     );
+
     registerEmailDispatchIpc(
         ipcMain
     );
+
     registerEmailReceivedIpc(
         ipcMain
     );
@@ -753,6 +774,15 @@ async function startAlfadime() {
             error
         );
     }
+}
+
+if (
+    process.platform ===
+    "win32"
+) {
+    app.setAppUserModelId(
+        "com.alfadime.app"
+    );
 }
 
 app.whenReady().then(
