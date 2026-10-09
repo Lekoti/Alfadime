@@ -5,7 +5,7 @@ const os = require("node:os");
 
 
 const {
-    getDatabase
+    getUsersDatabase
 } = require("../../database/connection");
 
 
@@ -14,7 +14,6 @@ const {
 const {
     USER_ROLES
 } = require("./userRoles.constants");
-
 
 
 
@@ -28,11 +27,9 @@ class AuthHandler {
 
 
 
-
     getDatabase() {
-        return getDatabase();
+        return getUsersDatabase();
     }
-
 
 
 
@@ -76,11 +73,9 @@ class AuthHandler {
 
 
 
-
     getComputerName() {
         return os.hostname();
     }
-
 
 
 
@@ -90,7 +85,6 @@ class AuthHandler {
             value || ""
         ).trim();
     }
-
 
 
 
@@ -116,7 +110,6 @@ class AuthHandler {
 
         return `${salt}:${hash}`;
     }
-
 
 
 
@@ -181,7 +174,6 @@ class AuthHandler {
 
 
 
-
     async getUserByUsername(username) {
         const database =
             this.getDatabase();
@@ -202,7 +194,6 @@ class AuthHandler {
 
 
 
-
     async getUserPermissions(role) {
         const database =
             this.getDatabase();
@@ -219,7 +210,6 @@ class AuthHandler {
             `)
             .all(role);
     }
-
 
 
 
@@ -363,7 +353,6 @@ class AuthHandler {
 
 
 
-
     async createOrUpdateSession(
         userId,
         isPersistent
@@ -426,7 +415,6 @@ class AuthHandler {
 
 
 
-
     async updateUserLastLogin(userId) {
         const database =
             this.getDatabase();
@@ -451,7 +439,6 @@ class AuthHandler {
 
 
 
-
     async updateLastAccess(userId) {
         const database =
             this.getDatabase();
@@ -472,7 +459,6 @@ class AuthHandler {
                 this.computerId
             );
     }
-
 
 
 
@@ -509,7 +495,6 @@ class AuthHandler {
 
 
 
-
     buildSession(user, permissions) {
         return {
             user: {
@@ -523,7 +508,6 @@ class AuthHandler {
             computerId: this.computerId
         };
     }
-
 
 
 
@@ -715,7 +699,6 @@ class AuthHandler {
 
 
 
-
     async logout() {
         try {
             if (this.currentSession?.user?.id) {
@@ -765,7 +748,6 @@ class AuthHandler {
             };
         }
     }
-
 
 
 
@@ -860,7 +842,6 @@ class AuthHandler {
 
 
 
-
     async validateSession() {
         try {
             const result =
@@ -904,7 +885,6 @@ class AuthHandler {
 
 
 
-
     async updateLastAccessHandler() {
         try {
             if (
@@ -942,11 +922,9 @@ class AuthHandler {
 
 
 
-
     getAuthenticatedUser() {
         return this.currentSession?.user || null;
     }
-
 
 
 
@@ -955,7 +933,6 @@ class AuthHandler {
         return this.computerId;
     }
 }
-
 
 
 

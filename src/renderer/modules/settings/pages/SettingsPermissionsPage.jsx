@@ -160,6 +160,33 @@ export default function SettingsPermissionsPage() {
 
 
 
+    const selectedUser =
+        useMemo(
+            () =>
+                users.find(
+                    (user) =>
+                        String(user.id) ===
+                        String(permissions.target_value)
+                ),
+            [
+                users,
+                permissions.target_value
+            ]
+        );
+
+
+
+    const selectedUserRoleLabel =
+        ROLES.find(
+            (role) =>
+                role.value ===
+                selectedUser?.role
+        )?.label ||
+        selectedUser?.role ||
+        "";
+
+
+
     const loadUsers =
         useCallback(
             async () => {
@@ -212,9 +239,12 @@ export default function SettingsPermissionsPage() {
                     "user" &&
                     !targetValue
                 ) {
-                    setPermissions(
-                        buildInitialState()
-                    );
+                    setPermissions({
+                        target_type: "user",
+                        target_value: "",
+                        module_permissions: [],
+                        function_permissions: []
+                    });
 
 
 
@@ -334,9 +364,12 @@ export default function SettingsPermissionsPage() {
 
 
 
-            setPermissions(
-                buildInitialState()
-            );
+            setPermissions({
+                target_type: value,
+                target_value: nextValue,
+                module_permissions: [],
+                function_permissions: []
+            });
 
 
 
@@ -474,7 +507,10 @@ export default function SettingsPermissionsPage() {
                 response?.success
             ) {
                 setMessage(
-                    "Permissões salvas com sucesso."
+                    permissions.target_type ===
+                        "user"
+                        ? "Permissões individuais salvas com sucesso."
+                        : "Permissões do perfil salvas com sucesso."
                 );
 
 
@@ -731,7 +767,12 @@ export default function SettingsPermissionsPage() {
                             className="settings-db-button settings-db-button-primary"
                             disabled={
                                 isSaving ||
-                                isLoading
+                                isLoading ||
+                                (
+                                    permissions.target_type ===
+                                    "user" &&
+                                    !permissions.target_value
+                                )
                             }
                             onClick={
                                 handleSave
@@ -751,7 +792,8 @@ export default function SettingsPermissionsPage() {
                                 className="settings-db-button"
                                 disabled={
                                     isSaving ||
-                                    isLoading
+                                    isLoading ||
+                                    !permissions.target_value
                                 }
                                 onClick={
                                     handleClearOverrides
@@ -776,6 +818,31 @@ export default function SettingsPermissionsPage() {
                         </button>
                     </div>
                 </div>
+
+
+
+                {permissions.target_type ===
+                    "user" &&
+                    selectedUser && (
+                        <div className="settings-general-field">
+                            <p>
+                                <strong>
+                                    {selectedUser.display_name ||
+                                        selectedUser.username}
+                                </strong>{" "}
+                                — perfil:{" "}
+                                <strong>
+                                    {selectedUserRoleLabel}
+                                </strong>
+                            </p>
+
+
+
+                            <p>
+                                As permissões salvas serão aplicadas individualmente a este usuário e terão prioridade sobre o perfil.
+                            </p>
+                        </div>
+                    )}
             </div>
 
 
