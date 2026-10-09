@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
+
+
 import useAuth from "../../auth/hooks/useAuth";
 import {
     ROLE_LABELS,
@@ -7,15 +9,23 @@ import {
 } from "../../auth/constants/userRoles";
 import settingsUsersService from "../services/settingsUsersService";
 
+
+
 import "../styles/settings-users.css";
+
+
 
 
 const EMPTY_FORM = {
     username: "",
     display_name: "",
-    role: USER_ROLES.PENDING,
+    password: "",
+    confirmPassword: "",
+    role: USER_ROLES.VIEWER,
     is_active: 1
 };
+
+
 
 
 export default function SettingsUsersPage() {
@@ -25,30 +35,42 @@ export default function SettingsUsersPage() {
         isAdmin
     } = useAuth();
 
+
+
     const [
         users,
         setUsers
     ] = useState([]);
+
+
 
     const [
         loading,
         setLoading
     ] = useState(true);
 
+
+
     const [
         error,
         setError
     ] = useState("");
+
+
 
     const [
         saving,
         setSaving
     ] = useState(false);
 
+
+
     const [
         form,
         setForm
     ] = useState(EMPTY_FORM);
+
+
 
     const [
         editingUser,
@@ -56,8 +78,26 @@ export default function SettingsUsersPage() {
     ] = useState(null);
 
 
+
+    const [
+        isModalOpen,
+        setIsModalOpen
+    ] = useState(false);
+
+
+
+    const [
+        deletingUser,
+        setDeletingUser
+    ] = useState(null);
+
+
+
+
     const canManageUsers =
         isCreator || isAdmin;
+
+
 
 
     const loadUsers =
@@ -67,8 +107,12 @@ export default function SettingsUsersPage() {
                     setLoading(true);
                     setError("");
 
+
+
                     const result =
                         await settingsUsersService.list();
+
+
 
                     if (
                         result?.success
@@ -88,6 +132,8 @@ export default function SettingsUsersPage() {
                         loadError
                     );
 
+
+
                     setError(
                         loadError?.message ||
                         "Não foi possível carregar os usuários."
@@ -100,6 +146,8 @@ export default function SettingsUsersPage() {
         );
 
 
+
+
     useEffect(() => {
         if (canManageUsers) {
             loadUsers();
@@ -110,11 +158,31 @@ export default function SettingsUsersPage() {
     ]);
 
 
+
+
     function resetForm() {
         setForm(EMPTY_FORM);
         setEditingUser(null);
         setError("");
     }
+
+
+
+
+    function openCreateModal() {
+        resetForm();
+        setIsModalOpen(true);
+    }
+
+
+
+
+    function closeModal() {
+        setIsModalOpen(false);
+        resetForm();
+    }
+
+
 
 
     function handleFormChange(event) {
@@ -123,6 +191,8 @@ export default function SettingsUsersPage() {
             value
         } = event.target;
 
+
+
         setForm((previous) => ({
             ...previous,
             [name]: value
@@ -130,30 +200,47 @@ export default function SettingsUsersPage() {
     }
 
 
+
+
     function handleEdit(user) {
         setEditingUser(user);
+
+
 
         setForm({
             username: user.username,
             display_name: user.display_name,
+            password: "",
+            confirmPassword: "",
             role: user.role,
             is_active: user.is_active
         });
 
+
+
         setError("");
+        setIsModalOpen(true);
     }
+
+
 
 
     async function handleSubmit(event) {
         event.preventDefault();
+
+
 
         if (!canManageUsers) {
             setError(
                 "Você não tem permissão para gerenciar usuários."
             );
 
+
+
             return;
         }
+
+
 
         if (
             !form.username.trim() ||
@@ -163,10 +250,45 @@ export default function SettingsUsersPage() {
                 "Informe o usuário e o nome de exibição."
             );
 
+
+
             return;
         }
 
+
+
+        if (!editingUser) {
+            if (form.password.length < 6) {
+                setError(
+                    "A senha deve ter pelo menos 6 caracteres."
+                );
+
+
+
+                return;
+            }
+
+
+
+            if (
+                form.password !==
+                form.confirmPassword
+            ) {
+                setError(
+                    "As senhas não são iguais."
+                );
+
+
+
+                return;
+            }
+        }
+
+
+
         setSaving(true);
+
+
 
         try {
             const result =
@@ -183,18 +305,26 @@ export default function SettingsUsersPage() {
                     : await settingsUsersService.create({
                         username: form.username.trim(),
                         display_name: form.display_name.trim(),
+                        password: form.password,
+                        confirmPassword: form.confirmPassword,
                         role: form.role,
                         is_active: Number(form.is_active)
                     });
 
+
+
             if (
                 result?.success
             ) {
-                resetForm();
+                closeModal();
                 await loadUsers();
+
+
 
                 return;
             }
+
+
 
             setError(
                 result?.error ||
@@ -206,6 +336,8 @@ export default function SettingsUsersPage() {
                 saveError
             );
 
+
+
             setError(
                 saveError?.message ||
                 "Não foi possível salvar o usuário."
@@ -216,6 +348,71 @@ export default function SettingsUsersPage() {
     }
 
 
+
+
+    async function handleDelete(user) {
+        setDeletingUser(user);
+    }
+
+
+
+
+    async function confirmDelete() {
+        if (!deletingUser) {
+            return;
+        }
+
+
+
+        setSaving(true);
+
+
+
+        try {
+            const result =
+                await settingsUsersService.delete(
+                    deletingUser.id
+                );
+
+
+
+            if (
+                result?.success
+            ) {
+                setDeletingUser(null);
+                await loadUsers();
+
+
+
+                return;
+            }
+
+
+
+            setError(
+                result?.error ||
+                "Não foi possível excluir o usuário."
+            );
+        } catch (deleteError) {
+            console.error(
+                "[USERS] Erro ao excluir:",
+                deleteError
+            );
+
+
+
+            setError(
+                deleteError?.message ||
+                "Não foi possível excluir o usuário."
+            );
+        } finally {
+            setSaving(false);
+        }
+    }
+
+
+
+
     async function handleToggleActive(user) {
         if (
             user.id === currentUser?.id
@@ -224,8 +421,12 @@ export default function SettingsUsersPage() {
                 "Não é possível desativar o usuário conectado."
             );
 
+
+
             return;
         }
+
+
 
         try {
             const result =
@@ -234,13 +435,19 @@ export default function SettingsUsersPage() {
                     user.is_active ? 0 : 1
                 );
 
+
+
             if (
                 result?.success
             ) {
                 await loadUsers();
 
+
+
                 return;
             }
+
+
 
             setError(
                 result?.error ||
@@ -252,12 +459,16 @@ export default function SettingsUsersPage() {
                 toggleError
             );
 
+
+
             setError(
                 toggleError?.message ||
                 "Não foi possível alterar o status."
             );
         }
     }
+
+
 
 
     if (!canManageUsers) {
@@ -268,9 +479,13 @@ export default function SettingsUsersPage() {
                         Configurações
                     </span>
 
+
+
                     <h1>
                         Usuários e permissões
                     </h1>
+
+
 
                     <p>
                         Você não tem permissão para acessar esta área.
@@ -281,6 +496,8 @@ export default function SettingsUsersPage() {
     }
 
 
+
+
     return (
         <main className="settings-users-page">
             <header className="settings-users-header">
@@ -289,15 +506,31 @@ export default function SettingsUsersPage() {
                         Configurações
                     </span>
 
+
+
                     <h1>
                         Usuários e permissões
                     </h1>
+
+
 
                     <p>
                         Gerencie os usuários, perfis e status de acesso ao Alfadime.
                     </p>
                 </div>
+
+
+
+                <button
+                    type="button"
+                    className="settings-users-primary-button"
+                    onClick={openCreateModal}
+                >
+                    Novo usuário
+                </button>
             </header>
+
+
 
             {
                 error && (
@@ -310,150 +543,14 @@ export default function SettingsUsersPage() {
                 )
             }
 
-            <section className="settings-users-card">
-                <h2>
-                    {
-                        editingUser
-                            ? "Editar usuário"
-                            : "Novo usuário"
-                    }
-                </h2>
 
-                <form
-                    className="settings-users-form"
-                    onSubmit={handleSubmit}
-                >
-                    <div className="settings-users-field">
-                        <label htmlFor="user-username">
-                            Usuário
-                        </label>
-
-                        <input
-                            id="user-username"
-                            name="username"
-                            value={form.username}
-                            onChange={handleFormChange}
-                            disabled={
-                                saving ||
-                                Boolean(editingUser)
-                            }
-                            placeholder="Ex.: joao.silva"
-                        />
-                    </div>
-
-                    <div className="settings-users-field">
-                        <label htmlFor="user-display-name">
-                            Nome de exibição
-                        </label>
-
-                        <input
-                            id="user-display-name"
-                            name="display_name"
-                            value={form.display_name}
-                            onChange={handleFormChange}
-                            disabled={saving}
-                            placeholder="Ex.: João Silva"
-                        />
-                    </div>
-
-                    <div className="settings-users-field">
-                        <label htmlFor="user-role">
-                            Perfil
-                        </label>
-
-                        <select
-                            id="user-role"
-                            name="role"
-                            value={form.role}
-                            onChange={handleFormChange}
-                            disabled={
-                                saving ||
-                                !isCreator
-                            }
-                        >
-                            {
-                                isCreator && (
-                                    <option value={USER_ROLES.CREATOR}>
-                                        Criador
-                                    </option>
-                                )
-                            }
-
-                            <option value={USER_ROLES.ADMIN}>
-                                Administrador
-                            </option>
-
-                            <option value={USER_ROLES.EDITOR}>
-                                Editor
-                            </option>
-
-                            <option value={USER_ROLES.VIEWER}>
-                                Visualizador
-                            </option>
-
-                            <option value={USER_ROLES.PENDING}>
-                                Pendente
-                            </option>
-                        </select>
-                    </div>
-
-                    <div className="settings-users-field">
-                        <label htmlFor="user-status">
-                            Status
-                        </label>
-
-                        <select
-                            id="user-status"
-                            name="is_active"
-                            value={form.is_active}
-                            onChange={handleFormChange}
-                            disabled={saving}
-                        >
-                            <option value={1}>
-                                Ativo
-                            </option>
-
-                            <option value={0}>
-                                Inativo
-                            </option>
-                        </select>
-                    </div>
-
-                    <div className="settings-users-form-actions">
-                        <button
-                            type="submit"
-                            className="settings-users-primary-button"
-                            disabled={saving}
-                        >
-                            {
-                                saving
-                                    ? "Salvando..."
-                                    : editingUser
-                                        ? "Salvar alterações"
-                                        : "Criar usuário"
-                            }
-                        </button>
-
-                        {
-                            editingUser && (
-                                <button
-                                    type="button"
-                                    className="settings-users-secondary-button"
-                                    onClick={resetForm}
-                                    disabled={saving}
-                                >
-                                    Cancelar
-                                </button>
-                            )
-                        }
-                    </div>
-                </form>
-            </section>
 
             <section className="settings-users-card">
                 <h2>
                     Usuários cadastrados
                 </h2>
+
+
 
                 {
                     loading ? (
@@ -473,23 +570,33 @@ export default function SettingsUsersPage() {
                                             Nome
                                         </th>
 
+
+
                                         <th>
                                             Usuário
                                         </th>
+
+
 
                                         <th>
                                             Perfil
                                         </th>
 
+
+
                                         <th>
                                             Status
                                         </th>
+
+
 
                                         <th>
                                             Ações
                                         </th>
                                     </tr>
                                 </thead>
+
+
 
                                 <tbody>
                                     {
@@ -499,9 +606,13 @@ export default function SettingsUsersPage() {
                                                     {user.display_name}
                                                 </td>
 
+
+
                                                 <td>
                                                     {user.username}
                                                 </td>
+
+
 
                                                 <td>
                                                     {
@@ -511,6 +622,8 @@ export default function SettingsUsersPage() {
                                                         user.role
                                                     }
                                                 </td>
+
+
 
                                                 <td>
                                                     <span
@@ -528,6 +641,8 @@ export default function SettingsUsersPage() {
                                                     </span>
                                                 </td>
 
+
+
                                                 <td>
                                                     <div className="settings-users-actions">
                                                         <button
@@ -538,6 +653,8 @@ export default function SettingsUsersPage() {
                                                         >
                                                             Editar
                                                         </button>
+
+
 
                                                         <button
                                                             type="button"
@@ -555,6 +672,24 @@ export default function SettingsUsersPage() {
                                                                     : "Ativar"
                                                             }
                                                         </button>
+
+
+
+                                                        <button
+                                                            type="button"
+                                                            className="settings-users-danger-button"
+                                                            onClick={() =>
+                                                                handleDelete(user)
+                                                            }
+                                                            disabled={
+                                                                user.id ===
+                                                                    currentUser?.id ||
+                                                                user.role ===
+                                                                    USER_ROLES.CREATOR
+                                                            }
+                                                        >
+                                                            Excluir
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -566,6 +701,289 @@ export default function SettingsUsersPage() {
                     )
                 }
             </section>
+
+
+
+            {
+                isModalOpen && (
+                    <div className="settings-users-modal-overlay">
+                        <div className="settings-users-modal">
+                            <header className="settings-users-modal-header">
+                                <h2>
+                                    {
+                                        editingUser
+                                            ? "Editar usuário"
+                                            : "Novo usuário"
+                                    }
+                                </h2>
+
+
+
+                                <button
+                                    type="button"
+                                    className="settings-users-modal-close"
+                                    onClick={closeModal}
+                                    disabled={saving}
+                                >
+                                    ×
+                                </button>
+                            </header>
+
+
+
+                            <form
+                                className="settings-users-form"
+                                onSubmit={handleSubmit}
+                            >
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-username">
+                                        Usuário
+                                    </label>
+
+
+
+                                    <input
+                                        id="user-username"
+                                        name="username"
+                                        value={form.username}
+                                        onChange={handleFormChange}
+                                        disabled={
+                                            saving ||
+                                            Boolean(editingUser)
+                                        }
+                                        placeholder="Ex.: joao.silva"
+                                    />
+                                </div>
+
+
+
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-display-name">
+                                        Nome de exibição
+                                    </label>
+
+
+
+                                    <input
+                                        id="user-display-name"
+                                        name="display_name"
+                                        value={form.display_name}
+                                        onChange={handleFormChange}
+                                        disabled={saving}
+                                        placeholder="Ex.: João Silva"
+                                    />
+                                </div>
+
+
+
+                                {
+                                    !editingUser && (
+                                        <>
+                                            <div className="settings-users-field">
+                                                <label htmlFor="user-password">
+                                                    Senha
+                                                </label>
+
+
+
+                                                <input
+                                                    id="user-password"
+                                                    name="password"
+                                                    type="password"
+                                                    value={form.password}
+                                                    onChange={handleFormChange}
+                                                    disabled={saving}
+                                                    placeholder="Mínimo de 6 caracteres"
+                                                />
+                                            </div>
+
+
+
+                                            <div className="settings-users-field">
+                                                <label htmlFor="user-confirm-password">
+                                                    Confirmar senha
+                                                </label>
+
+
+
+                                                <input
+                                                    id="user-confirm-password"
+                                                    name="confirmPassword"
+                                                    type="password"
+                                                    value={form.confirmPassword}
+                                                    onChange={handleFormChange}
+                                                    disabled={saving}
+                                                    placeholder="Repita a senha"
+                                                />
+                                            </div>
+                                        </>
+                                    )
+                                }
+
+
+
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-role">
+                                        Perfil
+                                    </label>
+
+
+
+                                    <select
+                                        id="user-role"
+                                        name="role"
+                                        value={form.role}
+                                        onChange={handleFormChange}
+                                        disabled={
+                                            saving ||
+                                            !isCreator
+                                        }
+                                    >
+                                        {
+                                            isCreator && (
+                                                <option value={USER_ROLES.CREATOR}>
+                                                    Staff
+                                                </option>
+                                            )
+                                        }
+
+
+
+                                        <option value={USER_ROLES.ADMIN}>
+                                            Administrador
+                                        </option>
+
+
+
+                                        <option value={USER_ROLES.EDITOR}>
+                                            Editor
+                                        </option>
+
+
+
+                                        <option value={USER_ROLES.VIEWER}>
+                                            Visualizador
+                                        </option>
+
+
+
+                                        <option value={USER_ROLES.PENDING}>
+                                            Pendente
+                                        </option>
+                                    </select>
+                                </div>
+
+
+
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-status">
+                                        Status
+                                    </label>
+
+
+
+                                    <select
+                                        id="user-status"
+                                        name="is_active"
+                                        value={form.is_active}
+                                        onChange={handleFormChange}
+                                        disabled={saving}
+                                    >
+                                        <option value={1}>
+                                            Ativo
+                                        </option>
+
+
+
+                                        <option value={0}>
+                                            Inativo
+                                        </option>
+                                    </select>
+                                </div>
+
+
+
+                                <div className="settings-users-form-actions">
+                                    <button
+                                        type="submit"
+                                        className="settings-users-primary-button"
+                                        disabled={saving}
+                                    >
+                                        {
+                                            saving
+                                                ? "Salvando..."
+                                                : editingUser
+                                                    ? "Salvar alterações"
+                                                    : "Criar usuário"
+                                        }
+                                    </button>
+
+
+
+                                    <button
+                                        type="button"
+                                        className="settings-users-secondary-button"
+                                        onClick={closeModal}
+                                        disabled={saving}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+
+
+
+            {
+                deletingUser && (
+                    <div className="settings-users-modal-overlay">
+                        <div className="settings-users-modal settings-users-confirm-modal">
+                            <h2>
+                                Excluir usuário
+                            </h2>
+
+
+
+                            <p>
+                                Deseja realmente excluir o usuário <strong>{deletingUser.display_name}</strong>?
+                            </p>
+
+
+
+                            <div className="settings-users-form-actions">
+                                <button
+                                    type="button"
+                                    className="settings-users-danger-button"
+                                    onClick={confirmDelete}
+                                    disabled={saving}
+                                >
+                                    {
+                                        saving
+                                            ? "Excluindo..."
+                                            : "Excluir"
+                                    }
+                                </button>
+
+
+
+                                <button
+                                    type="button"
+                                    className="settings-users-secondary-button"
+                                    onClick={() =>
+                                        setDeletingUser(null)
+                                    }
+                                    disabled={saving}
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </main>
     );
 }

@@ -1,5 +1,5 @@
 const {
-    getDatabase
+    getUsersDatabase
 } = require("../../database/connection");
 
 
@@ -33,7 +33,7 @@ function canManagePermissions(user) {
 function listModules() {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const modules =
             database
@@ -63,7 +63,7 @@ function listModules() {
 function listFunctions(moduleKey) {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const functions =
             database
@@ -100,7 +100,7 @@ function listFunctions(moduleKey) {
 
 function getRoleModulePermissions(role) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -114,7 +114,7 @@ function getRoleModulePermissions(role) {
 
 function getRoleFunctionPermissions(role) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -128,7 +128,7 @@ function getRoleFunctionPermissions(role) {
 
 function getUserModulePermissions(userId) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -142,7 +142,7 @@ function getUserModulePermissions(userId) {
 
 function getUserFunctionPermissions(userId) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -157,7 +157,7 @@ function getUserFunctionPermissions(userId) {
 function getPermissionsForUser(userId) {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const user =
             database
@@ -363,7 +363,7 @@ function getPermissionsForUser(userId) {
 function getPermissionsForRole(role) {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const modules =
             database
@@ -505,7 +505,7 @@ function saveRoleModulePermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -557,7 +557,7 @@ function saveRoleFunctionPermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -601,7 +601,7 @@ function saveUserModulePermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -655,7 +655,7 @@ function saveUserFunctionPermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -741,7 +741,7 @@ function savePermissions(payload, currentUser) {
         }
 
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         if (targetType === "user") {
             const user =
@@ -838,7 +838,7 @@ function clearUserOverrides(userId, currentUser) {
         }
 
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         database
             .prepare(`

@@ -4,6 +4,7 @@ import "../styles/settings.css";
 
 
 
+
 const MODULE_COLUMNS = [
     {
         key: "can_view",
@@ -32,6 +33,7 @@ const MODULE_COLUMNS = [
 ];
 
 
+
 const FUNCTION_COLUMNS = [
     {
         key: "can_view",
@@ -48,10 +50,11 @@ const FUNCTION_COLUMNS = [
 ];
 
 
+
 const ROLES = [
     {
         value: "creator",
-        label: "Criador"
+        label: "Staff"
     },
     {
         value: "admin",
@@ -73,6 +76,7 @@ const ROLES = [
 
 
 
+
 function buildInitialState() {
     return {
         target_type: "role",
@@ -84,9 +88,11 @@ function buildInitialState() {
 
 
 
+
 export default function SettingsPermissionsPage() {
     const navigate =
         useNavigate();
+
 
 
     const [
@@ -95,16 +101,19 @@ export default function SettingsPermissionsPage() {
     ] = useState([]);
 
 
+
     const [
         modules,
         setModules
     ] = useState([]);
 
 
+
     const [
         functions,
         setFunctions
     ] = useState([]);
+
 
 
     const [
@@ -115,10 +124,12 @@ export default function SettingsPermissionsPage() {
     );
 
 
+
     const [
         selectedModule,
         setSelectedModule
     ] = useState("");
+
 
 
     const [
@@ -127,10 +138,12 @@ export default function SettingsPermissionsPage() {
     ] = useState(true);
 
 
+
     const [
         isSaving,
         setIsSaving
     ] = useState(false);
+
 
 
     const [
@@ -139,10 +152,12 @@ export default function SettingsPermissionsPage() {
     ] = useState("");
 
 
+
     const [
         error,
         setError
     ] = useState("");
+
 
 
     const loadUsers =
@@ -150,6 +165,7 @@ export default function SettingsPermissionsPage() {
             async () => {
                 const response =
                     await window.alfadime.users.list();
+
 
 
                 if (
@@ -165,11 +181,13 @@ export default function SettingsPermissionsPage() {
         );
 
 
+
     const loadModules =
         useCallback(
             async () => {
                 const response =
                     await window.alfadime.permissions.listModules();
+
 
 
                 if (
@@ -185,6 +203,7 @@ export default function SettingsPermissionsPage() {
         );
 
 
+
     const loadPermissions =
         useCallback(
             async (targetType, targetValue) => {
@@ -198,8 +217,10 @@ export default function SettingsPermissionsPage() {
                     );
 
 
+
                     return;
                 }
+
 
 
                 setIsLoading(
@@ -207,7 +228,9 @@ export default function SettingsPermissionsPage() {
                 );
 
 
+
                 setError("");
+
 
 
                 const response =
@@ -219,6 +242,7 @@ export default function SettingsPermissionsPage() {
                         : await window.alfadime.permissions.getForRole(
                             targetValue
                         );
+
 
 
                 if (
@@ -242,12 +266,14 @@ export default function SettingsPermissionsPage() {
                 }
 
 
+
                 setIsLoading(
                     false
                 );
             },
             []
         );
+
 
 
     useEffect(
@@ -262,11 +288,13 @@ export default function SettingsPermissionsPage() {
                     );
 
 
+
                     await loadPermissions(
                         "role",
                         "creator"
                     );
                 };
+
 
 
             initialize();
@@ -277,6 +305,7 @@ export default function SettingsPermissionsPage() {
             loadPermissions
         ]
     );
+
 
 
     const moduleFunctions =
@@ -294,6 +323,7 @@ export default function SettingsPermissionsPage() {
         );
 
 
+
     const handleTargetTypeChange =
         (value) => {
             const nextValue =
@@ -303,9 +333,11 @@ export default function SettingsPermissionsPage() {
                     : "";
 
 
+
             setPermissions(
                 buildInitialState()
             );
+
 
 
             loadPermissions(
@@ -315,11 +347,13 @@ export default function SettingsPermissionsPage() {
         };
 
 
+
     const handleTargetValueChange =
         (value) => {
             setPermissions(
                 buildInitialState()
             );
+
 
 
             loadPermissions(
@@ -329,11 +363,13 @@ export default function SettingsPermissionsPage() {
         };
 
 
+
     const handleModuleSelect =
         async (moduleKey) => {
             setSelectedModule(
                 moduleKey
             );
+
 
 
             if (
@@ -343,10 +379,12 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             const response =
                 await window.alfadime.permissions.listFunctions(
                     moduleKey
                 );
+
 
 
             if (
@@ -358,6 +396,7 @@ export default function SettingsPermissionsPage() {
                 );
             }
         };
+
 
 
     const updateModulePermission =
@@ -380,6 +419,7 @@ export default function SettingsPermissionsPage() {
                 })
             );
         };
+
 
 
     const updateFunctionPermission =
@@ -406,6 +446,7 @@ export default function SettingsPermissionsPage() {
         };
 
 
+
     const handleSave =
         async () => {
             setIsSaving(
@@ -413,10 +454,13 @@ export default function SettingsPermissionsPage() {
             );
 
 
+
             setMessage("");
 
 
+
             setError("");
+
 
 
             const response =
@@ -425,12 +469,14 @@ export default function SettingsPermissionsPage() {
                 );
 
 
+
             if (
                 response?.success
             ) {
                 setMessage(
                     "Permissões salvas com sucesso."
                 );
+
 
 
                 await loadPermissions(
@@ -445,10 +491,12 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             setIsSaving(
                 false
             );
         };
+
 
 
     const handleClearOverrides =
@@ -461,9 +509,11 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             setIsSaving(
                 true
             );
+
 
 
             const response =
@@ -472,12 +522,14 @@ export default function SettingsPermissionsPage() {
                 );
 
 
+
             if (
                 response?.success
             ) {
                 setMessage(
                     "Overrides removidos. O usuário voltou a seguir as permissões do perfil."
                 );
+
 
 
                 await loadPermissions(
@@ -492,10 +544,12 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             setIsSaving(
                 false
             );
         };
+
 
 
     return (
@@ -507,9 +561,11 @@ export default function SettingsPermissionsPage() {
                     </span>
 
 
+
                     <h1>
                         Permissões granulares
                     </h1>
+
 
 
                     <p>
@@ -519,11 +575,13 @@ export default function SettingsPermissionsPage() {
             </header>
 
 
+
             {error && (
                 <div className="settings-db-message settings-db-message-error">
                     {error}
                 </div>
             )}
+
 
 
             {message && (
@@ -533,10 +591,12 @@ export default function SettingsPermissionsPage() {
             )}
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Destino das permissões
                 </h2>
+
 
 
                 <div className="settings-permissions-filters">
@@ -544,6 +604,7 @@ export default function SettingsPermissionsPage() {
                         <label>
                             Configurar por
                         </label>
+
 
 
                         <select
@@ -563,11 +624,13 @@ export default function SettingsPermissionsPage() {
                             </option>
 
 
+
                             <option value="user">
                                 Usuário
                             </option>
                         </select>
                     </div>
+
 
 
                     {permissions.target_type ===
@@ -576,6 +639,7 @@ export default function SettingsPermissionsPage() {
                             <label>
                                 Perfil
                             </label>
+
 
 
                             <select
@@ -617,6 +681,7 @@ export default function SettingsPermissionsPage() {
                             </label>
 
 
+
                             <select
                                 value={
                                     permissions.target_value
@@ -632,6 +697,7 @@ export default function SettingsPermissionsPage() {
                                 <option value="">
                                     Selecione
                                 </option>
+
 
 
                                 {users.map(
@@ -658,6 +724,7 @@ export default function SettingsPermissionsPage() {
                     )}
 
 
+
                     <div className="settings-permissions-actions">
                         <button
                             type="button"
@@ -674,6 +741,7 @@ export default function SettingsPermissionsPage() {
                                 ? "Salvando..."
                                 : "Salvar permissões"}
                         </button>
+
 
 
                         {permissions.target_type ===
@@ -694,6 +762,7 @@ export default function SettingsPermissionsPage() {
                         )}
 
 
+
                         <button
                             type="button"
                             className="settings-db-button"
@@ -710,10 +779,12 @@ export default function SettingsPermissionsPage() {
             </div>
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Permissões por módulo
                 </h2>
+
 
 
                 {isLoading ? (
@@ -728,6 +799,7 @@ export default function SettingsPermissionsPage() {
                                     <th>
                                         Módulo
                                     </th>
+
 
 
                                     {MODULE_COLUMNS.map(
@@ -749,6 +821,7 @@ export default function SettingsPermissionsPage() {
                             </thead>
 
 
+
                             <tbody>
                                 {permissions.module_permissions.map(
                                     (
@@ -764,6 +837,7 @@ export default function SettingsPermissionsPage() {
                                                     permission.module_label
                                                 }
                                             </td>
+
 
 
                                             {MODULE_COLUMNS.map(
@@ -810,10 +884,12 @@ export default function SettingsPermissionsPage() {
             </div>
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Colunas e ações
                 </h2>
+
 
 
                 <div className="settings-permissions-filters">
@@ -821,6 +897,7 @@ export default function SettingsPermissionsPage() {
                         <label>
                             Módulo
                         </label>
+
 
 
                         <select
@@ -838,6 +915,7 @@ export default function SettingsPermissionsPage() {
                             <option value="">
                                 Selecione
                             </option>
+
 
 
                             {modules.map(
@@ -863,6 +941,7 @@ export default function SettingsPermissionsPage() {
                 </div>
 
 
+
                 {selectedModule &&
                     moduleFunctions.length >
                         0 && (
@@ -873,6 +952,7 @@ export default function SettingsPermissionsPage() {
                                         <th>
                                             Item
                                         </th>
+
 
 
                                         {FUNCTION_COLUMNS.map(
@@ -894,6 +974,7 @@ export default function SettingsPermissionsPage() {
                                 </thead>
 
 
+
                                 <tbody>
                                     {moduleFunctions.map(
                                         (
@@ -909,6 +990,7 @@ export default function SettingsPermissionsPage() {
                                                 );
 
 
+
                                             return (
                                                 <tr
                                                     key={
@@ -920,6 +1002,7 @@ export default function SettingsPermissionsPage() {
                                                             permissionFunction.function_label
                                                         }
                                                     </td>
+
 
 
                                                     {FUNCTION_COLUMNS.map(
@@ -964,6 +1047,7 @@ export default function SettingsPermissionsPage() {
                             </table>
                         </div>
                     )}
+
 
 
                 {selectedModule &&

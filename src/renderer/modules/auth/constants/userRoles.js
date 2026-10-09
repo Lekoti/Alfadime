@@ -6,13 +6,15 @@ export const USER_ROLES = {
   PENDING: 'pending',
 };
 
+
 export const ROLE_LABELS = {
-  [USER_ROLES.CREATOR]: 'Criador',
+  [USER_ROLES.CREATOR]: 'Staff',
   [USER_ROLES.ADMIN]: 'Administrador',
   [USER_ROLES.EDITOR]: 'Editor',
   [USER_ROLES.VIEWER]: 'Visualizador',
   [USER_ROLES.PENDING]: 'Pendente',
 };
+
 
 export const ROLE_COLORS = {
   [USER_ROLES.CREATOR]: '#7c3aed',
@@ -22,10 +24,11 @@ export const ROLE_COLORS = {
   [USER_ROLES.PENDING]: '#d97706',
 };
 
+
 export const DEFAULT_USER = {
   id: 1,
   username: 'sLekoti',
-  display_name: 'sLekoti (Criador)',
+  display_name: 'sLekoti (Staff)',
   role: USER_ROLES.CREATOR,
   is_active: 1,
 };

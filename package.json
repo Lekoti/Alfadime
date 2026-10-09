@@ -5,7 +5,7 @@
   "main": "dist/main/main.js",
     "scripts": {
         "test": "node test.js",
-        "build": "vite build --config vite.config.mjs",
+        "build": "vite build --config vite.config.mjs && powershell -Command \"Copy-Item 'src/preload/preload.js' 'dist/preload/preload.js' -Force; Copy-Item 'src/main/*' 'dist/main' -Recurse -Force\"",
         "start": "npm run build && electron .",
         "rebuild": "electron-rebuild -f -w better-sqlite3",
         "dist": "npm run build && electron-builder --win nsis --x64",
@@ -57,6 +57,7 @@
             "resources/**/*",
             "package.json",
             "database/migrations/**/*",
+            "database/user-migrations/**/*",
             "database/seeds/**/*",
             "!**/*.map",
             "!**/.env",
