@@ -118,35 +118,41 @@ contextBridge.exposeInMainWorld(
         },
 
         permissions: {
-            listModules: () =>
-                invoke(
-                    "permissions:list-modules"
-                ),
+    listModules: () =>
+        invoke(
+            "permissions:list-modules"
+        ),
 
-            listFunctions: (moduleKey) =>
-                invoke(
-                    "permissions:list-functions",
-                    moduleKey
-                ),
+    listFunctions: (moduleKey) =>
+        invoke(
+            "permissions:list-functions",
+            moduleKey
+        ),
 
-            getForUser: (userId) =>
-                invoke(
-                    "permissions:get-for-user",
-                    userId
-                ),
+    getForUser: (userId) =>
+        invoke(
+            "permissions:get-for-user",
+            userId
+        ),
 
-            save: (payload) =>
-                invoke(
-                    "permissions:save",
-                    payload
-                ),
+    getForRole: (role) =>
+        invoke(
+            "permissions:get-for-role",
+            role
+        ),
 
-            clearUserOverrides: (userId) =>
-                invoke(
-                    "permissions:clear-user-overrides",
-                    userId
-                )
-        },
+    save: (payload) =>
+        invoke(
+            "permissions:save",
+            payload
+        ),
+
+    clearUserOverrides: (userId) =>
+        invoke(
+            "permissions:clear-user-overrides",
+            userId
+        )
+},
 
         app: {
             getVersion: () =>

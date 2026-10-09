@@ -3,10 +3,13 @@ import {
     Outlet
 } from "react-router-dom";
 
+
 import useAuth from
     "../../auth/hooks/useAuth";
 
+
 import "../styles/settings.css";
+
 
 
 function SettingsLayout() {
@@ -15,8 +18,10 @@ function SettingsLayout() {
         isAdmin
     } = useAuth();
 
+
     const canManageUsers =
         isCreator || isAdmin;
+
 
 
     return (
@@ -34,6 +39,7 @@ function SettingsLayout() {
                     Geral
                 </NavLink>
 
+
                 <NavLink
                     to="/settings/email-configs"
                     className={({ isActive }) =>
@@ -44,6 +50,7 @@ function SettingsLayout() {
                 >
                     E-mail - Configurações
                 </NavLink>
+
 
                 <NavLink
                     to="/settings/price-pending"
@@ -56,6 +63,7 @@ function SettingsLayout() {
                     Preços e Pendências
                 </NavLink>
 
+
                 <NavLink
                     to="/settings/contacts"
                     className={({ isActive }) =>
@@ -66,6 +74,7 @@ function SettingsLayout() {
                 >
                     Contatos
                 </NavLink>
+
 
                 {
                     canManageUsers && (
@@ -81,12 +90,30 @@ function SettingsLayout() {
                         </NavLink>
                     )
                 }
+
+
+                {
+                    canManageUsers && (
+                        <NavLink
+                            to="/settings/permissions"
+                            className={({ isActive }) =>
+                                isActive
+                                    ? "settings-tab active"
+                                    : "settings-tab"
+                            }
+                        >
+                            Permissões granulares
+                        </NavLink>
+                    )
+                }
             </nav>
+
 
             <Outlet />
         </div>
     );
 }
+
 
 
 export default SettingsLayout;
