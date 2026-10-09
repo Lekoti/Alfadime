@@ -3,15 +3,18 @@ const os = require("node:os");
 
 
 
+
 const {
     getDatabase
 } = require("../../database/connection");
 
 
 
+
 const {
     USER_ROLES
 } = require("./userRoles.constants");
+
 
 
 
@@ -25,9 +28,11 @@ class AuthHandler {
 
 
 
+
     getDatabase() {
         return getDatabase();
     }
+
 
 
 
@@ -38,13 +43,16 @@ class AuthHandler {
 
 
 
+
         const platform =
             os.platform();
 
 
 
+
         const arch =
             os.arch();
+
 
 
 
@@ -54,6 +62,7 @@ class AuthHandler {
                 platform,
                 arch
             ].join("-");
+
 
 
 
@@ -67,9 +76,11 @@ class AuthHandler {
 
 
 
+
     getComputerName() {
         return os.hostname();
     }
+
 
 
 
@@ -83,9 +94,11 @@ class AuthHandler {
 
 
 
+
     hashPassword(password) {
         const salt =
             crypto.randomBytes(16).toString("hex");
+
 
 
 
@@ -100,8 +113,10 @@ class AuthHandler {
 
 
 
+
         return `${salt}:${hash}`;
     }
+
 
 
 
@@ -113,14 +128,17 @@ class AuthHandler {
 
 
 
+
         const [
             salt,
             hash
         ] = String(storedHash).split(":");
 
+
         if (!salt || !hash) {
             return false;
         }
+
 
 
 
@@ -134,11 +152,13 @@ class AuthHandler {
 
 
 
+
         const stored =
             Buffer.from(
                 hash,
                 "hex"
             );
+
 
 
 
@@ -151,6 +171,7 @@ class AuthHandler {
 
 
 
+
         return crypto.timingSafeEqual(
             candidate,
             stored
@@ -160,9 +181,11 @@ class AuthHandler {
 
 
 
+
     async getUserByUsername(username) {
         const database =
             this.getDatabase();
+
 
 
 
@@ -179,9 +202,11 @@ class AuthHandler {
 
 
 
+
     async getUserPermissions(role) {
         const database =
             this.getDatabase();
+
 
 
 
@@ -198,6 +223,7 @@ class AuthHandler {
 
 
 
+
     async register({
         username,
         displayName,
@@ -209,13 +235,16 @@ class AuthHandler {
 
 
 
+
             const normalizedDisplayName =
                 this.normalizeText(displayName);
 
 
 
+
             const normalizedPassword =
                 String(password || "");
+
 
 
 
@@ -228,12 +257,14 @@ class AuthHandler {
 
 
 
+
             if (!normalizedDisplayName) {
                 return {
                     success: false,
                     error: "Informe o nome de exibição."
                 };
             }
+
 
 
 
@@ -246,10 +277,12 @@ class AuthHandler {
 
 
 
+
             const existingUser =
                 await this.getUserByUsername(
                     normalizedUsername
                 );
+
 
 
 
@@ -262,13 +295,16 @@ class AuthHandler {
 
 
 
+
             const database =
                 this.getDatabase();
 
 
 
+
             const now =
                 new Date().toISOString();
+
 
 
 
@@ -288,7 +324,7 @@ class AuthHandler {
                 .run(
                     normalizedUsername,
                     normalizedDisplayName,
-                    USER_ROLES.PENDING,
+                    USER_ROLES.VIEWER,
                     1,
                     this.hashPassword(
                         normalizedPassword
@@ -296,6 +332,7 @@ class AuthHandler {
                     now,
                     now
                 );
+
 
 
 
@@ -313,6 +350,7 @@ class AuthHandler {
 
 
 
+
             return {
                 success: false,
                 error:
@@ -321,6 +359,7 @@ class AuthHandler {
             };
         }
     }
+
 
 
 
@@ -334,8 +373,10 @@ class AuthHandler {
 
 
 
+
         const now =
             new Date().toISOString();
+
 
 
 
@@ -367,12 +408,13 @@ class AuthHandler {
 
 
 
+
         return database
             .prepare(`
                 SELECT *
                 FROM user_sessions
                 WHERE user_id = ?
-                  AND computer_id = ?
+                 AND computer_id = ?
                 LIMIT 1
             `)
             .get(
@@ -384,9 +426,11 @@ class AuthHandler {
 
 
 
+
     async updateUserLastLogin(userId) {
         const database =
             this.getDatabase();
+
 
 
 
@@ -407,9 +451,11 @@ class AuthHandler {
 
 
 
+
     async updateLastAccess(userId) {
         const database =
             this.getDatabase();
+
 
 
 
@@ -418,7 +464,7 @@ class AuthHandler {
                 UPDATE user_sessions
                 SET last_access_at = ?
                 WHERE user_id = ?
-                  AND computer_id = ?
+                 AND computer_id = ?
             `)
             .run(
                 new Date().toISOString(),
@@ -430,9 +476,11 @@ class AuthHandler {
 
 
 
+
     async getSessionByComputer() {
         const database =
             this.getDatabase();
+
 
 
 
@@ -448,8 +496,8 @@ class AuthHandler {
                 INNER JOIN users u
                     ON u.id = us.user_id
                 WHERE us.computer_id = ?
-                  AND us.is_persistent = 1
-                  AND u.is_active = 1
+                 AND us.is_persistent = 1
+                 AND u.is_active = 1
                 ORDER BY us.last_access_at DESC
                 LIMIT 1
             `)
@@ -457,6 +505,7 @@ class AuthHandler {
                 this.computerId
             );
     }
+
 
 
 
@@ -478,6 +527,7 @@ class AuthHandler {
 
 
 
+
     async login(
         username,
         password,
@@ -489,8 +539,10 @@ class AuthHandler {
 
 
 
+
             const normalizedPassword =
                 String(password || "");
+
 
 
 
@@ -503,12 +555,14 @@ class AuthHandler {
 
 
 
+
             if (!normalizedPassword) {
                 return {
                     success: false,
                     error: "Informe a senha."
                 };
             }
+
 
 
 
@@ -519,12 +573,14 @@ class AuthHandler {
 
 
 
+
             if (!user || !user.is_active) {
                 return {
                     success: false,
                     error: "Usuário ou senha inválidos."
                 };
             }
+
 
 
 
@@ -538,8 +594,10 @@ class AuthHandler {
 
 
 
+
                 const database =
                     this.getDatabase();
+
 
 
 
@@ -547,6 +605,7 @@ class AuthHandler {
                     this.hashPassword(
                         normalizedPassword
                     );
+
 
 
 
@@ -565,9 +624,11 @@ class AuthHandler {
 
 
 
+
                 user.password_hash =
                     newPasswordHash;
             }
+
 
 
 
@@ -576,6 +637,7 @@ class AuthHandler {
                     normalizedPassword,
                     user.password_hash
                 );
+
 
 
 
@@ -588,10 +650,12 @@ class AuthHandler {
 
 
 
+
             const permissions =
                 await this.getUserPermissions(
                     user.role
                 );
+
 
 
 
@@ -602,9 +666,11 @@ class AuthHandler {
 
 
 
+
             await this.updateUserLastLogin(
                 user.id
             );
+
 
 
 
@@ -616,9 +682,11 @@ class AuthHandler {
 
 
 
+
             await this.updateLastAccess(
                 user.id
             );
+
 
 
 
@@ -634,6 +702,7 @@ class AuthHandler {
 
 
 
+
             return {
                 success: false,
                 error:
@@ -646,6 +715,7 @@ class AuthHandler {
 
 
 
+
     async logout() {
         try {
             if (this.currentSession?.user?.id) {
@@ -654,11 +724,12 @@ class AuthHandler {
 
 
 
+
                 database
                     .prepare(`
                         DELETE FROM user_sessions
                         WHERE user_id = ?
-                          AND computer_id = ?
+                         AND computer_id = ?
                     `)
                     .run(
                         this.currentSession.user.id,
@@ -668,7 +739,9 @@ class AuthHandler {
 
 
 
+
             this.currentSession = null;
+
 
 
 
@@ -680,6 +753,7 @@ class AuthHandler {
                 "[AUTH] Erro ao sair:",
                 error
             );
+
 
 
 
@@ -695,12 +769,14 @@ class AuthHandler {
 
 
 
+
     async getCurrentSession() {
         try {
             if (this.currentSession) {
                 await this.updateLastAccess(
                     this.currentSession.user.id
                 );
+
 
 
 
@@ -712,8 +788,10 @@ class AuthHandler {
 
 
 
+
             const session =
                 await this.getSessionByComputer();
+
 
 
 
@@ -726,10 +804,12 @@ class AuthHandler {
 
 
 
+
             const permissions =
                 await this.getUserPermissions(
                     session.role
                 );
+
 
 
 
@@ -747,9 +827,11 @@ class AuthHandler {
 
 
 
+
             await this.updateLastAccess(
                 session.user_id
             );
+
 
 
 
@@ -765,6 +847,7 @@ class AuthHandler {
 
 
 
+
             return {
                 success: false,
                 error:
@@ -777,10 +860,12 @@ class AuthHandler {
 
 
 
+
     async validateSession() {
         try {
             const result =
                 await this.getCurrentSession();
+
 
 
 
@@ -796,12 +881,14 @@ class AuthHandler {
 
 
 
+
             return result;
         } catch (error) {
             console.error(
                 "[AUTH] Erro ao validar sessão:",
                 error
             );
+
 
 
 
@@ -813,6 +900,7 @@ class AuthHandler {
             };
         }
     }
+
 
 
 
@@ -829,6 +917,7 @@ class AuthHandler {
 
 
 
+
             return {
                 success: true
             };
@@ -837,6 +926,7 @@ class AuthHandler {
                 "[AUTH] Erro ao atualizar acesso:",
                 error
             );
+
 
 
 
@@ -852,9 +942,11 @@ class AuthHandler {
 
 
 
+
     getAuthenticatedUser() {
         return this.currentSession?.user || null;
     }
+
 
 
 
@@ -863,6 +955,7 @@ class AuthHandler {
         return this.computerId;
     }
 }
+
 
 
 
