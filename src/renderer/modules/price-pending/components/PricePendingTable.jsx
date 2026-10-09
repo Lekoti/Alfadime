@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 
+
 import {
     BRANCHES,
     COLUMN_GROUPS,
@@ -7,13 +8,20 @@ import {
     PRICE_PENDING_EXPORT_COLUMNS
 } from "../constants/price-pending.constants";
 
+
 import ExportExcelModal from "../../../shared/components/ExportExcelModal";
+
 
 import "./PricePendingTable.css";
 
+
 import { useModuleState } from "../../../hooks/useModuleState";
+import usePermissions from "../../auth/hooks/usePermissions";
+
 
 const MODULE_ID = "price-pending";
+const PERMISSION_MODULE_KEY = "price-pending";
+
 
 const INITIAL_STATE = {
     searchTerm: "",
@@ -28,16 +36,20 @@ const INITIAL_STATE = {
     filterBranch: ""
 };
 
+
 function getMonthYear(value) {
     if (!value) {
         return null;
     }
 
+
     const text = String(value).trim();
+
 
     const fullDate = text.match(
         /^(?:Atualizado\s*)?\d{1,2}\/(\d{1,2})\/(\d{4})$/i
     );
+
 
     if (fullDate) {
         return {
@@ -46,9 +58,11 @@ function getMonthYear(value) {
         };
     }
 
+
     const monthYear = text.match(
         /^(?:Atualizado\s*)?(\d{1,2})\/(\d{4})$/i
     );
+
 
     if (monthYear) {
         return {
@@ -57,39 +71,50 @@ function getMonthYear(value) {
         };
     }
 
+
     return null;
 }
 
+
 function getUpdateDateClass(value) {
     const parsed = getMonthYear(value);
+
 
     if (!parsed) {
         return "";
     }
 
+
     const today = new Date();
+
 
     const currentPeriod =
         today.getFullYear() * 12 +
         (today.getMonth() + 1);
 
+
     const updatePeriod =
         parsed.year * 12 +
         parsed.month;
+
 
     if (updatePeriod < currentPeriod) {
         return "updated-previous-month";
     }
 
+
     if (updatePeriod > currentPeriod) {
         return "updated-future-month";
     }
 
+
     return "updated-current-month";
 }
 
+
 function parsePendingExternalUpdates(value) {
     let updates = value;
+
 
     if (typeof updates === "string") {
         try {
@@ -99,6 +124,7 @@ function parsePendingExternalUpdates(value) {
         }
     }
 
+
     if (
         !updates ||
         typeof updates !== "object" ||
@@ -107,14 +133,17 @@ function parsePendingExternalUpdates(value) {
         return {};
     }
 
+
     return updates;
 }
+
 
 function getPendingExternalUpdate(row, column) {
     const updates = parsePendingExternalUpdates(
         row.pending_external_updates
     );
     const update = updates[column];
+
 
     if (
         !update ||
@@ -125,36 +154,47 @@ function getPendingExternalUpdate(row, column) {
         return null;
     }
 
+
     return update;
 }
 
+
 function getPeriodFromValue(value) {
     const parsed = getMonthYear(value);
+
 
     if (!parsed || parsed.month < 1 || parsed.month > 12) {
         return null;
     }
 
+
     return parsed.year * 12 + parsed.month;
 }
+
 
 function getCurrentPeriod() {
     const today = new Date();
 
+
     return today.getFullYear() * 12 + (today.getMonth() + 1);
 }
+
 
 function isUpdatedPeriod(value) {
     const period = getPeriodFromValue(value);
 
+
     return period !== null && period >= getCurrentPeriod();
 }
+
 
 function isOutdatedPeriod(value) {
     const period = getPeriodFromValue(value);
 
+
     return period !== null && period < getCurrentPeriod();
 }
+
 
 function PricePendingTable() {
     const [state, setField] = useModuleState(
@@ -162,7 +202,15 @@ function PricePendingTable() {
         INITIAL_STATE
     );
 
+    const {
+        isLoading: isLoadingPermissions,
+        canFunction,
+        canViewFunction,
+        canEditFunction
+    } = usePermissions();
+
     const searchTerm = state.searchTerm || "";
+
 
     const visibleColumns = useMemo(() => {
         return {
@@ -171,15 +219,19 @@ function PricePendingTable() {
         };
     }, [state.visibleColumns]);
 
+
     const filterUpdated = Boolean(
         state.filterUpdated
     );
+
 
     const filterOutdated = Boolean(
         state.filterOutdated
     );
 
+
     const filterBranch = state.filterBranch || "";
+
 
     const [rows, setRows] = useState([]);
     const [allRows, setAllRows] = useState([]);
@@ -195,11 +247,121 @@ function PricePendingTable() {
     const [sharedDbMode, setSharedDbMode] = useState(false);
     const [readOnly, setReadOnly] = useState(false);
 
+
+    const canSearch =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "search_laboratory"
+        );
+
+    const canFilterUpdated =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "filter_updated"
+        );
+
+    const canFilterOutdated =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "filter_outdated"
+        );
+
+    const canFilterBranch =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "filter_branch"
+        );
+
+    const canAddLaboratory =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "add_laboratory"
+        );
+
+    const canEditLaboratory =
+        canEditFunction(
+            PERMISSION_MODULE_KEY,
+            "edit_laboratory"
+        ) ||
+        canEditFunction(
+            PERMISSION_MODULE_KEY,
+            "laboratory"
+        );
+
+    const canEditObservation =
+        canEditFunction(
+            PERMISSION_MODULE_KEY,
+            "edit_observation"
+        ) ||
+        canEditFunction(
+            PERMISSION_MODULE_KEY,
+            "observation"
+        );
+
+    const canEditValues =
+        canEditFunction(
+            PERMISSION_MODULE_KEY,
+            "edit_values"
+        );
+
+    const canRemoveLaboratory =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "remove_laboratory"
+        );
+
+    const canRefresh =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "refresh_data"
+        );
+
+    const canExport =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "export_excel"
+        );
+
+    const canViewIgnoredFiles =
+        canFunction(
+            PERMISSION_MODULE_KEY,
+            "view_ignored_files"
+        );
+
+    const canViewIndustryGlobalCode =
+        canViewFunction(
+            PERMISSION_MODULE_KEY,
+            "industry_global_code"
+        );
+
+    const canViewLaboratory =
+        canViewFunction(
+            PERMISSION_MODULE_KEY,
+            "laboratory"
+        );
+
+    const canViewObservation =
+        canViewFunction(
+            PERMISSION_MODULE_KEY,
+            "observation"
+        );
+
+
     const visibleGroups = useMemo(() => {
         return COLUMN_GROUPS
             .map((group) => group.key)
-            .filter((groupKey) => visibleColumns[groupKey]);
-    }, [visibleColumns]);
+            .filter((groupKey) =>
+                visibleColumns[groupKey] &&
+                canViewFunction(
+                    PERMISSION_MODULE_KEY,
+                    groupKey
+                )
+            );
+    }, [
+        visibleColumns,
+        canViewFunction
+    ]);
+
 
     const visibleColumnGroups = useMemo(() => {
         return COLUMN_GROUPS.filter((group) => {
@@ -207,21 +369,32 @@ function PricePendingTable() {
         });
     }, [visibleGroups]);
 
+
     function isBranchColumn(column, branch) {
         return column.key.endsWith(
             `_${branch.toLowerCase()}`
         );
     }
 
+
     const visibleColumnsList = useMemo(() => {
         return PRICE_PENDING_COLUMNS.filter((column) => {
             return (
                 column.group &&
                 visibleGroups.includes(column.group) &&
-                (!filterBranch || isBranchColumn(column, filterBranch))
+                (!filterBranch || isBranchColumn(column, filterBranch)) &&
+                canViewFunction(
+                    PERMISSION_MODULE_KEY,
+                    column.key
+                )
             );
         });
-    }, [visibleGroups, filterBranch]);
+    }, [
+        visibleGroups,
+        filterBranch,
+        canViewFunction
+    ]);
+
 
     const headerGroups = visibleColumnGroups
         .map((group) => {
@@ -234,6 +407,7 @@ function PricePendingTable() {
         })
         .filter((item) => item.groupColumns.length > 0);
 
+
     function rowHasDate(row, predicates) {
         return visibleColumnsList.some((column) => {
             return predicates.some((predicate) => {
@@ -242,13 +416,19 @@ function PricePendingTable() {
         });
     }
 
+
     function filterRows(rowsToFilter) {
         let filtered = Array.isArray(rowsToFilter)
             ? rowsToFilter
             : [];
 
-        if (searchTerm.trim()) {
+
+        if (
+            canSearch &&
+            searchTerm.trim()
+        ) {
             const term = searchTerm.toLowerCase().trim();
+
 
             filtered = filtered.filter((row) => {
                 return String(row.laboratory || "")
@@ -257,7 +437,11 @@ function PricePendingTable() {
             });
         }
 
-        if (filterBranch) {
+
+        if (
+            canFilterBranch &&
+            filterBranch
+        ) {
             filtered = filtered.filter((row) => {
                 return visibleColumnsList.some((column) => {
                     return String(
@@ -267,15 +451,25 @@ function PricePendingTable() {
             });
         }
 
+
         const datePredicates = [];
 
-        if (filterUpdated) {
+
+        if (
+            canFilterUpdated &&
+            filterUpdated
+        ) {
             datePredicates.push(isUpdatedPeriod);
         }
 
-        if (filterOutdated) {
+
+        if (
+            canFilterOutdated &&
+            filterOutdated
+        ) {
             datePredicates.push(isOutdatedPeriod);
         }
+
 
         if (datePredicates.length > 0) {
             filtered = filtered.filter((row) => {
@@ -283,13 +477,16 @@ function PricePendingTable() {
             });
         }
 
+
         return filtered;
     }
+
 
     function isDatabaseBusyError(anError) {
         const message = String(
             anError?.message || anError || ""
         ).toLowerCase();
+
 
         return (
             message.includes("sqlite_busy") ||
@@ -300,6 +497,7 @@ function PricePendingTable() {
             message.includes("busy")
         );
     }
+
 
     function getFriendlyErrorMessage(
         anError,
@@ -313,8 +511,10 @@ function PricePendingTable() {
             );
         }
 
+
         return fallbackMessage;
     }
+
 
     async function loadRows({ silent = false } = {}) {
         try {
@@ -322,14 +522,18 @@ function PricePendingTable() {
                 setLoading(true);
             }
 
+
             setError("");
+
 
             const result =
                 await window.alfadime.pricePending.list();
 
+
             const data = Array.isArray(result)
                 ? result
                 : [];
+
 
             setAllRows(data);
             setRows(filterRows(data));
@@ -337,9 +541,11 @@ function PricePendingTable() {
         } catch (loadError) {
             console.error(loadError);
 
+
             if (isDatabaseBusyError(loadError)) {
                 setReadOnly(true);
             }
+
 
             setError(
                 getFriendlyErrorMessage(
@@ -354,19 +560,35 @@ function PricePendingTable() {
         }
     }
 
+
     async function retryConnection() {
         await loadRows();
     }
 
+
     async function refreshRows() {
+        if (
+            !canRefresh
+        ) {
+            setError(
+                "Você não tem permissão para atualizar as planilhas."
+            );
+
+
+            return;
+        }
+
+
         if (readOnly) {
             setError(
                 "O banco compartilhado está em modo somente leitura. " +
                 "Clique em “Tentar novamente” antes de atualizar."
             );
 
+
             return;
         }
+
 
         const confirmed = window.confirm(
             "Verificar planilhas de preços e pendências agora?\n\n" +
@@ -374,16 +596,20 @@ function PricePendingTable() {
             "novos ou alterados serão processados."
         );
 
+
         if (!confirmed) {
             return;
         }
+
 
         try {
             setRefreshing(true);
             setError("");
 
+
             const result =
                 await window.alfadime.pricePending.refresh();
+
 
             if (result?.code === "REFRESH_IN_PROGRESS") {
                 setError(
@@ -391,8 +617,10 @@ function PricePendingTable() {
                     "Outra atualização está em andamento em outro computador."
                 );
 
-                                return;
+
+                return;
             }
+
 
             if (!result?.success) {
                 setError(
@@ -400,12 +628,16 @@ function PricePendingTable() {
                     "Não foi possível atualizar os dados."
                 );
 
+
                 return;
             }
 
+
             setIgnoredFiles(result.ignored || []);
 
+
             await loadRows();
+
 
             setError(
                 [
@@ -421,9 +653,11 @@ function PricePendingTable() {
         } catch (refreshError) {
             console.error(refreshError);
 
+
             if (isDatabaseBusyError(refreshError)) {
                 setReadOnly(true);
             }
+
 
             setError(
                 getFriendlyErrorMessage(
@@ -436,8 +670,17 @@ function PricePendingTable() {
         }
     }
 
+
     useEffect(() => {
+        if (
+            isLoadingPermissions
+        ) {
+            return;
+        }
+
+
         loadRows();
+
 
         window.alfadime.pricePending
             .getDbConfig?.()
@@ -449,21 +692,27 @@ function PricePendingTable() {
             .catch(() => {
                 setSharedDbMode(false);
             });
-    }, []);
+    }, [
+        isLoadingPermissions
+    ]);
+
 
     useEffect(() => {
         if (!sharedDbMode) {
             return undefined;
         }
 
+
         const intervalId = setInterval(() => {
             loadRows({ silent: true });
         }, 20000);
+
 
         return () => {
             clearInterval(intervalId);
         };
     }, [sharedDbMode]);
+
 
     useEffect(() => {
         setRows(filterRows(allRows));
@@ -476,7 +725,15 @@ function PricePendingTable() {
         visibleColumnsList
     ]);
 
+
     function setSearchTerm(next) {
+        if (
+            !canSearch
+        ) {
+            return;
+        }
+
+
         setField(
             "searchTerm",
             typeof next === "function"
@@ -484,6 +741,7 @@ function PricePendingTable() {
                 : next
         );
     }
+
 
     function setVisibleColumns(next) {
         setField(
@@ -494,7 +752,15 @@ function PricePendingTable() {
         );
     }
 
+
     function setFilterUpdated(next) {
+        if (
+            !canFilterUpdated
+        ) {
+            return;
+        }
+
+
         setField(
             "filterUpdated",
             typeof next === "function"
@@ -503,7 +769,15 @@ function PricePendingTable() {
         );
     }
 
+
     function setFilterOutdated(next) {
+        if (
+            !canFilterOutdated
+        ) {
+            return;
+        }
+
+
         setField(
             "filterOutdated",
             typeof next === "function"
@@ -512,7 +786,15 @@ function PricePendingTable() {
         );
     }
 
+
     function setFilterBranch(next) {
+        if (
+            !canFilterBranch
+        ) {
+            return;
+        }
+
+
         setField(
             "filterBranch",
             typeof next === "function"
@@ -520,6 +802,7 @@ function PricePendingTable() {
                 : next
         );
     }
+
 
     function updateLocalValue(id, column, value) {
         const updateRows = (currentRows) => {
@@ -533,18 +816,47 @@ function PricePendingTable() {
             });
         };
 
+
         setRows(updateRows);
         setAllRows(updateRows);
     }
+
 
     async function saveCell(row, column) {
         if (readOnly) {
             return;
         }
 
+
+        if (
+            column === "laboratory" &&
+            !canEditLaboratory
+        ) {
+            return;
+        }
+
+
+        if (
+            column === "observation" &&
+            !canEditObservation
+        ) {
+            return;
+        }
+
+
+        if (
+            column !== "laboratory" &&
+            column !== "observation" &&
+            !canEditValues
+        ) {
+            return;
+        }
+
+
         try {
             setSaving(true);
             setError("");
+
 
             const savedRow =
                 await window.alfadime.pricePending.updateCell(
@@ -552,6 +864,7 @@ function PricePendingTable() {
                     column,
                     row[column] || ""
                 );
+
 
             if (savedRow && savedRow.id === row.id) {
                 const updateRows = (currentRows) => {
@@ -562,17 +875,21 @@ function PricePendingTable() {
                     });
                 };
 
+
                 setRows(updateRows);
                 setAllRows(updateRows);
             }
         } catch (saveError) {
             console.error(saveError);
 
+
             await loadRows({ silent: true });
+
 
             if (isDatabaseBusyError(saveError)) {
                 setReadOnly(true);
             }
+
 
             setError(
                 getFriendlyErrorMessage(
@@ -585,31 +902,51 @@ function PricePendingTable() {
         }
     }
 
+
     async function addLaboratory(event) {
         event.preventDefault();
+
+
+        if (
+            !canAddLaboratory
+        ) {
+            setError(
+                "Você não tem permissão para adicionar laboratórios."
+            );
+
+
+            return;
+        }
+
 
         if (readOnly) {
             return;
         }
 
+
         const laboratory = newLaboratory.trim();
+
 
         if (!laboratory) {
             setError(
                 "Digite o nome do laboratório e o código."
             );
 
+
             return;
         }
+
 
         try {
             setSaving(true);
             setError("");
 
+
             const createdRow =
                 await window.alfadime.pricePending.create({
                     laboratory
                 });
+
 
             setAllRows((currentRows) => {
                 return [
@@ -618,13 +955,16 @@ function PricePendingTable() {
                 ];
             });
 
+
             setNewLaboratory("");
         } catch (createError) {
             console.error(createError);
 
+
             if (isDatabaseBusyError(createError)) {
                 setReadOnly(true);
             }
+
 
             setError(
                 getFriendlyErrorMessage(
@@ -637,26 +977,44 @@ function PricePendingTable() {
         }
     }
 
+
     async function removeLaboratory(row) {
+        if (
+            !canRemoveLaboratory
+        ) {
+            setError(
+                "Você não tem permissão para remover laboratórios."
+            );
+
+
+            return;
+        }
+
+
         if (readOnly) {
             return;
         }
+
 
         const confirmed = window.confirm(
             `Remover "${row.laboratory}"?`
         );
 
+
         if (!confirmed) {
             return;
         }
+
 
         try {
             setSaving(true);
             setError("");
 
+
             await window.alfadime.pricePending.remove(
                 row.id
             );
+
 
             setAllRows((currentRows) => {
                 return currentRows.filter((currentRow) => {
@@ -666,9 +1024,11 @@ function PricePendingTable() {
         } catch (removeError) {
             console.error(removeError);
 
+
             if (isDatabaseBusyError(removeError)) {
                 setReadOnly(true);
             }
+
 
             setError(
                 getFriendlyErrorMessage(
@@ -681,11 +1041,25 @@ function PricePendingTable() {
         }
     }
 
+
     async function handleExport(selectedColumns) {
+        if (
+            !canExport
+        ) {
+            setError(
+                "Você não tem permissão para exportar."
+            );
+
+
+            return;
+        }
+
+
         const fileName =
             `precos-pendencias-${new Date()
                 .toISOString()
                 .slice(0, 10)}.xlsx`;
+
 
         const {
             filePath,
@@ -704,11 +1078,13 @@ function PricePendingTable() {
             }
         );
 
+
         if (canceled || !filePath) {
             return {
                 cancelled: true
             };
         }
+
 
         const result =
             await window.alfadime.pricePending.export({
@@ -718,15 +1094,21 @@ function PricePendingTable() {
                 )
             });
 
+
         alert(
             "Exportado com sucesso:\n" +
             result.filePath
         );
 
+
         return result;
     }
 
-    if (loading) {
+
+    if (
+        isLoadingPermissions ||
+        loading
+    ) {
         return (
             <main className="price-pending-page">
                 <div className="price-pending-loading">
@@ -736,12 +1118,14 @@ function PricePendingTable() {
         );
     }
 
+
     return (
         <main className="price-pending-page">
             <header className="price-pending-toolbar">
                 <div className="price-pending-title">
                     <h1>Preços e Pendências</h1>
                 </div>
+
 
                 <div className="price-pending-toolbar-actions">
                     <button
@@ -758,36 +1142,43 @@ function PricePendingTable() {
                             : "Filtros"}
                     </button>
 
-                    <button
-                        type="button"
-                        className="price-pending-refresh-button"
-                        onClick={refreshRows}
-                        disabled={refreshing || readOnly}
-                    >
-                        {refreshing
-                            ? "Atualizando..."
-                            : "Atualizar"}
-                    </button>
 
-                    {ignoredFiles.length > 0 && (
+                    {canRefresh && (
                         <button
                             type="button"
-                            className="price-pending-ignored-button"
-                            onClick={() => {
-                                setShowIgnoredModal(true);
-                            }}
-                            title="Ver arquivos ignorados"
+                            className="price-pending-refresh-button"
+                            onClick={refreshRows}
+                            disabled={refreshing || readOnly}
                         >
-                            Ignorados ({ignoredFiles.length})
+                            {refreshing
+                                ? "Atualizando..."
+                                : "Atualizar"}
                         </button>
                     )}
+
+
+                    {canViewIgnoredFiles &&
+                        ignoredFiles.length > 0 && (
+                            <button
+                                type="button"
+                                className="price-pending-ignored-button"
+                                onClick={() => {
+                                    setShowIgnoredModal(true);
+                                }}
+                                title="Ver arquivos ignorados"
+                            >
+                                Ignorados ({ignoredFiles.length})
+                            </button>
+                        )}
                 </div>
             </header>
+
 
             {filtersPanelOpen && (
                 <section className="price-pending-floating-panel">
                     <div className="price-pending-floating-panel-header">
                         <strong>Filtros e Ações</strong>
+
 
                         <button
                             type="button"
@@ -801,10 +1192,12 @@ function PricePendingTable() {
                         </button>
                     </div>
 
+
                     <div className="price-pending-panel-content">
                         <div className="price-pending-panel-left">
                             <div className="price-pending-filters-section">
                                 <h3>Colunas Visíveis</h3>
+
 
                                 <div className="price-pending-column-toggles">
                                     {COLUMN_GROUPS.map((group) => (
@@ -816,6 +1209,12 @@ function PricePendingTable() {
                                                         group.key
                                                     ]
                                                 )}
+                                                disabled={
+                                                    !canViewFunction(
+                                                        PERMISSION_MODULE_KEY,
+                                                        group.key
+                                                    )
+                                                }
                                                 onChange={(event) => {
                                                     setVisibleColumns({
                                                         ...visibleColumns,
@@ -830,142 +1229,174 @@ function PricePendingTable() {
                                 </div>
                             </div>
 
-                            <div className="price-pending-filters-section">
-                                <h3>Filtros de Atualização</h3>
 
-                                <div className="price-pending-filter-options">
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                filterUpdated
-                                            }
-                                            onChange={(event) => {
-                                                setFilterUpdated(
-                                                    event.target.checked
-                                                );
-                                            }}
-                                        />
-                                        Atualizados
-                                    </label>
+                            {canFilterUpdated && (
+                                <div className="price-pending-filters-section">
+                                    <h3>Filtros de Atualização</h3>
 
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                filterOutdated
-                                            }
-                                            onChange={(event) => {
-                                                setFilterOutdated(
-                                                    event.target.checked
-                                                );
-                                            }}
-                                        />
-                                        Desatualizados
-                                    </label>
+
+                                    <div className="price-pending-filter-options">
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    filterUpdated
+                                                }
+                                                onChange={(event) => {
+                                                    setFilterUpdated(
+                                                        event.target.checked
+                                                    );
+                                                }}
+                                            />
+                                            Atualizados
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="price-pending-filters-section">
-                                <h3>Filtro por Filial</h3>
 
-                                <select
-                                    value={filterBranch}
-                                    onChange={(event) => {
-                                        setFilterBranch(
-                                            event.target.value
-                                        );
-                                    }}
-                                >
-                                    <option value="">
-                                        Todas as filiais
-                                    </option>
+                            {canFilterOutdated && (
+                                <div className="price-pending-filters-section">
+                                    <div className="price-pending-filter-options">
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    filterOutdated
+                                                }
+                                                onChange={(event) => {
+                                                    setFilterOutdated(
+                                                        event.target.checked
+                                                    );
+                                                }}
+                                            />
+                                            Desatualizados
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
 
-                                    {BRANCHES.map((branch) => (
-                                        <option
-                                            key={branch}
-                                            value={branch}
-                                        >
-                                            {branch}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
 
-                            <div className="price-pending-filters-section">
-                                <h3>Buscar Laboratório</h3>
+                            {canFilterBranch && (
+                                <div className="price-pending-filters-section">
+                                    <h3>Filtro por Filial</h3>
 
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={(event) => {
-                                        setSearchTerm(
-                                            event.target.value
-                                        );
-                                    }}
-                                    placeholder="Buscar laboratório..."
-                                />
-                            </div>
-                        </div>
 
-                        <div className="price-pending-panel-right">
-                            <div className="price-pending-filters-section">
-                                <h3>Adicionar Laboratório</h3>
-
-                                <form
-                                    className="price-pending-add-form-inline"
-                                    onSubmit={addLaboratory}
-                                >
-                                    <input
-                                        type="text"
-                                        value={newLaboratory}
+                                    <select
+                                        value={filterBranch}
                                         onChange={(event) => {
-                                            setNewLaboratory(
+                                            setFilterBranch(
                                                 event.target.value
                                             );
                                         }}
-                                        placeholder="Laboratório - código"
-                                        disabled={saving || readOnly}
+                                    >
+                                        <option value="">
+                                            Todas as filiais
+                                        </option>
+
+
+                                        {BRANCHES.map((branch) => (
+                                            <option
+                                                key={branch}
+                                                value={branch}
+                                            >
+                                                {branch}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+
+                            {canSearch && (
+                                <div className="price-pending-filters-section">
+                                    <h3>Buscar Laboratório</h3>
+
+
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(event) => {
+                                            setSearchTerm(
+                                                event.target.value
+                                            );
+                                        }}
+                                        placeholder="Buscar laboratório..."
                                     />
+                                </div>
+                            )}
+                        </div>
+
+
+                        <div className="price-pending-panel-right">
+                            {canAddLaboratory && (
+                                <div className="price-pending-filters-section">
+                                    <h3>Adicionar Laboratório</h3>
+
+
+                                    <form
+                                        className="price-pending-add-form-inline"
+                                        onSubmit={addLaboratory}
+                                    >
+                                        <input
+                                            type="text"
+                                            value={newLaboratory}
+                                            onChange={(event) => {
+                                                setNewLaboratory(
+                                                    event.target.value
+                                                );
+                                            }}
+                                            placeholder="Laboratório - código"
+                                            disabled={saving || readOnly}
+                                        />
+
+
+                                        <button
+                                            type="submit"
+                                            disabled={saving || readOnly}
+                                        >
+                                            {saving
+                                                ? "Salvando..."
+                                                : "Adicionar"}
+                                        </button>
+                                    </form>
+                                </div>
+                            )}
+
+
+                            {canExport && (
+                                <div className="price-pending-filters-section">
+                                    <h3>Exportar</h3>
+
 
                                     <button
-                                        type="submit"
-                                        disabled={saving || readOnly}
+                                        type="button"
+                                        className="price-pending-button"
+                                        onClick={() => {
+                                            setExportModalOpen(true);
+                                        }}
                                     >
-                                        {saving
-                                            ? "Salvando..."
-                                            : "Adicionar"}
+                                        Exportar Excel
                                     </button>
-                                </form>
-                            </div>
 
-                            <div className="price-pending-filters-section">
-                                <h3>Exportar</h3>
 
-                                <button
-                                    type="button"
-                                    className="price-pending-button"
-                                    onClick={() => {
-                                        setExportModalOpen(true);
-                                    }}
-                                >
-                                    Exportar Excel
-                                </button>
-
-                                <p className="price-pending-export-hint">
-                                    Escolha as colunas e a ordem antes de exportar.
-                                </p>
-                            </div>
+                                    <p className="price-pending-export-hint">
+                                        Escolha as colunas e a ordem antes de exportar.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </section>
             )}
+
 
             {error && (
                 <div className="price-pending-error">
                     {error}
                 </div>
             )}
+
 
             {readOnly && (
                 <div className="price-pending-read-only-actions">
@@ -979,6 +1410,7 @@ function PricePendingTable() {
                     </button>
                 </div>
             )}
+
 
             {showIgnoredModal && (
                 <div
@@ -999,6 +1431,7 @@ function PricePendingTable() {
                                 Arquivos ignorados na atualização
                             </h2>
 
+
                             <button
                                 type="button"
                                 className="modal-close"
@@ -1009,6 +1442,7 @@ function PricePendingTable() {
                                 ×
                             </button>
                         </div>
+
 
                         <div className="modal-body">
                             {ignoredFiles.length === 0 ? (
@@ -1024,6 +1458,7 @@ function PricePendingTable() {
                                         </tr>
                                     </thead>
 
+
                                     <tbody>
                                         {ignoredFiles.map(
                                             (file, index) => (
@@ -1033,6 +1468,7 @@ function PricePendingTable() {
                                                             file.name ||
                                                             "Desconhecido"}
                                                     </td>
+
 
                                                     <td>
                                                         {file.reason ===
@@ -1060,6 +1496,7 @@ function PricePendingTable() {
                             )}
                         </div>
 
+
                         <div className="modal-footer">
                             <button
                                 type="button"
@@ -1075,12 +1512,14 @@ function PricePendingTable() {
                 </div>
             )}
 
+
             <section className="price-pending-card">
                 <div className="price-pending-card-header">
                     <div>
                         <strong>
                             Lista de laboratórios
                         </strong>
+
 
                         <span>
                             {rows.length} registro(s)
@@ -1089,6 +1528,7 @@ function PricePendingTable() {
                         </span>
                     </div>
 
+
                     {saving && (
                         <span className="saving-indicator">
                             Salvando...
@@ -1096,30 +1536,40 @@ function PricePendingTable() {
                     )}
                 </div>
 
+
                 <div className="price-pending-table-wrapper">
                     <table className="price-pending-table">
                         <thead>
                             <tr>
-                                <th
-                                    rowSpan="2"
-                                    className="industry-global-code-header"
-                                >
-                                    Código Global
-                                </th>
+                                {canViewIndustryGlobalCode && (
+                                    <th
+                                        rowSpan="2"
+                                        className="industry-global-code-header"
+                                    >
+                                        Código Global
+                                    </th>
+                                )}
 
-                                <th
-                                    rowSpan="2"
-                                    className="laboratory-header"
-                                >
-                                    Laboratórios
-                                </th>
 
-                                <th
-                                    rowSpan="2"
-                                    className="observation-header"
-                                >
-                                    Observação
-                                </th>
+                                {canViewLaboratory && (
+                                    <th
+                                        rowSpan="2"
+                                        className="laboratory-header"
+                                    >
+                                        Laboratórios
+                                    </th>
+                                )}
+
+
+                                {canViewObservation && (
+                                    <th
+                                        rowSpan="2"
+                                        className="observation-header"
+                                    >
+                                        Observação
+                                    </th>
+                                )}
+
 
                                 {headerGroups.map(
                                     ({ group, groupColumns }) => (
@@ -1137,13 +1587,17 @@ function PricePendingTable() {
                                     )
                                 )}
 
-                                <th
-                                    rowSpan="2"
-                                    className="actions-header"
-                                >
-                                    Ações
-                                </th>
+
+                                {canRemoveLaboratory && (
+                                    <th
+                                        rowSpan="2"
+                                        className="actions-header"
+                                    >
+                                        Ações
+                                    </th>
+                                )}
                             </tr>
+
 
                             <tr>
                                 {headerGroups.flatMap(
@@ -1165,6 +1619,7 @@ function PricePendingTable() {
                             </tr>
                         </thead>
 
+
                         <tbody>
                             {rows.length === 0 && (
                                 <tr>
@@ -1182,59 +1637,75 @@ function PricePendingTable() {
                                 </tr>
                             )}
 
+
                             {rows.map((row) => (
                                 <tr key={row.id}>
-                                    <td className="industry-global-code-cell">
-                                        {row.industry_global_code || ""}
-                                    </td>
+                                    {canViewIndustryGlobalCode && (
+                                        <td className="industry-global-code-cell">
+                                            {row.industry_global_code || ""}
+                                        </td>
+                                    )}
 
-                                    <td className="laboratory-cell">
-                                        <input
-                                            type="text"
-                                            value={
-                                                row.laboratory || ""
-                                            }
-                                            onChange={(event) => {
-                                                updateLocalValue(
-                                                    row.id,
-                                                    "laboratory",
-                                                    event.target.value
-                                                );
-                                            }}
-                                            onBlur={() => {
-                                                saveCell(
-                                                    row,
-                                                    "laboratory"
-                                                );
-                                            }}
-                                            title={
-                                                "Edite o nome do laboratório " +
-                                                "e clique fora para salvar"
-                                            }
-                                            disabled={
-                                                saving || readOnly
-                                            }
-                                        />
-                                    </td>
 
-                                    <td className="observation-cell">
-                                        <input
-                                            type="text"
-                                            value={row.observation || ""}
-                                            onChange={(event) => {
-                                                updateLocalValue(
-                                                    row.id,
-                                                    "observation",
-                                                    event.target.value
-                                                );
-                                            }}
-                                            onBlur={() => {
-                                                saveCell(row, "observation");
-                                            }}
-                                            title={row.observation || ""}
-                                            disabled={saving || readOnly}
-                                        />
-                                    </td>
+                                    {canViewLaboratory && (
+                                        <td className="laboratory-cell">
+                                            <input
+                                                type="text"
+                                                value={
+                                                    row.laboratory || ""
+                                                }
+                                                onChange={(event) => {
+                                                    updateLocalValue(
+                                                        row.id,
+                                                        "laboratory",
+                                                        event.target.value
+                                                    );
+                                                }}
+                                                onBlur={() => {
+                                                    saveCell(
+                                                        row,
+                                                        "laboratory"
+                                                    );
+                                                }}
+                                                title={
+                                                    "Edite o nome do laboratório " +
+                                                    "e clique fora para salvar"
+                                                }
+                                                disabled={
+                                                    saving ||
+                                                    readOnly ||
+                                                    !canEditLaboratory
+                                                }
+                                            />
+                                        </td>
+                                    )}
+
+
+                                    {canViewObservation && (
+                                        <td className="observation-cell">
+                                            <input
+                                                type="text"
+                                                value={row.observation || ""}
+                                                onChange={(event) => {
+                                                    updateLocalValue(
+                                                        row.id,
+                                                        "observation",
+                                                        event.target.value
+                                                    );
+                                                }}
+                                                onBlur={() => {
+                                                    saveCell(row, "observation");
+                                                }}
+                                                title={row.observation || ""}
+                                                disabled={
+                                                    saving ||
+                                                    readOnly ||
+                                                    !canEditObservation
+                                                }
+                                            />
+                                        </td>
+                                    )}
+
 
                                     {visibleColumnsList.map((column) => {
                                         const pendingUpdate =
@@ -1242,6 +1713,15 @@ function PricePendingTable() {
                                                 row,
                                                 column.key
                                             );
+
+
+                                        const canEditColumn =
+                                            canEditValues &&
+                                            canEditFunction(
+                                                PERMISSION_MODULE_KEY,
+                                                column.key
+                                            );
+
 
                                         return (
                                             <td
@@ -1288,33 +1768,39 @@ function PricePendingTable() {
                                                             ] || ""
                                                     }
                                                     disabled={
-                                                        saving || readOnly
+                                                        saving ||
+                                                        readOnly ||
+                                                        !canEditColumn
                                                     }
                                                 />
                                             </td>
                                         );
                                     })}
 
-                                    <td className="actions-cell">
-                                        <button
-                                            type="button"
-                                            className="remove-button"
-                                            onClick={() => {
-                                                removeLaboratory(row);
-                                            }}
-                                            disabled={
-                                                saving || readOnly
-                                            }
-                                        >
-                                            Remover
-                                        </button>
-                                    </td>
+
+                                    {canRemoveLaboratory && (
+                                        <td className="actions-cell">
+                                            <button
+                                                type="button"
+                                                className="remove-button"
+                                                onClick={() => {
+                                                    removeLaboratory(row);
+                                                }}
+                                                disabled={
+                                                    saving || readOnly
+                                                }
+                                            >
+                                                Remover
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
             </section>
+
 
             <ExportExcelModal
                 open={exportModalOpen}
@@ -1331,5 +1817,6 @@ function PricePendingTable() {
         </main>
     );
 }
+
 
 export default PricePendingTable;
