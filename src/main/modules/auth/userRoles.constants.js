@@ -2,8 +2,7 @@ const USER_ROLES = {
     CREATOR: "creator",
     ADMIN: "admin",
     EDITOR: "editor",
-    VIEWER: "viewer",
-    PENDING: "pending"
+    VIEWER: "viewer"
 };
 
 module.exports = {

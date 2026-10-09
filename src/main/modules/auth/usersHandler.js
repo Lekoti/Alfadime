@@ -4,26 +4,14 @@ const {
 
 
 
+
 const {
     USER_ROLES
 } = require("./userRoles.constants");
 
 
+
 const crypto = require("node:crypto");
-
-
-
-
-const ALLOWED_ROLES = [
-    USER_ROLES.CREATOR,
-    USER_ROLES.ADMIN,
-    USER_ROLES.EDITOR,
-    USER_ROLES.VIEWER,
-    USER_ROLES.PENDING
-];
-
-
-
 
 function normalizeText(value) {
     return String(
@@ -34,9 +22,11 @@ function normalizeText(value) {
 
 
 
+
 function validateRole(role) {
     return ALLOWED_ROLES.includes(role);
 }
+
 
 
 
@@ -51,6 +41,7 @@ function buildSuccess(data) {
 
 
 
+
 function buildError(message) {
     return {
         success: false,
@@ -61,9 +52,11 @@ function buildError(message) {
 
 
 
+
 function hashPassword(password) {
     const salt =
         crypto.randomBytes(16).toString("hex");
+
 
 
 
@@ -78,8 +71,10 @@ function hashPassword(password) {
 
 
 
+
     return `${salt}:${hash}`;
 }
+
 
 
 
@@ -88,6 +83,7 @@ function listUsers() {
     try {
         const database =
             getUsersDatabase();
+
 
 
 
@@ -110,12 +106,14 @@ function listUsers() {
 
 
 
+
         return buildSuccess(users);
     } catch (error) {
         console.error(
             "[USERS] Erro ao listar usuários:",
             error
         );
+
 
 
 
@@ -129,9 +127,11 @@ function listUsers() {
 
 
 
+
 function getUserById(id) {
     const database =
         getUsersDatabase();
+
 
 
 
@@ -156,9 +156,11 @@ function getUserById(id) {
 
 
 
+
 function getUserByUsername(username) {
     const database =
         getUsersDatabase();
+
 
 
 
@@ -180,6 +182,7 @@ function getUserByUsername(username) {
 
 
 
+
 function createUser(data, currentUser) {
     try {
         if (
@@ -196,8 +199,10 @@ function createUser(data, currentUser) {
 
 
 
+
         const username =
             normalizeText(data.username);
+
 
 
 
@@ -206,13 +211,16 @@ function createUser(data, currentUser) {
 
 
 
+
         const password =
             String(data.password || "");
 
 
 
+
         const confirmPassword =
             String(data.confirmPassword || "");
+
 
 
 
@@ -222,8 +230,10 @@ function createUser(data, currentUser) {
 
 
 
+
         const isActive =
             Number(data.is_active ?? 1) ? 1 : 0;
+
 
 
 
@@ -235,11 +245,13 @@ function createUser(data, currentUser) {
 
 
 
+
         if (!displayName) {
             return buildError(
                 "Informe o nome de exibição."
             );
         }
+
 
 
 
@@ -251,6 +263,7 @@ function createUser(data, currentUser) {
 
 
 
+
         if (password !== confirmPassword) {
             return buildError(
                 "As senhas não são iguais."
@@ -259,11 +272,13 @@ function createUser(data, currentUser) {
 
 
 
+
         if (!validateRole(role)) {
             return buildError(
                 "Perfil inválido."
             );
         }
+
 
 
 
@@ -278,13 +293,16 @@ function createUser(data, currentUser) {
 
 
 
+
         const database =
             getUsersDatabase();
 
 
 
+
         const existingUser =
             getUserByUsername(username);
+
 
 
 
@@ -296,8 +314,10 @@ function createUser(data, currentUser) {
 
 
 
+
         const now =
             new Date().toISOString();
+
 
 
 
@@ -327,10 +347,12 @@ function createUser(data, currentUser) {
 
 
 
+
         const createdUser =
             getUserById(
                 result.lastInsertRowid
             );
+
 
 
 
@@ -343,12 +365,14 @@ function createUser(data, currentUser) {
 
 
 
+
         return buildError(
             error?.message ||
             "Não foi possível criar o usuário."
         );
     }
 }
+
 
 
 
@@ -369,13 +393,16 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         const userId =
             Number(id);
 
 
 
+
         const targetUser =
             getUserById(userId);
+
 
 
 
@@ -387,13 +414,16 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         const username =
             normalizeText(data.username);
 
 
 
+
         const displayName =
             normalizeText(data.display_name);
+
 
 
 
@@ -403,8 +433,10 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         const isActive =
             Number(data.is_active ?? targetUser.is_active) ? 1 : 0;
+
 
 
 
@@ -416,6 +448,7 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         if (!displayName) {
             return buildError(
                 "Informe o nome de exibição."
@@ -424,11 +457,13 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         if (!validateRole(role)) {
             return buildError(
                 "Perfil inválido."
             );
         }
+
 
 
 
@@ -443,6 +478,7 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         if (
             role === USER_ROLES.CREATOR &&
             currentUser.role !== USER_ROLES.CREATOR
@@ -451,6 +487,7 @@ function updateUser(id, data, currentUser) {
                 "Somente o Staff pode definir outro usuário como Staff."
             );
         }
+
 
 
 
@@ -465,13 +502,16 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         const database =
             getUsersDatabase();
 
 
 
+
         const existingUser =
             getUserByUsername(username);
+
 
 
 
@@ -486,25 +526,63 @@ function updateUser(id, data, currentUser) {
 
 
 
-        database
-            .prepare(`
-                UPDATE users
-                SET
-                    username = ?,
-                    display_name = ?,
-                    role = ?,
-                    is_active = ?,
-                    updated_at = ?
-                WHERE id = ?
-            `)
-            .run(
-                username,
-                displayName,
-                role,
-                isActive,
-                new Date().toISOString(),
-                userId
-            );
+
+        const roleChanged =
+            targetUser.role !== role;
+
+
+
+
+        const updateUserTransaction =
+            database.transaction(() => {
+                database
+                    .prepare(`
+                        UPDATE users
+                        SET
+                            username = ?,
+                            display_name = ?,
+                            role = ?,
+                            is_active = ?,
+                            updated_at = ?
+                        WHERE id = ?
+                    `)
+                    .run(
+                        username,
+                        displayName,
+                        role,
+                        isActive,
+                        new Date().toISOString(),
+                        userId
+                    );
+
+
+
+
+                if (roleChanged) {
+                    database
+                        .prepare(`
+                            DELETE FROM user_module_permissions
+                            WHERE user_id = ?
+                        `)
+                        .run(userId);
+
+
+
+
+                    database
+                        .prepare(`
+                            DELETE FROM user_function_permissions
+                            WHERE user_id = ?
+                        `)
+                        .run(userId);
+                }
+            });
+
+
+
+
+        updateUserTransaction();
+
 
 
 
@@ -519,12 +597,14 @@ function updateUser(id, data, currentUser) {
 
 
 
+
         return buildError(
             error?.message ||
             "Não foi possível atualizar o usuário."
         );
     }
 }
+
 
 
 
@@ -545,8 +625,10 @@ function deleteUser(id, currentUser) {
 
 
 
+
         const userId =
             Number(id);
+
 
 
 
@@ -555,11 +637,13 @@ function deleteUser(id, currentUser) {
 
 
 
+
         if (!targetUser) {
             return buildError(
                 "Usuário não encontrado."
             );
         }
+
 
 
 
@@ -573,6 +657,7 @@ function deleteUser(id, currentUser) {
 
 
 
+
         if (
             targetUser.role === USER_ROLES.CREATOR
         ) {
@@ -583,8 +668,10 @@ function deleteUser(id, currentUser) {
 
 
 
+
         const database =
             getUsersDatabase();
+
 
 
 
@@ -599,6 +686,7 @@ function deleteUser(id, currentUser) {
 
 
 
+
                 database
                     .prepare(`
                         DELETE FROM user_module_permissions
@@ -608,12 +696,14 @@ function deleteUser(id, currentUser) {
 
 
 
+
                 database
                     .prepare(`
                         DELETE FROM user_sessions
                         WHERE user_id = ?
                     `)
                     .run(userId);
+
 
 
 
@@ -627,7 +717,9 @@ function deleteUser(id, currentUser) {
 
 
 
+
         deleteUserTransaction();
+
 
 
 
@@ -642,12 +734,14 @@ function deleteUser(id, currentUser) {
 
 
 
+
         return buildError(
             error?.message ||
             "Não foi possível excluir o usuário."
         );
     }
 }
+
 
 
 
@@ -668,8 +762,10 @@ function setUserActive(id, isActive, currentUser) {
 
 
 
+
         const userId =
             Number(id);
+
 
 
 
@@ -678,11 +774,13 @@ function setUserActive(id, isActive, currentUser) {
 
 
 
+
         if (!targetUser) {
             return buildError(
                 "Usuário não encontrado."
             );
         }
+
 
 
 
@@ -696,6 +794,7 @@ function setUserActive(id, isActive, currentUser) {
 
 
 
+
         if (
             targetUser.role === USER_ROLES.CREATOR
         ) {
@@ -706,8 +805,10 @@ function setUserActive(id, isActive, currentUser) {
 
 
 
+
         const database =
             getUsersDatabase();
+
 
 
 
@@ -727,6 +828,7 @@ function setUserActive(id, isActive, currentUser) {
 
 
 
+
         return buildSuccess(
             getUserById(userId)
         );
@@ -735,6 +837,7 @@ function setUserActive(id, isActive, currentUser) {
             "[USERS] Erro ao alterar status:",
             error
         );
+
 
 
 
@@ -748,10 +851,12 @@ function setUserActive(id, isActive, currentUser) {
 
 
 
+
 function listPermissions() {
     try {
         const database =
             getUsersDatabase();
+
 
 
 
@@ -766,6 +871,7 @@ function listPermissions() {
 
 
 
+
         return buildSuccess(permissions);
     } catch (error) {
         console.error(
@@ -775,12 +881,14 @@ function listPermissions() {
 
 
 
+
         return buildError(
             error?.message ||
             "Não foi possível listar as permissões."
         );
     }
 }
+
 
 
 

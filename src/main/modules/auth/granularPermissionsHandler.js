@@ -695,6 +695,65 @@ function saveUserFunctionPermission(
 }
 
 
+function getUserRole(userId) {
+    const database = getUsersDatabase();
+
+    const user = database
+        .prepare(`
+            SELECT role
+            FROM users
+            WHERE id = ?
+            LIMIT 1
+        `)
+        .get(userId);
+
+    return user?.role || null;
+}
+
+function isSameModulePermission(current, next) {
+    return Boolean(
+        Number(current.can_view) === Number(next.can_view) &&
+        Number(current.can_edit) === Number(next.can_edit) &&
+        Number(current.can_delete) === Number(next.can_delete) &&
+        Number(current.can_approve) === Number(next.can_approve) &&
+        Number(current.can_export) === Number(next.can_export) &&
+        Number(current.can_sync) === Number(next.can_sync)
+    );
+}
+
+function isSameFunctionPermission(current, next) {
+    return Boolean(
+        Number(current.can_view) === Number(next.can_view) &&
+        Number(current.can_edit) === Number(next.can_edit) &&
+        Number(current.can_execute) === Number(next.can_execute)
+    );
+}
+
+function deleteUserModuleOverride(userId, moduleKey) {
+    const database = getUsersDatabase();
+
+    database
+        .prepare(`
+            DELETE FROM user_module_permissions
+            WHERE user_id = ?
+              AND module_key = ?
+        `)
+        .run(userId, moduleKey);
+}
+
+function deleteUserFunctionOverride(userId, moduleKey, functionKey) {
+    const database = getUsersDatabase();
+
+    database
+        .prepare(`
+            DELETE FROM user_function_permissions
+            WHERE user_id = ?
+              AND module_key = ?
+              AND function_key = ?
+        `)
+        .run(userId, moduleKey, functionKey);
+}
+
 function savePermissions(payload, currentUser) {
     try {
         if (!canManagePermissions(currentUser)) {
@@ -703,112 +762,156 @@ function savePermissions(payload, currentUser) {
             );
         }
 
-        const targetType =
-            payload.target_type;
-
-        const targetValue =
-            payload.target_value;
+        const targetType = payload.target_type;
+        const targetValue = payload.target_value;
 
         const modulePermissions =
-            Array.isArray(
-                payload.module_permissions
-            )
+            Array.isArray(payload.module_permissions)
                 ? payload.module_permissions
                 : [];
 
         const functionPermissions =
-            Array.isArray(
-                payload.function_permissions
-            )
+            Array.isArray(payload.function_permissions)
                 ? payload.function_permissions
                 : [];
 
-        if (
-            ![
-                "role",
-                "user"
-            ].includes(targetType)
-        ) {
-            return buildError(
-                "Tipo de destino inválido."
-            );
+        if (!["role", "user"].includes(targetType)) {
+            return buildError("Tipo de destino inválido.");
         }
 
         if (!targetValue) {
-            return buildError(
-                "Destino da permissão não informado."
-            );
+            return buildError("Destino da permissão não informado.");
         }
 
-        const database =
-            getUsersDatabase();
+        const database = getUsersDatabase();
+
+        let userRole = null;
 
         if (targetType === "user") {
-            const user =
-                database
-                    .prepare(`
-                        SELECT id
-                        FROM users
-                        WHERE id = ?
-                        LIMIT 1
-                    `)
-                    .get(targetValue);
+            userRole = getUserRole(targetValue);
 
-            if (!user) {
-                return buildError(
-                    "Usuário não encontrado."
-                );
+            if (!userRole) {
+                return buildError("Usuário não encontrado.");
             }
         }
 
-        const saveModule =
-            targetType === "role"
-                ? saveRoleModulePermission
-                : saveUserModulePermission;
+        const roleModuleMap = new Map(
+            targetType === "user"
+                ? getRoleModulePermissions(userRole).map((item) => [
+                    item.module_key,
+                    item
+                ])
+                : []
+        );
 
-        const saveFunction =
-            targetType === "role"
-                ? saveRoleFunctionPermission
-                : saveUserFunctionPermission;
+        const roleFunctionMap = new Map(
+            targetType === "user"
+                ? getRoleFunctionPermissions(userRole).map((item) => [
+                    `${item.module_key}:${item.function_key}`,
+                    item
+                ])
+                : []
+        );
 
         for (const permission of modulePermissions) {
-            if (
-                !permission.module_key
-            ) {
+            if (!permission.module_key) {
                 continue;
             }
 
-            saveModule(
+            const next = {
+                can_view: permission.can_view ? 1 : 0,
+                can_edit: permission.can_edit ? 1 : 0,
+                can_delete: permission.can_delete ? 1 : 0,
+                can_approve: permission.can_approve ? 1 : 0,
+                can_export: permission.can_export ? 1 : 0,
+                can_sync: permission.can_sync ? 1 : 0
+            };
+
+            if (targetType === "role") {
+                saveRoleModulePermission(
+                    targetValue,
+                    permission.module_key,
+                    next
+                );
+
+                continue;
+            }
+
+            const rolePermission =
+                roleModuleMap.get(permission.module_key) ||
+                {
+                    can_view: 0,
+                    can_edit: 0,
+                    can_delete: 0,
+                    can_approve: 0,
+                    can_export: 0,
+                    can_sync: 0
+                };
+
+            if (isSameModulePermission(rolePermission, next)) {
+                deleteUserModuleOverride(
+                    targetValue,
+                    permission.module_key
+                );
+
+                continue;
+            }
+
+            saveUserModulePermission(
                 targetValue,
                 permission.module_key,
-                {
-                    can_view: permission.can_view,
-                    can_edit: permission.can_edit,
-                    can_delete: permission.can_delete,
-                    can_approve: permission.can_approve,
-                    can_export: permission.can_export,
-                    can_sync: permission.can_sync
-                }
+                next
             );
         }
 
         for (const permission of functionPermissions) {
-            if (
-                !permission.module_key ||
-                !permission.function_key
-            ) {
+            if (!permission.module_key || !permission.function_key) {
                 continue;
             }
 
-            saveFunction(
+            const next = {
+                can_view: permission.can_view ? 1 : 0,
+                can_edit: permission.can_edit ? 1 : 0,
+                can_execute: permission.can_execute ? 1 : 0
+            };
+
+            const compositeKey =
+                `${permission.module_key}:${permission.function_key}`;
+
+            if (targetType === "role") {
+                saveRoleFunctionPermission(
+                    targetValue,
+                    permission.module_key,
+                    permission.function_key,
+                    next
+                );
+
+                continue;
+            }
+
+            const rolePermission =
+                roleFunctionMap.get(compositeKey) ||
+                {
+                    can_view: 0,
+                    can_edit: 0,
+                    can_execute: 0
+                };
+
+            if (isSameFunctionPermission(rolePermission, next)) {
+                deleteUserFunctionOverride(
+                    targetValue,
+                    permission.module_key,
+                    permission.function_key
+                );
+
+                continue;
+            }
+
+            saveUserFunctionPermission(
                 targetValue,
                 permission.module_key,
                 permission.function_key,
-                {
-                    can_view: permission.can_view,
-                    can_edit: permission.can_edit,
-                    can_execute: permission.can_execute
-                }
+                next
             );
         }
 
@@ -827,7 +930,6 @@ function savePermissions(payload, currentUser) {
         );
     }
 }
-
 
 function clearUserOverrides(userId, currentUser) {
     try {

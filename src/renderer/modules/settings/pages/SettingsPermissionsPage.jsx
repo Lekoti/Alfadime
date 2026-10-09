@@ -67,10 +67,6 @@ const ROLES = [
     {
         value: "viewer",
         label: "Visualizador"
-    },
-    {
-        value: "pending",
-        label: "Pendente"
     }
 ];
 
