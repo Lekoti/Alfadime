@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 
+
 import {
     DollarSign,
     Package,
@@ -13,10 +14,9 @@ import {
 } from "lucide-react";
 
 
-import wallpaper from "../../../../../resources/Alfadime.png";
-
 
 import "../styles/home.css";
+
 
 
 
@@ -75,23 +75,21 @@ const MODULES = [
 
 
 
+
 function HomePage() {
     const navigate = useNavigate();
 
 
 
 
+
     return (
-        <div
-            className="home-page"
-            style={{
-                "--home-wallpaper": `url("${wallpaper}")`
-            }}
-        >
+        <div className="home-page">
             <div className="home-grid">
                 {MODULES.map((module) => {
                     const Icon =
                         module.icon;
+
 
 
                     return (
@@ -111,9 +109,11 @@ function HomePage() {
                             </span>
 
 
+
                             <span className="home-card-title">
                                 {module.title}
                             </span>
+
 
 
                             <span className="home-card-description">
@@ -126,6 +126,7 @@ function HomePage() {
         </div>
     );
 }
+
 
 
 

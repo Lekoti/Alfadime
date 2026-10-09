@@ -1,8 +1,8 @@
 {
-    "name": "alfadime",
-    "version": "3.0.0",
-    "description": "Sistema desktop de ferramentas empresariais.",
-    "main": "src/main/main.js",
+  "name": "alfadime",
+  "version": "3.0.2",
+  "description": "Sistema desktop de ferramentas empresariais.",
+  "main": "dist/main/main.js",
     "scripts": {
         "test": "node test.js",
         "build": "vite build --config vite.config.mjs",

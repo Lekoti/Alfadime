@@ -7,14 +7,17 @@ import React, {
     useState
 } from "react";
 
+
 import authService from "../services/authService";
 import {
     USER_ROLES
 } from "../constants/userRoles";
 
 
+
 const AuthContext =
     createContext(null);
+
 
 
 export function AuthProvider({
@@ -25,15 +28,18 @@ export function AuthProvider({
         setSession
     ] = useState(null);
 
+
     const [
         loading,
         setLoading
     ] = useState(true);
 
+
     const [
         error,
         setError
     ] = useState(null);
+
 
 
     const loadSession =
@@ -43,9 +49,11 @@ export function AuthProvider({
                     setLoading(true);
                     setError(null);
 
+
                     const result =
                         await authService
                             .getCurrentSession();
+
 
                     if (
                         result?.success &&
@@ -63,6 +71,7 @@ export function AuthProvider({
                         loadError
                     );
 
+
                     setSession(null);
                     setError(
                         loadError?.message ||
@@ -76,21 +85,26 @@ export function AuthProvider({
         );
 
 
+
     const login =
         useCallback(
             async (
                 username,
+                password,
                 isPersistent = false
             ) => {
                 try {
                     setLoading(true);
                     setError(null);
 
+
                     const result =
                         await authService.login(
                             username,
+                            password,
                             isPersistent
                         );
+
 
                     if (
                         result?.success &&
@@ -100,16 +114,19 @@ export function AuthProvider({
                             result.data
                         );
 
+
                         return {
                             success: true,
                             data: result.data
                         };
                     }
 
+
                     setError(
                         result?.error ||
                         "Não foi possível realizar o login."
                     );
+
 
                     return {
                         success: false,
@@ -123,11 +140,14 @@ export function AuthProvider({
                         loginError
                     );
 
+
                     const message =
                         loginError?.message ||
                         "Não foi possível realizar o login.";
 
+
                     setError(message);
+
 
                     return {
                         success: false,
@@ -141,6 +161,70 @@ export function AuthProvider({
         );
 
 
+
+    const register =
+        useCallback(
+            async (payload) => {
+                try {
+                    setLoading(true);
+                    setError(null);
+
+
+                    const result =
+                        await authService.register(
+                            payload
+                        );
+
+
+                    if (
+                        result?.success
+                    ) {
+                        return {
+                            success: true
+                        };
+                    }
+
+
+                    setError(
+                        result?.error ||
+                        "Não foi possível criar a conta."
+                    );
+
+
+                    return {
+                        success: false,
+                        error:
+                            result?.error ||
+                            "Não foi possível criar a conta."
+                    };
+                } catch (registerError) {
+                    console.error(
+                        "[AUTH] Erro ao criar conta:",
+                        registerError
+                    );
+
+
+                    const message =
+                        registerError?.message ||
+                        "Não foi possível criar a conta.";
+
+
+                    setError(message);
+
+
+                    return {
+                        success: false,
+                        error: message
+                    };
+                } finally {
+                    setLoading(false);
+                }
+            },
+            []
+        );
+
+
+
     const logout =
         useCallback(
             async () => {
@@ -148,23 +232,28 @@ export function AuthProvider({
                     setLoading(true);
                     setError(null);
 
+
                     const result =
                         await authService.logout();
+
 
                     if (
                         result?.success
                     ) {
                         setSession(null);
 
+
                         return {
                             success: true
                         };
                     }
 
+
                     setError(
                         result?.error ||
                         "Não foi possível sair."
                     );
+
 
                     return {
                         success: false,
@@ -177,7 +266,9 @@ export function AuthProvider({
                         logoutError?.message ||
                         "Não foi possível sair.";
 
+
                     setError(message);
+
 
                     return {
                         success: false,
@@ -191,6 +282,7 @@ export function AuthProvider({
         );
 
 
+
     const hasPermission =
         useCallback(
             (
@@ -201,6 +293,7 @@ export function AuthProvider({
                     return false;
                 }
 
+
                 if (
                     session.user.role ===
                     USER_ROLES.CREATOR
@@ -208,12 +301,14 @@ export function AuthProvider({
                     return true;
                 }
 
+
                 const permission =
                     session.permissions?.find(
                         (item) =>
                             item.module_key ===
                             moduleKey
                     );
+
 
                 return Boolean(
                     permission?.[action]
@@ -223,6 +318,7 @@ export function AuthProvider({
                 session
             ]
         );
+
 
 
     const value =
@@ -252,6 +348,7 @@ export function AuthProvider({
                     session?.user?.role ===
                     USER_ROLES.PENDING,
                 login,
+                register,
                 logout,
                 refreshSession:
                     loadSession,
@@ -262,11 +359,13 @@ export function AuthProvider({
                 loading,
                 error,
                 login,
+                register,
                 logout,
                 loadSession,
                 hasPermission
             ]
         );
+
 
 
     useEffect(
@@ -279,6 +378,7 @@ export function AuthProvider({
     );
 
 
+
     return (
         <AuthContext.Provider
             value={value}
@@ -289,17 +389,20 @@ export function AuthProvider({
 }
 
 
+
 export function useAuthContext() {
     const context =
         useContext(
             AuthContext
         );
 
+
     if (!context) {
         throw new Error(
             "useAuthContext deve ser usado dentro de AuthProvider."
         );
     }
+
 
     return context;
 }

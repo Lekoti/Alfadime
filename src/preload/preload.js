@@ -47,17 +47,26 @@ contextBridge.exposeInMainWorld(
     "alfadime",
     {
         auth: {
-            login: (
+    login: (
+        username,
+        password,
+        isPersistent
+    ) =>
+        invoke(
+            "auth:login",
+            {
                 username,
+                password,
                 isPersistent
-            ) =>
-                invoke(
-                    "auth:login",
-                    {
-                        username,
-                        isPersistent
-                    }
-                ),
+            }
+        ),
+
+
+    register: (payload) =>
+        invoke(
+            "auth:register",
+            payload
+        ),
 
             logout: () =>
                 invoke(

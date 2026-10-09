@@ -1,9 +1,19 @@
 const crypto = require("node:crypto");
 const os = require("node:os");
 
+
+
 const {
     getDatabase
 } = require("../../database/connection");
+
+
+
+const {
+    USER_ROLES
+} = require("./userRoles.constants");
+
+
 
 
 class AuthHandler {
@@ -13,20 +23,30 @@ class AuthHandler {
     }
 
 
+
+
     getDatabase() {
         return getDatabase();
     }
+
+
 
 
     generateComputerId() {
         const hostname =
             os.hostname();
 
+
+
         const platform =
             os.platform();
 
+
+
         const arch =
             os.arch();
+
+
 
         const uniqueString =
             [
@@ -34,6 +54,8 @@ class AuthHandler {
                 platform,
                 arch
             ].join("-");
+
+
 
         return crypto
             .createHash("sha256")
@@ -43,37 +65,125 @@ class AuthHandler {
     }
 
 
+
+
     getComputerName() {
         return os.hostname();
     }
 
 
-    normalizeUsername(username) {
+
+
+    normalizeText(value) {
         return String(
-            username || ""
+            value || ""
         ).trim();
     }
+
+
+
+
+    hashPassword(password) {
+        const salt =
+            crypto.randomBytes(16).toString("hex");
+
+
+
+        const hash =
+            crypto
+                .scryptSync(
+                    password,
+                    salt,
+                    64
+                )
+                .toString("hex");
+
+
+
+        return `${salt}:${hash}`;
+    }
+
+
+
+
+    verifyPassword(password, storedHash) {
+        if (!storedHash) {
+            return false;
+        }
+
+
+
+        const [
+            salt,
+            hash
+        ] = String(storedHash).split(":");
+
+        if (!salt || !hash) {
+            return false;
+        }
+
+
+
+        const candidate =
+            crypto
+                .scryptSync(
+                    password,
+                    salt,
+                    64
+                );
+
+
+
+        const stored =
+            Buffer.from(
+                hash,
+                "hex"
+            );
+
+
+
+        if (
+            candidate.length !==
+            stored.length
+        ) {
+            return false;
+        }
+
+
+
+        return crypto.timingSafeEqual(
+            candidate,
+            stored
+        );
+    }
+
+
 
 
     async getUserByUsername(username) {
         const database =
             this.getDatabase();
 
+
+
         return database
             .prepare(`
                 SELECT *
                 FROM users
                 WHERE username = ?
-                  AND is_active = 1
                 LIMIT 1
             `)
             .get(username);
     }
 
 
+
+
     async getUserPermissions(role) {
         const database =
             this.getDatabase();
+
+
 
         return database
             .prepare(`
@@ -86,6 +196,135 @@ class AuthHandler {
     }
 
 
+
+
+    async register({
+        username,
+        displayName,
+        password
+    }) {
+        try {
+            const normalizedUsername =
+                this.normalizeText(username);
+
+
+
+            const normalizedDisplayName =
+                this.normalizeText(displayName);
+
+
+
+            const normalizedPassword =
+                String(password || "");
+
+
+
+            if (!normalizedUsername) {
+                return {
+                    success: false,
+                    error: "Informe o nome de usuário."
+                };
+            }
+
+
+
+            if (!normalizedDisplayName) {
+                return {
+                    success: false,
+                    error: "Informe o nome de exibição."
+                };
+            }
+
+
+
+            if (normalizedPassword.length < 6) {
+                return {
+                    success: false,
+                    error: "A senha deve ter pelo menos 6 caracteres."
+                };
+            }
+
+
+
+            const existingUser =
+                await this.getUserByUsername(
+                    normalizedUsername
+                );
+
+
+
+            if (existingUser) {
+                return {
+                    success: false,
+                    error: "Já existe um usuário com este nome."
+                };
+            }
+
+
+
+            const database =
+                this.getDatabase();
+
+
+
+            const now =
+                new Date().toISOString();
+
+
+
+            database
+                .prepare(`
+                    INSERT INTO users (
+                        username,
+                        display_name,
+                        role,
+                        is_active,
+                        password_hash,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `)
+                .run(
+                    normalizedUsername,
+                    normalizedDisplayName,
+                    USER_ROLES.PENDING,
+                    1,
+                    this.hashPassword(
+                        normalizedPassword
+                    ),
+                    now,
+                    now
+                );
+
+
+
+            return {
+                success: true,
+                data: {
+                    username: normalizedUsername
+                }
+            };
+        } catch (error) {
+            console.error(
+                "[AUTH] Erro ao criar conta:",
+                error
+            );
+
+
+
+            return {
+                success: false,
+                error:
+                    error?.message ||
+                    "Não foi possível criar a conta."
+            };
+        }
+    }
+
+
+
+
     async createOrUpdateSession(
         userId,
         isPersistent
@@ -93,8 +332,12 @@ class AuthHandler {
         const database =
             this.getDatabase();
 
+
+
         const now =
             new Date().toISOString();
+
+
 
         database
             .prepare(`
@@ -122,6 +365,8 @@ class AuthHandler {
                 now
             );
 
+
+
         return database
             .prepare(`
                 SELECT *
@@ -137,9 +382,13 @@ class AuthHandler {
     }
 
 
+
+
     async updateUserLastLogin(userId) {
         const database =
             this.getDatabase();
+
+
 
         database
             .prepare(`
@@ -156,9 +405,13 @@ class AuthHandler {
     }
 
 
+
+
     async updateLastAccess(userId) {
         const database =
             this.getDatabase();
+
+
 
         database
             .prepare(`
@@ -175,9 +428,13 @@ class AuthHandler {
     }
 
 
+
+
     async getSessionByComputer() {
         const database =
             this.getDatabase();
+
+
 
         return database
             .prepare(`
@@ -202,6 +459,8 @@ class AuthHandler {
     }
 
 
+
+
     buildSession(user, permissions) {
         return {
             user: {
@@ -217,48 +476,137 @@ class AuthHandler {
     }
 
 
+
+
     async login(
         username,
+        password,
         isPersistent = false
     ) {
         try {
             const normalizedUsername =
-                this.normalizeUsername(
-                    username
-                );
+                this.normalizeText(username);
+
+
+
+            const normalizedPassword =
+                String(password || "");
+
+
 
             if (!normalizedUsername) {
                 return {
                     success: false,
-                    error: "Informe o nome do usuário."
+                    error: "Informe o nome de usuário."
                 };
             }
+
+
+
+            if (!normalizedPassword) {
+                return {
+                    success: false,
+                    error: "Informe a senha."
+                };
+            }
+
+
 
             const user =
                 await this.getUserByUsername(
                     normalizedUsername
                 );
 
-            if (!user) {
+
+
+            if (!user || !user.is_active) {
                 return {
                     success: false,
-                    error: "Usuário não encontrado ou inativo."
+                    error: "Usuário ou senha inválidos."
                 };
             }
+
+
+
+            if (!user.password_hash) {
+                if (normalizedPassword.length < 6) {
+                    return {
+                        success: false,
+                        error: "Defina uma senha com pelo menos 6 caracteres."
+                    };
+                }
+
+
+
+                const database =
+                    this.getDatabase();
+
+
+
+                const newPasswordHash =
+                    this.hashPassword(
+                        normalizedPassword
+                    );
+
+
+
+                database
+                    .prepare(`
+                        UPDATE users
+                        SET password_hash = ?,
+                            updated_at = ?
+                        WHERE id = ?
+                    `)
+                    .run(
+                        newPasswordHash,
+                        new Date().toISOString(),
+                        user.id
+                    );
+
+
+
+                user.password_hash =
+                    newPasswordHash;
+            }
+
+
+
+            const passwordIsValid =
+                this.verifyPassword(
+                    normalizedPassword,
+                    user.password_hash
+                );
+
+
+
+            if (!passwordIsValid) {
+                return {
+                    success: false,
+                    error: "Usuário ou senha inválidos."
+                };
+            }
+
+
 
             const permissions =
                 await this.getUserPermissions(
                     user.role
                 );
 
+
+
             await this.createOrUpdateSession(
                 user.id,
                 Boolean(isPersistent)
             );
 
+
+
             await this.updateUserLastLogin(
                 user.id
             );
+
+
 
             this.currentSession =
                 this.buildSession(
@@ -266,9 +614,13 @@ class AuthHandler {
                     permissions
                 );
 
+
+
             await this.updateLastAccess(
                 user.id
             );
+
+
 
             return {
                 success: true,
@@ -280,6 +632,8 @@ class AuthHandler {
                 error
             );
 
+
+
             return {
                 success: false,
                 error:
@@ -290,11 +644,15 @@ class AuthHandler {
     }
 
 
+
+
     async logout() {
         try {
             if (this.currentSession?.user?.id) {
                 const database =
                     this.getDatabase();
+
+
 
                 database
                     .prepare(`
@@ -308,7 +666,11 @@ class AuthHandler {
                     );
             }
 
+
+
             this.currentSession = null;
+
+
 
             return {
                 success: true
@@ -318,6 +680,8 @@ class AuthHandler {
                 "[AUTH] Erro ao sair:",
                 error
             );
+
+
 
             return {
                 success: false,
@@ -329,6 +693,8 @@ class AuthHandler {
     }
 
 
+
+
     async getCurrentSession() {
         try {
             if (this.currentSession) {
@@ -336,14 +702,20 @@ class AuthHandler {
                     this.currentSession.user.id
                 );
 
+
+
                 return {
                     success: true,
                     data: this.currentSession
                 };
             }
 
+
+
             const session =
                 await this.getSessionByComputer();
+
+
 
             if (!session) {
                 return {
@@ -352,10 +724,14 @@ class AuthHandler {
                 };
             }
 
+
+
             const permissions =
                 await this.getUserPermissions(
                     session.role
                 );
+
+
 
             this.currentSession =
                 this.buildSession(
@@ -369,9 +745,13 @@ class AuthHandler {
                     permissions
                 );
 
+
+
             await this.updateLastAccess(
                 session.user_id
             );
+
+
 
             return {
                 success: true,
@@ -383,6 +763,8 @@ class AuthHandler {
                 error
             );
 
+
+
             return {
                 success: false,
                 error:
@@ -393,10 +775,14 @@ class AuthHandler {
     }
 
 
+
+
     async validateSession() {
         try {
             const result =
                 await this.getCurrentSession();
+
+
 
             if (
                 !result.success ||
@@ -408,12 +794,16 @@ class AuthHandler {
                 };
             }
 
+
+
             return result;
         } catch (error) {
             console.error(
                 "[AUTH] Erro ao validar sessão:",
                 error
             );
+
+
 
             return {
                 success: false,
@@ -423,6 +813,8 @@ class AuthHandler {
             };
         }
     }
+
+
 
 
     async updateLastAccessHandler() {
@@ -435,6 +827,8 @@ class AuthHandler {
                 );
             }
 
+
+
             return {
                 success: true
             };
@@ -443,6 +837,8 @@ class AuthHandler {
                 "[AUTH] Erro ao atualizar acesso:",
                 error
             );
+
+
 
             return {
                 success: false,
@@ -454,15 +850,21 @@ class AuthHandler {
     }
 
 
+
+
     getAuthenticatedUser() {
         return this.currentSession?.user || null;
     }
+
+
 
 
     getComputerId() {
         return this.computerId;
     }
 }
+
+
 
 
 module.exports =
