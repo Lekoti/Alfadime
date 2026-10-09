@@ -95,6 +95,12 @@ const {
     "./modules/auth/users.ipc"
 );
 
+const {
+    registerGranularPermissionsIpc
+} = require(
+    "./modules/auth/granularPermissions.ipc"
+);
+
 const authHandler = require(
     "./modules/auth/authHandler"
 );
@@ -731,6 +737,11 @@ function registerAllIpc() {
     );
 
     registerUsersIpc(
+        ipcMain,
+        () => authHandler.getAuthenticatedUser()
+    );
+
+    registerGranularPermissionsIpc(
         ipcMain,
         () => authHandler.getAuthenticatedUser()
     );

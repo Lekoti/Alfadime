@@ -117,6 +117,37 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+        permissions: {
+            listModules: () =>
+                invoke(
+                    "permissions:list-modules"
+                ),
+
+            listFunctions: (moduleKey) =>
+                invoke(
+                    "permissions:list-functions",
+                    moduleKey
+                ),
+
+            getForUser: (userId) =>
+                invoke(
+                    "permissions:get-for-user",
+                    userId
+                ),
+
+            save: (payload) =>
+                invoke(
+                    "permissions:save",
+                    payload
+                ),
+
+            clearUserOverrides: (userId) =>
+                invoke(
+                    "permissions:clear-user-overrides",
+                    userId
+                )
+        },
+
         app: {
             getVersion: () =>
                 invoke(
