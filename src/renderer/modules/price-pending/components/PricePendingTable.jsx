@@ -233,8 +233,7 @@ function PricePendingTable() {
     const filterBranch = state.filterBranch || "";
 
 
-    const [rows, setRows] = useState([]);
-    const [allRows, setAllRows] = useState([]);
+        const [allRows, setAllRows] = useState([]);
     const [newLaboratory, setNewLaboratory] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -536,7 +535,6 @@ function PricePendingTable() {
 
 
             setAllRows(data);
-            setRows(filterRows(data));
             setReadOnly(false);
         } catch (loadError) {
             console.error(loadError);
@@ -714,17 +712,6 @@ function PricePendingTable() {
     }, [sharedDbMode]);
 
 
-    useEffect(() => {
-        setRows(filterRows(allRows));
-    }, [
-        allRows,
-        searchTerm,
-        filterUpdated,
-        filterOutdated,
-        filterBranch,
-        visibleColumnsList
-    ]);
-
 
     function setSearchTerm(next) {
         if (
@@ -804,6 +791,23 @@ function PricePendingTable() {
     }
 
 
+    const rows = useMemo(
+        () => filterRows(allRows),
+        [
+            allRows,
+            searchTerm,
+            filterUpdated,
+            filterOutdated,
+            filterBranch,
+            visibleColumnsList,
+            canSearch,
+            canFilterBranch,
+            canFilterUpdated,
+            canFilterOutdated
+        ]
+    );
+
+
     function updateLocalValue(id, column, value) {
         const updateRows = (currentRows) => {
             return currentRows.map((row) => {
@@ -817,7 +821,6 @@ function PricePendingTable() {
         };
 
 
-        setRows(updateRows);
         setAllRows(updateRows);
     }
 
@@ -876,7 +879,6 @@ function PricePendingTable() {
                 };
 
 
-                setRows(updateRows);
                 setAllRows(updateRows);
             }
         } catch (saveError) {
@@ -1230,54 +1232,54 @@ function PricePendingTable() {
                             </div>
 
 
-                            {canFilterUpdated && (
+                            {(canFilterUpdated || canFilterOutdated) && (
                                 <div className="price-pending-filters-section">
-                                    <h3>Filtros de Atualização</h3>
-
+                                    <h3>Situação de atualização</h3>
 
                                     <div className="price-pending-filter-options">
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    filterUpdated
-                                                }
-                                                onChange={(event) => {
-                                                    setFilterUpdated(
-                                                        event.target.checked
-                                                    );
-                                                }}
-                                            />
-                                            Atualizados
-                                        </label>
+                                        {canFilterUpdated && (
+                                            <label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filterUpdated}
+                                                    onChange={(event) => {
+                                                        const checked = event.target.checked;
+
+                                                        setFilterUpdated(checked);
+
+                                                        if (checked) {
+                                                            setFilterOutdated(false);
+                                                        }
+                                                    }}
+                                                />
+                                                Atualizados
+                                            </label>
+                                        )}
+
+                                        {canFilterOutdated && (
+                                            <label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filterOutdated}
+                                                    onChange={(event) => {
+                                                        const checked = event.target.checked;
+
+                                                        setFilterOutdated(checked);
+
+                                                        if (checked) {
+                                                            setFilterUpdated(false);
+                                                        }
+                                                    }}
+                                                />
+                                                Desatualizados
+                                            </label>
+                                        )}
                                     </div>
                                 </div>
                             )}
 
 
-                            {canFilterOutdated && (
-                                <div className="price-pending-filters-section">
-                                    <div className="price-pending-filter-options">
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    filterOutdated
-                                                }
-                                                onChange={(event) => {
-                                                    setFilterOutdated(
-                                                        event.target.checked
-                                                    );
-                                                }}
-                                            />
-                                            Desatualizados
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-
-                            {canFilterBranch && (
+{canFilterBranch && (
                                 <div className="price-pending-filters-section">
                                     <h3>Filtro por Filial</h3>
 
