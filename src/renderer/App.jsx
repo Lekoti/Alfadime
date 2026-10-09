@@ -1,11 +1,13 @@
 ﻿import React from "react";
 
+
 import {
     HashRouter,
     Routes,
     Route,
     Navigate
 } from "react-router-dom";
+
 
 import MainLayout from "./layouts/MainLayout.jsx";
 import HomePage from "./modules/home/pages/HomePage.jsx";
@@ -26,9 +28,12 @@ import SettingsUsersPage from "./modules/settings/pages/SettingsUsersPage.jsx";
 import SettingsLayout from "./modules/settings/pages/SettingsLayout.jsx";
 import LoginPage from "./modules/auth/pages/LoginPage.jsx";
 import useAuth from "./modules/auth/hooks/useAuth.js";
+import PermissionRoute from "./modules/auth/components/PermissionRoute.jsx";
+import SettingsPermissionsPage from "./modules/settings/pages/SettingsPermissionsPage.jsx";
 import {
     AuthProvider
 } from "./modules/auth/context/AuthContext.jsx";
+
 
 
 function LoadingScreen() {
@@ -42,19 +47,23 @@ function LoadingScreen() {
 }
 
 
+
 function ApplicationRoutes() {
     const {
         loading,
         isAuthenticated
     } = useAuth();
 
+
     if (loading) {
         return <LoadingScreen />;
     }
 
+
     if (!isAuthenticated) {
         return <LoginPage />;
     }
+
 
     return (
         <Routes>
@@ -67,80 +76,141 @@ function ApplicationRoutes() {
                     element={<HomePage />}
                 />
 
+
                 <Route
                     path="products"
-                    element={<ProductsPage />}
+                    element={
+                        <PermissionRoute moduleKey="products">
+                            <ProductsPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="product-audit"
-                    element={<ProductAuditPage />}
+                    element={
+                        <PermissionRoute moduleKey="product-audit">
+                            <ProductAuditPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="product-corrections"
-                    element={<ProductCorrectionsPage />}
+                    element={
+                        <PermissionRoute moduleKey="product-corrections">
+                            <ProductCorrectionsPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="price-pending"
-                    element={<PricePendingPage />}
+                    element={
+                        <PermissionRoute moduleKey="price-pending">
+                            <PricePendingPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="purchases"
-                    element={<PurchasesPage />}
+                    element={
+                        <PermissionRoute moduleKey="purchases">
+                            <PurchasesPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="industry-contacts"
-                    element={<IndustryContactsPage />}
+                    element={
+                        <PermissionRoute moduleKey="industry-contacts">
+                            <IndustryContactsPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="notifications"
-                    element={<NotificationsPage />}
+                    element={
+                        <PermissionRoute moduleKey="notifications">
+                            <NotificationsPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="email"
-                    element={<EmailCampaignsPage />}
+                    element={
+                        <PermissionRoute moduleKey="email">
+                            <EmailCampaignsPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="email/received"
-                    element={<EmailReceivedPage />}
+                    element={
+                        <PermissionRoute moduleKey="email">
+                            <EmailReceivedPage />
+                        </PermissionRoute>
+                    }
                 />
+
 
                 <Route
                     path="settings"
-                    element={<SettingsLayout />}
+                    element={
+                        <PermissionRoute moduleKey="settings">
+                            <SettingsLayout />
+                        </PermissionRoute>
+                    }
                 >
                     <Route
                         index
                         element={<SettingsGeneralPage />}
                     />
 
+
                     <Route
                         path="email-configs"
                         element={<EmailConfigsPage />}
                     />
+
 
                     <Route
                         path="price-pending"
                         element={<SettingsPricePendingPage />}
                     />
 
+
                     <Route
                         path="contacts"
                         element={<SettingsContactsPage />}
                     />
 
+
                     <Route
                         path="users"
                         element={<SettingsUsersPage />}
                     />
+
+
+                    <Route
+                        path="permissions"
+                        element={<SettingsPermissionsPage />}
+                    />
                 </Route>
+
 
                 <Route
                     path="*"
@@ -157,6 +227,7 @@ function ApplicationRoutes() {
 }
 
 
+
 function App() {
     return (
         <AuthProvider>
@@ -166,6 +237,7 @@ function App() {
         </AuthProvider>
     );
 }
+
 
 
 export default App;
