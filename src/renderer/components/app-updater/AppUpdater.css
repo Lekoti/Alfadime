@@ -1,17 +1,27 @@
 .app-updater-panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
+
+    width: min(420px, calc(100vw - 32px));
     box-sizing: border-box;
-    margin: 10px 14px 0;
-    padding: 10px 12px;
+    padding: 12px 14px;
+
     border: 1px solid #cbd7e3;
-    border-radius: 7px;
+    border-radius: 8px;
     background: #f5f8fb;
     color: #344b65;
     font-size: 11px;
+
+    box-shadow: 0 8px 24px rgba(15, 35, 60, 0.18);
 }
+
 
 .app-updater-panel div {
     display: flex;
@@ -19,14 +29,17 @@
     gap: 3px;
 }
 
+
 .app-updater-panel strong {
     color: #263f5a;
     font-size: 12px;
 }
 
+
 .app-updater-panel span {
     color: #637487;
 }
+
 
 .app-updater-panel button {
     flex-shrink: 0;
@@ -43,20 +56,26 @@
     white-space: nowrap;
 }
 
+
 .app-updater-panel button:hover {
     background: #e7edf4;
 }
+
 
 .app-updater-panel button:disabled {
     cursor: wait;
     opacity: 0.6;
 }
 
+
 @media (max-width: 680px) {
     .app-updater-panel {
+        top: 12px;
+        right: 12px;
         align-items: stretch;
         flex-direction: column;
     }
+
 
     .app-updater-panel button {
         width: 100%;
