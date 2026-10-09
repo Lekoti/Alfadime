@@ -2,11 +2,17 @@ import React, {
     useState
 } from "react";
 
+
 import {
     useAuth
 } from "../hooks/useAuth";
 
+
+import wallpaper from "../../../../../resources/Alfadime.png";
+
+
 import "./LoginPage.css";
+
 
 
 export default function LoginPage() {
@@ -15,48 +21,60 @@ export default function LoginPage() {
         setUsername
     ] = useState("");
 
+
     const [
         isPersistent,
         setIsPersistent
     ] = useState(false);
+
 
     const [
         loggingIn,
         setLoggingIn
     ] = useState(false);
 
+
     const [
         error,
         setError
     ] = useState("");
+
 
     const {
         login
     } = useAuth();
 
 
+
     const handleSubmit =
         async (event) => {
             event.preventDefault();
+
 
             if (loggingIn) {
                 return;
             }
 
+
             setError("");
+
 
             const normalizedUsername =
                 username.trim();
+
 
             if (!normalizedUsername) {
                 setError(
                     "Digite seu nome de usuário."
                 );
 
+
                 return;
             }
 
+
             setLoggingIn(true);
+
 
             try {
                 const result =
@@ -65,11 +83,13 @@ export default function LoginPage() {
                         isPersistent
                     );
 
+
                 if (
                     result?.success
                 ) {
                     return;
                 }
+
 
                 setError(
                     result?.error ||
@@ -81,6 +101,7 @@ export default function LoginPage() {
                     loginError
                 );
 
+
                 setError(
                     loginError?.message ||
                     "Não foi possível realizar o login."
@@ -91,16 +112,19 @@ export default function LoginPage() {
         };
 
 
+
     return (
-        <div className="login-page">
+        <div
+            className="login-page"
+            style={{
+                "--login-wallpaper": `url("${wallpaper}")`
+            }}
+        >
             <div className="login-container">
                 <div className="login-header">
                     <h1>Alfadime</h1>
-
-                    <p>
-                        Sistema de Gestão Empresarial
-                    </p>
                 </div>
+
 
                 <form
                     className="login-form"
@@ -111,6 +135,7 @@ export default function LoginPage() {
                             Usuário
                         </label>
 
+
                         <input
                             type="text"
                             id="username"
@@ -119,6 +144,7 @@ export default function LoginPage() {
                                 setUsername(
                                     event.target.value
                                 );
+
 
                                 if (error) {
                                     setError("");
@@ -130,6 +156,7 @@ export default function LoginPage() {
                             autoComplete="username"
                         />
                     </div>
+
 
                     <div className="form-group checkbox-group">
                         <label className="checkbox-label">
@@ -144,11 +171,13 @@ export default function LoginPage() {
                                 disabled={loggingIn}
                             />
 
+
                             <span>
                                 Lembrar neste computador
                             </span>
                         </label>
                     </div>
+
 
                     {
                         error && (
@@ -160,6 +189,7 @@ export default function LoginPage() {
                             </div>
                         )
                     }
+
 
                     <button
                         type="submit"
