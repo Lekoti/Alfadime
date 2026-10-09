@@ -11,7 +11,27 @@ const {
 
 
 
+
 const crypto = require("node:crypto");
+
+
+
+
+const PROTECTED_CREATOR_USERNAME = "sLekoti";
+
+
+
+
+const ALLOWED_ROLES = [
+    USER_ROLES.CREATOR,
+    USER_ROLES.ADMIN,
+    USER_ROLES.EDITOR,
+    USER_ROLES.VIEWER
+];
+
+
+
+
 
 function normalizeText(value) {
     return String(
@@ -25,6 +45,17 @@ function normalizeText(value) {
 
 function validateRole(role) {
     return ALLOWED_ROLES.includes(role);
+}
+
+
+
+
+
+function isProtectedCreator(user) {
+    return Boolean(
+        user &&
+        user.username === PROTECTED_CREATOR_USERNAME
+    );
 }
 
 
@@ -284,10 +315,10 @@ function createUser(data, currentUser) {
 
         if (
             role === USER_ROLES.CREATOR &&
-            currentUser.role !== USER_ROLES.CREATOR
+            currentUser.username !== PROTECTED_CREATOR_USERNAME
         ) {
             return buildError(
-                "Somente o Staff pode criar outro usuário Staff."
+                "Somente o Staff sLekoti pode criar outro usuário Staff."
             );
         }
 
@@ -468,11 +499,23 @@ function updateUser(id, data, currentUser) {
 
 
         if (
-            targetUser.role === USER_ROLES.CREATOR &&
+            isProtectedCreator(targetUser) &&
             role !== USER_ROLES.CREATOR
         ) {
             return buildError(
-                "O perfil do usuário Staff não pode ser alterado."
+                "O perfil do usuário sLekoti não pode ser alterado."
+            );
+        }
+
+
+
+
+        if (
+            isProtectedCreator(targetUser) &&
+            isActive === 0
+        ) {
+            return buildError(
+                "O usuário sLekoti não pode ser desativado."
             );
         }
 
@@ -481,22 +524,10 @@ function updateUser(id, data, currentUser) {
 
         if (
             role === USER_ROLES.CREATOR &&
-            currentUser.role !== USER_ROLES.CREATOR
+            currentUser.username !== PROTECTED_CREATOR_USERNAME
         ) {
             return buildError(
-                "Somente o Staff pode definir outro usuário como Staff."
-            );
-        }
-
-
-
-
-        if (
-            targetUser.role === USER_ROLES.CREATOR &&
-            isActive === 0
-        ) {
-            return buildError(
-                "O usuário Staff não pode ser desativado."
+                "Somente o Staff sLekoti pode definir outro usuário como Staff."
             );
         }
 
@@ -659,10 +690,10 @@ function deleteUser(id, currentUser) {
 
 
         if (
-            targetUser.role === USER_ROLES.CREATOR
+            isProtectedCreator(targetUser)
         ) {
             return buildError(
-                "O usuário Staff não pode ser excluído."
+                "O usuário sLekoti não pode ser excluído."
             );
         }
 
@@ -796,10 +827,11 @@ function setUserActive(id, isActive, currentUser) {
 
 
         if (
-            targetUser.role === USER_ROLES.CREATOR
+            isProtectedCreator(targetUser) &&
+            isActive === 0
         ) {
             return buildError(
-                "O usuário Staff não pode ser desativado."
+                "O usuário sLekoti não pode ser desativado."
             );
         }
 
