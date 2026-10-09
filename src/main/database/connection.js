@@ -344,7 +344,7 @@ function initializeUsersDatabase() {
     );
 
 
-    usersDatabase.pragma("journal_mode = WAL");
+    usersDatabase.pragma("journal_mode = DELETE");
     usersDatabase.pragma("foreign_keys = ON");
 
 

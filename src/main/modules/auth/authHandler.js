@@ -1,22 +1,15 @@
 const crypto = require("node:crypto");
 const os = require("node:os");
 
-
-
-
 const {
     getUsersDatabase
 } = require("../../database/connection");
 
-
-
+const granularPermissionsHandler = require("./granularPermissionsHandler");
 
 const {
     USER_ROLES
 } = require("./userRoles.constants");
-
-
-
 
 class AuthHandler {
     constructor() {
@@ -24,44 +17,20 @@ class AuthHandler {
         this.computerId = this.generateComputerId();
     }
 
-
-
-
     getDatabase() {
         return getUsersDatabase();
     }
 
-
-
-
     generateComputerId() {
-        const hostname =
-            os.hostname();
+        const hostname = os.hostname();
+        const platform = os.platform();
+        const arch = os.arch();
 
-
-
-
-        const platform =
-            os.platform();
-
-
-
-
-        const arch =
-            os.arch();
-
-
-
-
-        const uniqueString =
-            [
-                hostname,
-                platform,
-                arch
-            ].join("-");
-
-
-
+        const uniqueString = [
+            hostname,
+            platform,
+            arch
+        ].join("-");
 
         return crypto
             .createHash("sha256")
@@ -70,116 +39,50 @@ class AuthHandler {
             .substring(0, 16);
     }
 
-
-
-
     getComputerName() {
         return os.hostname();
     }
 
-
-
-
     normalizeText(value) {
-        return String(
-            value || ""
-        ).trim();
+        return String(value || "").trim();
     }
 
-
-
-
     hashPassword(password) {
-        const salt =
-            crypto.randomBytes(16).toString("hex");
+        const salt = crypto.randomBytes(16).toString("hex");
 
-
-
-
-        const hash =
-            crypto
-                .scryptSync(
-                    password,
-                    salt,
-                    64
-                )
-                .toString("hex");
-
-
-
+        const hash = crypto
+            .scryptSync(password, salt, 64)
+            .toString("hex");
 
         return `${salt}:${hash}`;
     }
-
-
-
 
     verifyPassword(password, storedHash) {
         if (!storedHash) {
             return false;
         }
 
-
-
-
         const [
             salt,
             hash
         ] = String(storedHash).split(":");
 
-
         if (!salt || !hash) {
             return false;
         }
 
+        const candidate = crypto.scryptSync(password, salt, 64);
+        const stored = Buffer.from(hash, "hex");
 
-
-
-        const candidate =
-            crypto
-                .scryptSync(
-                    password,
-                    salt,
-                    64
-                );
-
-
-
-
-        const stored =
-            Buffer.from(
-                hash,
-                "hex"
-            );
-
-
-
-
-        if (
-            candidate.length !==
-            stored.length
-        ) {
+        if (candidate.length !== stored.length) {
             return false;
         }
 
-
-
-
-        return crypto.timingSafeEqual(
-            candidate,
-            stored
-        );
+        return crypto.timingSafeEqual(candidate, stored);
     }
 
-
-
-
     async getUserByUsername(username) {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         return database
             .prepare(`
@@ -191,28 +94,40 @@ class AuthHandler {
             .get(username);
     }
 
+    async getUserPermissions(user) {
+        if (
+            user.role === USER_ROLES.CREATOR ||
+            user.role === USER_ROLES.ADMIN
+        ) {
+            const result = await granularPermissionsHandler.getPermissionsForRole(
+                user.role
+            );
 
+            if (result?.success) {
+                return result.data.modules.map(
+                    (module) => ({
+                        ...module,
+                        can_view: true,
+                        can_edit: true,
+                        can_delete: true,
+                        can_approve: true,
+                        can_export: true,
+                        can_sync: true
+                    })
+                );
+            }
+        }
 
+        const result = await granularPermissionsHandler.getPermissionsForUser(
+            user.id
+        );
 
-    async getUserPermissions(role) {
-        const database =
-            this.getDatabase();
+        if (!result?.success) {
+            return [];
+        }
 
-
-
-
-        return database
-            .prepare(`
-                SELECT *
-                FROM module_permissions
-                WHERE role = ?
-                ORDER BY module_key
-            `)
-            .all(role);
+        return result.data.modules;
     }
-
-
-
 
     async register({
         username,
@@ -220,23 +135,9 @@ class AuthHandler {
         password
     }) {
         try {
-            const normalizedUsername =
-                this.normalizeText(username);
-
-
-
-
-            const normalizedDisplayName =
-                this.normalizeText(displayName);
-
-
-
-
-            const normalizedPassword =
-                String(password || "");
-
-
-
+            const normalizedUsername = this.normalizeText(username);
+            const normalizedDisplayName = this.normalizeText(displayName);
+            const normalizedPassword = String(password || "");
 
             if (!normalizedUsername) {
                 return {
@@ -245,18 +146,12 @@ class AuthHandler {
                 };
             }
 
-
-
-
             if (!normalizedDisplayName) {
                 return {
                     success: false,
                     error: "Informe o nome de exibição."
                 };
             }
-
-
-
 
             if (normalizedPassword.length < 6) {
                 return {
@@ -265,16 +160,7 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const existingUser =
-                await this.getUserByUsername(
-                    normalizedUsername
-                );
-
-
-
+            const existingUser = await this.getUserByUsername(normalizedUsername);
 
             if (existingUser) {
                 return {
@@ -283,20 +169,8 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const database =
-                this.getDatabase();
-
-
-
-
-            const now =
-                new Date().toISOString();
-
-
-
+            const database = this.getDatabase();
+            const now = new Date().toISOString();
 
             database
                 .prepare(`
@@ -316,15 +190,10 @@ class AuthHandler {
                     normalizedDisplayName,
                     USER_ROLES.VIEWER,
                     1,
-                    this.hashPassword(
-                        normalizedPassword
-                    ),
+                    this.hashPassword(normalizedPassword),
                     now,
                     now
                 );
-
-
-
 
             return {
                 success: true,
@@ -333,41 +202,18 @@ class AuthHandler {
                 }
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao criar conta:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao criar conta:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível criar a conta."
+                error: error?.message || "Não foi possível criar a conta."
             };
         }
     }
 
-
-
-
-    async createOrUpdateSession(
-        userId,
-        isPersistent
-    ) {
-        const database =
-            this.getDatabase();
-
-
-
-
-        const now =
-            new Date().toISOString();
-
-
-
+    async createOrUpdateSession(userId, isPersistent) {
+        const database = this.getDatabase();
+        const now = new Date().toISOString();
 
         database
             .prepare(`
@@ -395,9 +241,6 @@ class AuthHandler {
                 now
             );
 
-
-
-
         return database
             .prepare(`
                 SELECT *
@@ -406,21 +249,11 @@ class AuthHandler {
                  AND computer_id = ?
                 LIMIT 1
             `)
-            .get(
-                userId,
-                this.computerId
-            );
+            .get(userId, this.computerId);
     }
 
-
-
-
     async updateUserLastLogin(userId) {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         database
             .prepare(`
@@ -436,15 +269,8 @@ class AuthHandler {
             );
     }
 
-
-
-
     async updateLastAccess(userId) {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         database
             .prepare(`
@@ -460,15 +286,8 @@ class AuthHandler {
             );
     }
 
-
-
-
     async getSessionByComputer() {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         return database
             .prepare(`
@@ -487,13 +306,8 @@ class AuthHandler {
                 ORDER BY us.last_access_at DESC
                 LIMIT 1
             `)
-            .get(
-                this.computerId
-            );
+            .get(this.computerId);
     }
-
-
-
 
     buildSession(user, permissions) {
         return {
@@ -509,26 +323,10 @@ class AuthHandler {
         };
     }
 
-
-
-
-    async login(
-        username,
-        password,
-        isPersistent = false
-    ) {
+    async login(username, password, isPersistent = false) {
         try {
-            const normalizedUsername =
-                this.normalizeText(username);
-
-
-
-
-            const normalizedPassword =
-                String(password || "");
-
-
-
+            const normalizedUsername = this.normalizeText(username);
+            const normalizedPassword = String(password || "");
 
             if (!normalizedUsername) {
                 return {
@@ -537,9 +335,6 @@ class AuthHandler {
                 };
             }
 
-
-
-
             if (!normalizedPassword) {
                 return {
                     success: false,
@@ -547,16 +342,7 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const user =
-                await this.getUserByUsername(
-                    normalizedUsername
-                );
-
-
-
+            const user = await this.getUserByUsername(normalizedUsername);
 
             if (!user || !user.is_active) {
                 return {
@@ -564,9 +350,6 @@ class AuthHandler {
                     error: "Usuário ou senha inválidos."
                 };
             }
-
-
-
 
             if (!user.password_hash) {
                 if (normalizedPassword.length < 6) {
@@ -576,22 +359,8 @@ class AuthHandler {
                     };
                 }
 
-
-
-
-                const database =
-                    this.getDatabase();
-
-
-
-
-                const newPasswordHash =
-                    this.hashPassword(
-                        normalizedPassword
-                    );
-
-
-
+                const database = this.getDatabase();
+                const newPasswordHash = this.hashPassword(normalizedPassword);
 
                 database
                     .prepare(`
@@ -606,24 +375,13 @@ class AuthHandler {
                         user.id
                     );
 
-
-
-
-                user.password_hash =
-                    newPasswordHash;
+                user.password_hash = newPasswordHash;
             }
 
-
-
-
-            const passwordIsValid =
-                this.verifyPassword(
-                    normalizedPassword,
-                    user.password_hash
-                );
-
-
-
+            const passwordIsValid = this.verifyPassword(
+                normalizedPassword,
+                user.password_hash
+            );
 
             if (!passwordIsValid) {
                 return {
@@ -632,81 +390,33 @@ class AuthHandler {
                 };
             }
 
+            const permissions = await this.getUserPermissions(user);
 
+            await this.createOrUpdateSession(user.id, Boolean(isPersistent));
+            await this.updateUserLastLogin(user.id);
 
+            this.currentSession = this.buildSession(user, permissions);
 
-            const permissions =
-                await this.getUserPermissions(
-                    user.role
-                );
-
-
-
-
-            await this.createOrUpdateSession(
-                user.id,
-                Boolean(isPersistent)
-            );
-
-
-
-
-            await this.updateUserLastLogin(
-                user.id
-            );
-
-
-
-
-            this.currentSession =
-                this.buildSession(
-                    user,
-                    permissions
-                );
-
-
-
-
-            await this.updateLastAccess(
-                user.id
-            );
-
-
-
+            await this.updateLastAccess(user.id);
 
             return {
                 success: true,
                 data: this.currentSession
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao fazer login:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao fazer login:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível realizar o login."
+                error: error?.message || "Não foi possível realizar o login."
             };
         }
     }
 
-
-
-
     async logout() {
         try {
             if (this.currentSession?.user?.id) {
-                const database =
-                    this.getDatabase();
-
-
-
+                const database = this.getDatabase();
 
                 database
                     .prepare(`
@@ -720,47 +430,25 @@ class AuthHandler {
                     );
             }
 
-
-
-
             this.currentSession = null;
-
-
-
 
             return {
                 success: true
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao sair:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao sair:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível encerrar a sessão."
+                error: error?.message || "Não foi possível encerrar a sessão."
             };
         }
     }
 
-
-
-
     async getCurrentSession() {
         try {
             if (this.currentSession) {
-                await this.updateLastAccess(
-                    this.currentSession.user.id
-                );
-
-
-
+                await this.updateLastAccess(this.currentSession.user.id);
 
                 return {
                     success: true,
@@ -768,14 +456,7 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const session =
-                await this.getSessionByComputer();
-
-
-
+            const session = await this.getSessionByComputer();
 
             if (!session) {
                 return {
@@ -784,158 +465,86 @@ class AuthHandler {
                 };
             }
 
+            const permissions = await this.getUserPermissions({
+                id: session.user_id,
+                role: session.role
+            });
 
-
-
-            const permissions =
-                await this.getUserPermissions(
-                    session.role
-                );
-
-
-
-
-            this.currentSession =
-                this.buildSession(
-                    {
-                        id: session.user_id,
-                        username: session.username,
-                        display_name: session.display_name,
-                        role: session.role,
-                        is_active: session.is_active
-                    },
-                    permissions
-                );
-
-
-
-
-            await this.updateLastAccess(
-                session.user_id
+            this.currentSession = this.buildSession(
+                {
+                    id: session.user_id,
+                    username: session.username,
+                    display_name: session.display_name,
+                    role: session.role,
+                    is_active: session.is_active
+                },
+                permissions
             );
 
-
-
+            await this.updateLastAccess(session.user_id);
 
             return {
                 success: true,
                 data: this.currentSession
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao recuperar sessão:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao recuperar sessão:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível recuperar a sessão."
+                error: error?.message || "Não foi possível recuperar a sessão."
             };
         }
     }
 
-
-
-
     async validateSession() {
         try {
-            const result =
-                await this.getCurrentSession();
+            const result = await this.getCurrentSession();
 
-
-
-
-            if (
-                !result.success ||
-                !result.data
-            ) {
+            if (!result.success || !result.data) {
                 return {
                     success: false,
                     error: "Nenhuma sessão ativa."
                 };
             }
 
-
-
-
             return result;
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao validar sessão:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao validar sessão:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Sessão inválida."
+                error: error?.message || "Sessão inválida."
             };
         }
     }
 
-
-
-
     async updateLastAccessHandler() {
         try {
-            if (
-                this.currentSession?.user?.id
-            ) {
-                await this.updateLastAccess(
-                    this.currentSession.user.id
-                );
+            if (this.currentSession?.user?.id) {
+                await this.updateLastAccess(this.currentSession.user.id);
             }
-
-
-
 
             return {
                 success: true
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao atualizar acesso:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao atualizar acesso:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível atualizar o acesso."
+                error: error?.message || "Não foi possível atualizar o acesso."
             };
         }
     }
 
-
-
-
     getAuthenticatedUser() {
         return this.currentSession?.user || null;
     }
-
-
-
 
     getComputerId() {
         return this.computerId;
     }
 }
 
-
-
-
-module.exports =
-    new AuthHandler();
+module.exports = new AuthHandler();

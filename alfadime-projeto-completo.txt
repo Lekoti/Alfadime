@@ -1,7 +1,7 @@
 PROJETO ALFADIME - INVENTÃRIO COMPLETO
-Gerado em: 2026-10-09 14:53:23
+Gerado em: 2026-10-09 17:42:39
 Raiz: C:\Users\USER\Alfadime
-Arquivos incluÃ­dos: 260
+Arquivos incluÃ­dos: 265
 
 PASTAS E ARQUIVOS
 ==================
@@ -48,6 +48,7 @@ PASTAS E ARQUIVOS
 [PASTA] backup-price-pending-20261005-181122\src\renderer\modules\price-pending\constants
 [ARQUIVO] backup-price-pending-20261005-181122\src\renderer\modules\price-pending\constants\price-pending.constants.js | 4144 bytes
 [ARQUIVO] check-db.js | 467 bytes
+[ARQUIVO] check-viewer-db.js | 812 bytes
 [ARQUIVO] como gerar txt.txt | 74 bytes
 [PASTA] database
 [PASTA] database\migrations
@@ -92,8 +93,13 @@ PASTAS E ARQUIVOS
 [ARQUIVO] database\renderer\index.html | 390 bytes
 [PASTA] database\seeds
 [ARQUIVO] database\seeds\price-pending-seed.js | 5885 bytes
+[PASTA] database\user-migrations
+[ARQUIVO] database\user-migrations\030-create-users-and-permissions.sql | 4849 bytes
+[ARQUIVO] database\user-migrations\031-add-user-password.sql | 1064 bytes
+[ARQUIVO] database\user-migrations\031-create-granular-permissions.sql | 15202 bytes
+[ARQUIVO] database\user-migrations\032-fix-viewer-module-permissions.sql | 1329 bytes
 [ARQUIVO] gerar-inventario-alfadime.ps1 | 4515 bytes
-[ARQUIVO] package.json | 4611 bytes
+[ARQUIVO] package.json | 4263 bytes
 [ARQUIVO] package-lock.json | 275144 bytes
 [ARQUIVO] PurchasesPage.jsx | 11351 bytes
 [PASTA] resources
@@ -107,19 +113,19 @@ PASTAS E ARQUIVOS
 [ARQUIVO] src\main\config\app.config.js | 3772 bytes
 [ARQUIVO] src\main\config\email.config.js | 629 bytes
 [PASTA] src\main\database
-[ARQUIVO] src\main\database\connection.js | 5091 bytes
+[ARQUIVO] src\main\database\connection.js | 6739 bytes
 [PASTA] src\main\ipc
 [ARQUIVO] src\main\ipc\export.ipc.js | 2087 bytes
 [ARQUIVO] src\main\main.js | 15354 bytes
 [PASTA] src\main\modules
 [PASTA] src\main\modules\auth
 [ARQUIVO] src\main\modules\auth\auth.ipc.js | 1401 bytes
-[ARQUIVO] src\main\modules\auth\authHandler.js | 17589 bytes
+[ARQUIVO] src\main\modules\auth\authHandler.js | 15543 bytes
 [ARQUIVO] src\main\modules\auth\granularPermissions.ipc.js | 1754 bytes
-[ARQUIVO] src\main\modules\auth\granularPermissionsHandler.js | 23637 bytes
+[ARQUIVO] src\main\modules\auth\granularPermissionsHandler.js | 23712 bytes
 [ARQUIVO] src\main\modules\auth\userRoles.constants.js | 182 bytes
-[ARQUIVO] src\main\modules\auth\users.ipc.js | 1330 bytes
-[ARQUIVO] src\main\modules\auth\usersHandler.js | 11107 bytes
+[ARQUIVO] src\main\modules\auth\users.ipc.js | 1564 bytes
+[ARQUIVO] src\main\modules\auth\usersHandler.js | 14844 bytes
 [PASTA] src\main\modules\email-dispatch
 [ARQUIVO] src\main\modules\email-dispatch\email-dispatch.config.js | 437 bytes
 [ARQUIVO] src\main\modules\email-dispatch\email-dispatch.constants.js | 646 bytes
@@ -200,7 +206,7 @@ PASTAS E ARQUIVOS
 [ARQUIVO] src\main\utils\laboratory-filter.utils.js | 1789 bytes
 [ARQUIVO] src\main\utils\validation.utils.js | 875 bytes
 [PASTA] src\preload
-[ARQUIVO] src\preload\preload.js | 26978 bytes
+[ARQUIVO] src\preload\preload.js | 27256 bytes
 [PASTA] src\renderer
 [ARQUIVO] src\renderer\App.jsx | 7373 bytes
 [PASTA] src\renderer\components
@@ -221,7 +227,7 @@ PASTAS E ARQUIVOS
 [PASTA] src\renderer\modules\auth\components
 [ARQUIVO] src\renderer\modules\auth\components\PermissionRoute.jsx | 693 bytes
 [PASTA] src\renderer\modules\auth\constants
-[ARQUIVO] src\renderer\modules\auth\constants\userRoles.js | 728 bytes
+[ARQUIVO] src\renderer\modules\auth\constants\userRoles.js | 730 bytes
 [PASTA] src\renderer\modules\auth\context
 [ARQUIVO] src\renderer\modules\auth\context\AuthContext.jsx | 9614 bytes
 [PASTA] src\renderer\modules\auth\hooks
@@ -243,7 +249,7 @@ PASTAS E ARQUIVOS
 [ARQUIVO] src\renderer\modules\email-dispatch\services\emailApi.js | 3884 bytes
 [PASTA] src\renderer\modules\home
 [PASTA] src\renderer\modules\home\pages
-[ARQUIVO] src\renderer\modules\home\pages\HomePage.jsx | 3089 bytes
+[ARQUIVO] src\renderer\modules\home\pages\HomePage.jsx | 4604 bytes
 [PASTA] src\renderer\modules\home\styles
 [ARQUIVO] src\renderer\modules\home\styles\home.css | 2516 bytes
 [PASTA] src\renderer\modules\industry-contacts
@@ -357,14 +363,14 @@ PASTAS E ARQUIVOS
 [ARQUIVO] src\renderer\modules\settings\pages\SettingsContactsPage.jsx | 9185 bytes
 [ARQUIVO] src\renderer\modules\settings\pages\SettingsGeneralPage.jsx | 3097 bytes
 [ARQUIVO] src\renderer\modules\settings\pages\SettingsLayout.jsx | 3136 bytes
-[ARQUIVO] src\renderer\modules\settings\pages\SettingsPermissionsPage.jsx | 31604 bytes
+[ARQUIVO] src\renderer\modules\settings\pages\SettingsPermissionsPage.jsx | 34045 bytes
 [ARQUIVO] src\renderer\modules\settings\pages\SettingsPricePendingPage.jsx | 10862 bytes
-[ARQUIVO] src\renderer\modules\settings\pages\SettingsUsersPage.jsx | 19020 bytes
+[ARQUIVO] src\renderer\modules\settings\pages\SettingsUsersPage.jsx | 29005 bytes
 [PASTA] src\renderer\modules\settings\services
-[ARQUIVO] src\renderer\modules\settings\services\settingsUsersService.js | 749 bytes
+[ARQUIVO] src\renderer\modules\settings\services\settingsUsersService.js | 841 bytes
 [PASTA] src\renderer\modules\settings\styles
 [ARQUIVO] src\renderer\modules\settings\styles\settings.css | 5596 bytes
-[ARQUIVO] src\renderer\modules\settings\styles\settings-users.css | 4385 bytes
+[ARQUIVO] src\renderer\modules\settings\styles\settings-users.css | 6552 bytes
 [PASTA] src\renderer\services
 [ARQUIVO] src\renderer\services\moduleState.service.js | 1666 bytes
 [PASTA] src\renderer\shared
@@ -6826,6 +6832,40 @@ console.log(
 db.close();
 
 ----------------------------------------------------------------
+ARQUIVO: check-viewer-db.js
+CAMINHO: C:\Users\USER\Alfadime\check-viewer-db.js
+TAMANHO: 812 bytes
+----------------------------------------------------------------
+const Database = require("better-sqlite3");
+
+const db = new Database(
+    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\USUARIOS\\alfadime-users.db",
+    { readonly: true }
+);
+
+console.log("USUARIOS:");
+console.log(
+    db.prepare("SELECT id, username, role, is_active FROM users").all()
+);
+
+console.log("MIGRACOES:");
+console.log(
+    db.prepare("SELECT filename FROM schema_migrations ORDER BY filename").all()
+);
+
+console.log("PERMISSOES VIEWER:");
+console.log(
+    db.prepare("SELECT module_key, can_view FROM role_module_permissions WHERE role = 'viewer' ORDER BY module_key").all()
+);
+
+console.log("OVERRIDES POR USUARIO:");
+console.log(
+    db.prepare("SELECT user_id, module_key, can_view FROM user_module_permissions ORDER BY user_id, module_key").all()
+);
+
+db.close();
+
+----------------------------------------------------------------
 ARQUIVO: como gerar txt.txt
 CAMINHO: C:\Users\USER\Alfadime\como gerar txt.txt
 TAMANHO: 74 bytes
@@ -9041,6 +9081,603 @@ module.exports = {
 };
 
 ----------------------------------------------------------------
+ARQUIVO: database\user-migrations\030-create-users-and-permissions.sql
+CAMINHO: C:\Users\USER\Alfadime\database\user-migrations\030-create-users-and-permissions.sql
+TAMANHO: 4849 bytes
+----------------------------------------------------------------
+-- Migration 030: Tabela de usuários, sessões e permissões
+-- Alfadime User Management System
+
+-- Tabela principal de usuários
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'pending',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT,
+    metadata TEXT
+);
+
+-- Tabela de sessões persistentes por computador
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    computer_id TEXT NOT NULL,
+    computer_name TEXT,
+    is_persistent INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_access_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, computer_id)
+);
+
+-- Tabela de permissões por módulo e role
+CREATE TABLE IF NOT EXISTS module_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role TEXT NOT NULL,
+    module_key TEXT NOT NULL,
+    can_view INTEGER NOT NULL DEFAULT 0,
+    can_create INTEGER NOT NULL DEFAULT 0,
+    can_edit INTEGER NOT NULL DEFAULT 0,
+    can_delete INTEGER NOT NULL DEFAULT 0,
+    can_approve INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(role, module_key)
+);
+
+-- Inserir usuário Criador padrão (sLekoti)
+INSERT OR IGNORE INTO users (id, username, display_name, role, is_active) 
+VALUES (1, 'sLekoti', 'sLekoti (Criador)', 'creator', 1);
+
+-- Permissões para Creator (acesso total)
+INSERT OR IGNORE INTO module_permissions (role, module_key, can_view, can_create, can_edit, can_delete, can_approve) VALUES
+('creator', 'home', 1, 1, 1, 1, 1),
+('creator', 'products', 1, 1, 1, 1, 1),
+('creator', 'purchases', 1, 1, 1, 1, 1),
+('creator', 'price-pending', 1, 1, 1, 1, 1),
+('creator', 'product-corrections', 1, 1, 1, 1, 1),
+('creator', 'product-audit', 1, 1, 1, 1, 1),
+('creator', 'industry-contacts', 1, 1, 1, 1, 1),
+('creator', 'email-dispatch', 1, 1, 1, 1, 1),
+('creator', 'notifications', 1, 1, 1, 1, 1),
+('creator', 'settings', 1, 1, 1, 1, 1);
+
+-- Permissões para Admin
+INSERT OR IGNORE INTO module_permissions (role, module_key, can_view, can_create, can_edit, can_delete, can_approve) VALUES
+('admin', 'home', 1, 1, 1, 1, 1),
+('admin', 'products', 1, 1, 1, 1, 1),
+('admin', 'purchases', 1, 1, 1, 1, 1),
+('admin', 'price-pending', 1, 1, 1, 1, 1),
+('admin', 'product-corrections', 1, 1, 1, 1, 1),
+('admin', 'product-audit', 1, 1, 1, 1, 1),
+('admin', 'industry-contacts', 1, 1, 1, 1, 1),
+('admin', 'email-dispatch', 1, 1, 1, 1, 1),
+('admin', 'notifications', 1, 1, 1, 1, 1),
+('admin', 'settings', 1, 1, 1, 0, 1);
+
+-- Permissões para Editor
+INSERT OR IGNORE INTO module_permissions (role, module_key, can_view, can_create, can_edit, can_delete, can_approve) VALUES
+('editor', 'home', 1, 1, 1, 0, 0),
+('editor', 'products', 1, 1, 1, 0, 0),
+('editor', 'purchases', 1, 1, 1, 0, 0),
+('editor', 'price-pending', 1, 1, 1, 0, 0),
+('editor', 'product-corrections', 1, 1, 1, 0, 0),
+('editor', 'product-audit', 1, 0, 1, 0, 0),
+('editor', 'industry-contacts', 1, 1, 1, 0, 0),
+('editor', 'email-dispatch', 1, 0, 1, 0, 0),
+('editor', 'notifications', 1, 0, 0, 0, 0),
+('editor', 'settings', 1, 0, 0, 0, 0);
+
+-- Permissões para Viewer
+INSERT OR IGNORE INTO module_permissions (role, module_key, can_view, can_create, can_edit, can_delete, can_approve) VALUES
+('viewer', 'home', 1, 0, 0, 0, 0),
+('viewer', 'products', 1, 0, 0, 0, 0),
+('viewer', 'purchases', 1, 0, 0, 0, 0),
+('viewer', 'price-pending', 1, 0, 0, 0, 0),
+('viewer', 'product-corrections', 1, 0, 0, 0, 0),
+('viewer', 'product-audit', 1, 0, 0, 0, 0),
+('viewer', 'industry-contacts', 1, 0, 0, 0, 0),
+('viewer', 'email-dispatch', 1, 0, 0, 0, 0),
+('viewer', 'notifications', 1, 0, 0, 0, 0),
+('viewer', 'settings', 1, 0, 0, 0, 0);
+
+-- Permissões para Pending
+INSERT OR IGNORE INTO module_permissions (role, module_key, can_view, can_create, can_edit, can_delete, can_approve) VALUES
+('pending', 'home', 1, 0, 0, 0, 0),
+('pending', 'notifications', 1, 0, 0, 0, 0);
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_computer ON user_sessions(computer_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_module_permissions_role ON module_permissions(role);
+CREATE INDEX IF NOT EXISTS idx_module_permissions_module ON module_permissions(module_key);
+
+----------------------------------------------------------------
+ARQUIVO: database\user-migrations\031-add-user-password.sql
+CAMINHO: C:\Users\USER\Alfadime\database\user-migrations\031-add-user-password.sql
+TAMANHO: 1064 bytes
+----------------------------------------------------------------
+-- Migration 031: Senha dos usuários e permissões de visualização para Pending
+
+ALTER TABLE users ADD COLUMN password_hash TEXT;
+
+UPDATE users
+SET password_hash = '8f1c9d2a7b6e4f3a5c8d9e0b1a2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c:9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b'
+WHERE username = 'sLekoti'
+  AND password_hash IS NULL;
+
+DELETE FROM module_permissions
+WHERE role = 'pending';
+
+INSERT INTO module_permissions (
+    role,
+    module_key,
+    can_view,
+    can_create,
+    can_edit,
+    can_delete,
+    can_approve
+)
+VALUES
+    ('pending', 'home', 1, 0, 0, 0, 0),
+    ('pending', 'products', 1, 0, 0, 0, 0),
+    ('pending', 'purchases', 1, 0, 0, 0, 0),
+    ('pending', 'price-pending', 1, 0, 0, 0, 0),
+    ('pending', 'product-corrections', 1, 0, 0, 0, 0),
+    ('pending', 'product-audit', 1, 0, 0, 0, 0),
+    ('pending', 'industry-contacts', 1, 0, 0, 0, 0),
+    ('pending', 'email-dispatch', 1, 0, 0, 0, 0),
+    ('pending', 'notifications', 1, 0, 0, 0, 0),
+    ('pending', 'settings', 1, 0, 0, 0, 0);
+
+----------------------------------------------------------------
+ARQUIVO: database\user-migrations\031-create-granular-permissions.sql
+CAMINHO: C:\Users\USER\Alfadime\database\user-migrations\031-create-granular-permissions.sql
+TAMANHO: 15202 bytes
+----------------------------------------------------------------
+-- Migration 031: Permissões granulares por módulo, função, coluna e ação
+-- Alfadime Granular Permissions System
+
+
+-- Catálogo de módulos controláveis
+CREATE TABLE IF NOT EXISTS permission_modules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    module_key TEXT UNIQUE NOT NULL,
+    module_label TEXT NOT NULL,
+    route TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+
+-- Catálogo de funções, colunas e ações por módulo
+CREATE TABLE IF NOT EXISTS permission_functions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    module_key TEXT NOT NULL,
+    function_key TEXT NOT NULL,
+    function_label TEXT NOT NULL,
+    function_type TEXT NOT NULL DEFAULT 'action',
+    parent_key TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(module_key, function_key)
+);
+
+
+-- Permissões padrão por perfil: acesso ao módulo
+CREATE TABLE IF NOT EXISTS role_module_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role TEXT NOT NULL,
+    module_key TEXT NOT NULL,
+    can_view INTEGER NOT NULL DEFAULT 0,
+    can_edit INTEGER NOT NULL DEFAULT 0,
+    can_delete INTEGER NOT NULL DEFAULT 0,
+    can_approve INTEGER NOT NULL DEFAULT 0,
+    can_export INTEGER NOT NULL DEFAULT 0,
+    can_sync INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(role, module_key)
+);
+
+
+-- Permissões padrão por perfil: função, coluna ou ação
+CREATE TABLE IF NOT EXISTS role_function_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role TEXT NOT NULL,
+    module_key TEXT NOT NULL,
+    function_key TEXT NOT NULL,
+    can_view INTEGER NOT NULL DEFAULT 0,
+    can_edit INTEGER NOT NULL DEFAULT 0,
+    can_execute INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(role, module_key, function_key)
+);
+
+
+-- Permissão individual por usuário: acesso ao módulo
+CREATE TABLE IF NOT EXISTS user_module_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    module_key TEXT NOT NULL,
+    can_view INTEGER NOT NULL DEFAULT 0,
+    can_edit INTEGER NOT NULL DEFAULT 0,
+    can_delete INTEGER NOT NULL DEFAULT 0,
+    can_approve INTEGER NOT NULL DEFAULT 0,
+    can_export INTEGER NOT NULL DEFAULT 0,
+    can_sync INTEGER NOT NULL DEFAULT 0,
+    override_role INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, module_key)
+);
+
+
+-- Permissão individual por usuário: função, coluna ou ação
+CREATE TABLE IF NOT EXISTS user_function_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    module_key TEXT NOT NULL,
+    function_key TEXT NOT NULL,
+    can_view INTEGER NOT NULL DEFAULT 0,
+    can_edit INTEGER NOT NULL DEFAULT 0,
+    can_execute INTEGER NOT NULL DEFAULT 0,
+    override_role INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(user_id, module_key, function_key)
+);
+
+
+-- Registrar módulos controláveis
+INSERT OR IGNORE INTO permission_modules 
+    (module_key, module_label, route, is_active)
+VALUES
+    ('home', 'Início', '/', 1),
+    ('products', 'Produtos', '/products', 1),
+    ('product-audit', 'Auditoria de Produtos', '/product-audit', 1),
+    ('product-corrections', 'Correções de Produtos', '/product-corrections', 1),
+    ('price-pending', 'Preços e Pendências', '/price-pending', 1),
+    ('purchases', 'Compras', '/purchases', 1),
+    ('industry-contacts', 'Contatos', '/industry-contacts', 1),
+    ('notifications', 'Notificações', '/notifications', 1),
+    ('email', 'E-mail', '/email', 1),
+    ('settings', 'Configurações', '/settings', 1);
+
+
+-- Registrar funções do módulo Preços e Pendências
+INSERT OR IGNORE INTO permission_functions
+    (module_key, function_key, function_label, function_type, parent_key, is_active)
+VALUES
+    ('price-pending', 'view_table', 'Ver tabela', 'action', NULL, 1),
+    ('price-pending', 'search_laboratory', 'Buscar laboratório', 'action', NULL, 1),
+    ('price-pending', 'filter_updated', 'Filtrar atualizados', 'action', NULL, 1),
+    ('price-pending', 'filter_outdated', 'Filtrar desatualizados', 'action', NULL, 1),
+    ('price-pending', 'filter_branch', 'Filtrar por filial', 'action', NULL, 1),
+    ('price-pending', 'add_laboratory', 'Adicionar laboratório', 'action', NULL, 1),
+    ('price-pending', 'edit_laboratory', 'Editar laboratório', 'action', NULL, 1),
+    ('price-pending', 'edit_observation', 'Editar observação', 'action', NULL, 1),
+    ('price-pending', 'edit_values', 'Editar valores por filial', 'action', NULL, 1),
+    ('price-pending', 'remove_laboratory', 'Remover laboratório', 'action', NULL, 1),
+    ('price-pending', 'refresh_data', 'Atualizar planilhas', 'action', NULL, 1),
+    ('price-pending', 'export_excel', 'Exportar Excel', 'action', NULL, 1),
+    ('price-pending', 'view_ignored_files', 'Ver arquivos ignorados', 'action', NULL, 1),
+
+
+    ('price-pending', 'industry_global_code', 'Código Global', 'column', NULL, 1),
+    ('price-pending', 'laboratory', 'Laboratório', 'column', NULL, 1),
+    ('price-pending', 'observation', 'Observação', 'column', NULL, 1),
+
+
+    ('price-pending', 'env_precos', 'Preços Recebidos', 'column_group', NULL, 1),
+    ('price-pending', 'env_precos_dpr', 'Preços Recebidos - DPR', 'column', 'env_precos', 1),
+    ('price-pending', 'env_precos_ams', 'Preços Recebidos - AMS', 'column', 'env_precos', 1),
+    ('price-pending', 'env_precos_dmt', 'Preços Recebidos - DMT', 'column', 'env_precos', 1),
+    ('price-pending', 'env_precos_dms', 'Preços Recebidos - DMS', 'column', 'env_precos', 1),
+    ('price-pending', 'env_precos_dsc', 'Preços Recebidos - DSC', 'column', 'env_precos', 1),
+
+
+    ('price-pending', 'env_pend', 'Pendências Recebidas', 'column_group', NULL, 1),
+    ('price-pending', 'env_pend_dpr', 'Pendências Recebidas - DPR', 'column', 'env_pend', 1),
+    ('price-pending', 'env_pend_ams', 'Pendências Recebidas - AMS', 'column', 'env_pend', 1),
+    ('price-pending', 'env_pend_dmt', 'Pendências Recebidas - DMT', 'column', 'env_pend', 1),
+    ('price-pending', 'env_pend_dms', 'Pendências Recebidas - DMS', 'column', 'env_pend', 1),
+    ('price-pending', 'env_pend_dsc', 'Pendências Recebidas - DSC', 'column', 'env_pend', 1),
+
+
+    ('price-pending', 'precos_ok', 'Preços Atualizados', 'column_group', NULL, 1),
+    ('price-pending', 'precos_ok_dpr', 'Preços Atualizados - DPR', 'column', 'precos_ok', 1),
+    ('price-pending', 'precos_ok_ams', 'Preços Atualizados - AMS', 'column', 'precos_ok', 1),
+    ('price-pending', 'precos_ok_dmt', 'Preços Atualizados - DMT', 'column', 'precos_ok', 1),
+    ('price-pending', 'precos_ok_dms', 'Preços Atualizados - DMS', 'column', 'precos_ok', 1),
+    ('price-pending', 'precos_ok_dsc', 'Preços Atualizados - DSC', 'column', 'precos_ok', 1),
+
+
+    ('price-pending', 'pendencias_ok', 'Pendências Atualizadas', 'column_group', NULL, 1),
+    ('price-pending', 'pendencias_ok_dpr', 'Pendências Atualizadas - DPR', 'column', 'pendencias_ok', 1),
+    ('price-pending', 'pendencias_ok_ams', 'Pendências Atualizadas - AMS', 'column', 'pendencias_ok', 1),
+    ('price-pending', 'pendencias_ok_dmt', 'Pendências Atualizadas - DMT', 'column', 'pendencias_ok', 1),
+    ('price-pending', 'pendencias_ok_dms', 'Pendências Atualizadas - DMS', 'column', 'pendencias_ok', 1),
+    ('price-pending', 'pendencias_ok_dsc', 'Pendências Atualizadas - DSC', 'column', 'pendencias_ok', 1);
+
+
+-- Permissões padrão do Criador
+INSERT OR IGNORE INTO role_module_permissions
+    (role, module_key, can_view, can_edit, can_delete, can_approve, can_export, can_sync)
+VALUES
+    ('creator', 'home', 1, 1, 1, 1, 1, 1),
+    ('creator', 'products', 1, 1, 1, 1, 1, 1),
+    ('creator', 'product-audit', 1, 1, 1, 1, 1, 1),
+    ('creator', 'product-corrections', 1, 1, 1, 1, 1, 1),
+    ('creator', 'price-pending', 1, 1, 1, 1, 1, 1),
+    ('creator', 'purchases', 1, 1, 1, 1, 1, 1),
+    ('creator', 'industry-contacts', 1, 1, 1, 1, 1, 1),
+    ('creator', 'notifications', 1, 1, 1, 1, 1, 1),
+    ('creator', 'email', 1, 1, 1, 1, 1, 1),
+    ('creator', 'settings', 1, 1, 1, 1, 1, 1);
+
+
+-- Permissões padrão do Administrador
+INSERT OR IGNORE INTO role_module_permissions
+    (role, module_key, can_view, can_edit, can_delete, can_approve, can_export, can_sync)
+VALUES
+    ('admin', 'home', 1, 1, 1, 1, 1, 1),
+    ('admin', 'products', 1, 1, 1, 1, 1, 1),
+    ('admin', 'product-audit', 1, 1, 1, 1, 1, 1),
+    ('admin', 'product-corrections', 1, 1, 1, 1, 1, 1),
+    ('admin', 'price-pending', 1, 1, 1, 1, 1, 1),
+    ('admin', 'purchases', 1, 1, 1, 1, 1, 1),
+    ('admin', 'industry-contacts', 1, 1, 1, 1, 1, 1),
+    ('admin', 'notifications', 1, 1, 1, 1, 1, 1),
+    ('admin', 'email', 1, 1, 1, 1, 1, 1),
+    ('admin', 'settings', 1, 1, 0, 1, 1, 1);
+
+
+-- Permissões padrão do Editor
+INSERT OR IGNORE INTO role_module_permissions
+    (role, module_key, can_view, can_edit, can_delete, can_approve, can_export, can_sync)
+VALUES
+    ('editor', 'home', 1, 1, 0, 0, 1, 1),
+    ('editor', 'products', 1, 1, 0, 0, 1, 1),
+    ('editor', 'product-audit', 1, 1, 0, 0, 1, 0),
+    ('editor', 'product-corrections', 1, 1, 0, 0, 1, 0),
+    ('editor', 'price-pending', 1, 1, 0, 0, 1, 1),
+    ('editor', 'purchases', 1, 1, 0, 0, 1, 1),
+    ('editor', 'industry-contacts', 1, 1, 0, 0, 1, 0),
+    ('editor', 'notifications', 1, 0, 0, 0, 0, 0),
+    ('editor', 'email', 1, 1, 0, 0, 1, 0),
+    ('editor', 'settings', 1, 0, 0, 0, 0, 0);
+
+
+-- Permissões padrão do Visualizador
+INSERT OR IGNORE INTO role_module_permissions
+    (role, module_key, can_view, can_edit, can_delete, can_approve, can_export, can_sync)
+VALUES
+    ('viewer', 'home', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'products', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'product-audit', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'product-corrections', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'price-pending', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'purchases', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'industry-contacts', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'notifications', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'email', 1, 0, 0, 0, 0, 0),
+    ('viewer', 'settings', 1, 0, 0, 0, 0, 0);
+
+
+-- Permissões padrão do Pendente
+INSERT OR IGNORE INTO role_module_permissions
+    (role, module_key, can_view, can_edit, can_delete, can_approve, can_export, can_sync)
+VALUES
+    ('pending', 'home', 1, 0, 0, 0, 0, 0),
+    ('pending', 'notifications', 1, 0, 0, 0, 0, 0);
+
+
+-- Permissões padrão do Criador para Preços e Pendências
+INSERT OR IGNORE INTO role_function_permissions
+    (role, module_key, function_key, can_view, can_edit, can_execute)
+SELECT
+    'creator',
+    function_key,
+    function_key,
+    1,
+    CASE 
+        WHEN function_key IN (
+            'laboratory',
+            'observation'
+        ) THEN 1
+        WHEN function_type = 'column' 
+            AND function_key NOT IN ('industry_global_code') THEN 1
+        ELSE 0
+    END,
+    CASE 
+        WHEN function_type = 'action' THEN 1
+        ELSE 0
+    END
+FROM permission_functions
+WHERE module_key = 'price-pending';
+
+
+-- Permissões padrão do Administrador para Preços e Pendências
+INSERT OR IGNORE INTO role_function_permissions
+    (role, module_key, function_key, can_view, can_edit, can_execute)
+SELECT
+    'admin',
+    function_key,
+    function_key,
+    1,
+    CASE 
+        WHEN function_key IN (
+            'laboratory',
+            'observation'
+        ) THEN 1
+        WHEN function_type = 'column' 
+            AND function_key NOT IN ('industry_global_code') THEN 1
+        ELSE 0
+    END,
+    CASE 
+        WHEN function_type = 'action' THEN 1
+        ELSE 0
+    END
+FROM permission_functions
+WHERE module_key = 'price-pending';
+
+
+-- Permissões padrão do Editor para Preços e Pendências
+INSERT OR IGNORE INTO role_function_permissions
+    (role, module_key, function_key, can_view, can_edit, can_execute)
+SELECT
+    'editor',
+    function_key,
+    function_key,
+    1,
+    CASE 
+        WHEN function_key IN (
+            'laboratory',
+            'observation'
+        ) THEN 1
+        WHEN function_type = 'column' 
+            AND function_key NOT IN ('industry_global_code') THEN 1
+        ELSE 0
+    END,
+    CASE 
+        WHEN function_type = 'action' THEN 1
+        ELSE 0
+    END
+FROM permission_functions
+WHERE module_key = 'price-pending';
+
+
+-- Permissões padrão do Visualizador para Preços e Pendências
+INSERT OR IGNORE INTO role_function_permissions
+    (role, module_key, function_key, can_view, can_edit, can_execute)
+SELECT
+    'viewer',
+    function_key,
+    function_key,
+    1,
+    0,
+    CASE 
+        WHEN function_key IN (
+            'view_table',
+            'search_laboratory',
+            'filter_updated',
+            'filter_outdated',
+            'filter_branch'
+        ) THEN 1
+        ELSE 0
+    END
+FROM permission_functions
+WHERE module_key = 'price-pending';
+
+
+-- Permissões padrão do Pendente para Preços e Pendências
+INSERT OR IGNORE INTO role_function_permissions
+    (role, module_key, function_key, can_view, can_edit, can_execute)
+SELECT
+    'pending',
+    function_key,
+    function_key,
+    0,
+    0,
+    0
+FROM permission_functions
+WHERE module_key = 'price-pending';
+
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_permission_modules_key 
+    ON permission_modules(module_key);
+
+
+CREATE INDEX IF NOT EXISTS idx_permission_functions_module 
+    ON permission_functions(module_key);
+
+
+CREATE INDEX IF NOT EXISTS idx_permission_functions_type 
+    ON permission_functions(function_type);
+
+
+CREATE INDEX IF NOT EXISTS idx_role_module_permissions_role 
+    ON role_module_permissions(role);
+
+
+CREATE INDEX IF NOT EXISTS idx_role_module_permissions_module 
+    ON role_module_permissions(module_key);
+
+
+CREATE INDEX IF NOT EXISTS idx_role_function_permissions_role 
+    ON role_function_permissions(role);
+
+
+CREATE INDEX IF NOT EXISTS idx_role_function_permissions_module 
+    ON role_function_permissions(module_key);
+
+
+CREATE INDEX IF NOT EXISTS idx_user_module_permissions_user 
+    ON user_module_permissions(user_id);
+
+
+CREATE INDEX IF NOT EXISTS idx_user_module_permissions_module 
+    ON user_module_permissions(module_key);
+
+
+CREATE INDEX IF NOT EXISTS idx_user_function_permissions_user 
+    ON user_function_permissions(user_id);
+
+
+CREATE INDEX IF NOT EXISTS idx_user_function_permissions_module 
+    ON user_function_permissions(module_key);
+
+----------------------------------------------------------------
+ARQUIVO: database\user-migrations\032-fix-viewer-module-permissions.sql
+CAMINHO: C:\Users\USER\Alfadime\database\user-migrations\032-fix-viewer-module-permissions.sql
+TAMANHO: 1329 bytes
+----------------------------------------------------------------
+-- Migration 032: Garante visualizacao de todos os modulos para o perfil viewer
+
+INSERT INTO role_module_permissions (
+    role,
+    module_key,
+    can_view,
+    can_edit,
+    can_delete,
+    can_approve,
+    can_export,
+    can_sync,
+    created_at,
+    updated_at
+)
+VALUES
+    ('viewer', 'home', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'products', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'product-audit', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'product-corrections', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'price-pending', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'purchases', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'industry-contacts', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'notifications', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'email', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now')),
+    ('viewer', 'settings', 1, 0, 0, 0, 0, 0, datetime('now'), datetime('now'))
+ON CONFLICT(role, module_key)
+DO UPDATE SET
+    can_view = 1,
+    can_edit = 0,
+    can_delete = 0,
+    can_approve = 0,
+    can_export = 0,
+    can_sync = 0,
+    updated_at = datetime('now');
+
+----------------------------------------------------------------
 ARQUIVO: gerar-inventario-alfadime.ps1
 CAMINHO: C:\Users\USER\Alfadime\gerar-inventario-alfadime.ps1
 TAMANHO: 4515 bytes
@@ -9164,142 +9801,143 @@ Write-Host "Arquivos listados: $($arquivos.Count)"
 ----------------------------------------------------------------
 ARQUIVO: package.json
 CAMINHO: C:\Users\USER\Alfadime\package.json
-TAMANHO: 4611 bytes
+TAMANHO: 4263 bytes
 ----------------------------------------------------------------
 {
   "name": "alfadime",
-  "version": "3.0.3",
+  "version": "10.6.1",
   "description": "Sistema desktop de ferramentas empresariais.",
   "main": "dist/main/main.js",
-    "scripts": {
-        "test": "node test.js",
-        "build": "vite build --config vite.config.mjs",
-        "start": "npm run build && electron .",
-        "rebuild": "electron-rebuild -f -w better-sqlite3",
-        "dist": "npm run build && electron-builder --win nsis --x64",
-        "dist:portable": "npm run build && electron-builder --win portable --x64",
-        "dist:all": "npm run build && electron-builder --win nsis portable --x64",
-        "dev": "concurrently -k \"vite --config vite.config.mjs\" \"wait-on http://127.0.0.1:5173 && set VITE_DEV_SERVER_URL=http://127.0.0.1:5173 && electron .\"",
-        "postinstall": "electron-builder install-app-deps"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "type": "commonjs",
-    "dependencies": {
-        "better-sqlite3": "^13.0.3",
-        "electron-updater": "^6.8.9",
-        "exceljs": "^4.4.0",
-        "imap": "^0.8.19",
-        "lucide-react": "^1.46.0",
-        "mailcomposer": "^4.0.2",
-        "mailparser": "^3.9.16",
-        "nodemailer": "^9.0.5",
-        "react": "^19.2.8",
-        "react-dom": "^19.2.8",
-        "react-router-dom": "^7.18.2",
-        "xlsx": "^0.18.5"
-    },
-    "devDependencies": {
-        "@electron/rebuild": "^4.2.0",
-        "@vitejs/plugin-react": "^6.0.5",
-        "concurrently": "^10.0.4",
-        "electron": "^43.3.0",
-        "electron-builder": "^26.15.6",
-        "vite": "^8.2.2",
-        "wait-on": "^9.1.0"
-    },
-    "build": {
-        "appId": "com.alfadime.app",
-        "productName": "Alfadime",
-        "icon": "resources/Alfadime.ico",
-        "asar": true,
-        "asarUnpack": [
-            "**/*.node",
-            "**/node_modules/better-sqlite3/prebuilds/win32-x64/**/*"
+  "scripts": {
+    "test": "node test.js",
+    "build": "vite build --config vite.config.mjs && powershell -Command \"New-Item -ItemType Directory -Force dist/preload, dist/main | Out-Null; Copy-Item 'src/preload/preload.js' 'dist/preload/' -Force; if (Test-Path 'dist/main') { Remove-Item 'dist/main' -Recurse -Force }; Copy-Item 'src/main' 'dist/main' -Recurse -Force\"",
+    "start": "npm run build && electron .",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "dist": "npm run build && electron-builder --win nsis --x64",
+    "dist:portable": "npm run build && electron-builder --win portable --x64",
+    "dist:all": "npm run build && electron-builder --win nsis portable --x64",
+    "dev": "concurrently -k \"vite --config vite.config.mjs\" \"wait-on http://127.0.0.1:5173 && set VITE_DEV_SERVER_URL=http://127.0.0.1:5173 && electron .\"",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "electron-updater": "^6.8.9",
+    "exceljs": "^4.4.0",
+    "imap": "^0.8.19",
+    "lucide-react": "^1.46.0",
+    "mailcomposer": "^4.0.2",
+    "mailparser": "^3.9.16",
+    "nodemailer": "^9.0.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^10.0.4",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.6",
+    "vite": "^8.2.2",
+    "wait-on": "^9.1.0"
+  },
+  "build": {
+    "appId": "com.alfadime.app",
+    "productName": "Alfadime",
+    "icon": "resources/Alfadime.ico",
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "**/node_modules/better-sqlite3/prebuilds/win32-x64/**/*"
+    ],
+    "files": [
+      "dist/**/*",
+      "src/main/**/*",
+      "src/preload/**/*",
+      "resources/**/*",
+      "package.json",
+      "database/migrations/**/*",
+      "database/user-migrations/**/*",
+      "database/seeds/**/*",
+      "!**/*.map",
+      "!**/.env",
+      "!**/.git/**",
+      "!**/node_modules/better-sqlite3/prebuilds/darwin-**",
+      "!**/node_modules/better-sqlite3/prebuilds/linux-**",
+      "!**/node_modules/better-sqlite3/prebuilds/linuxmusl-**",
+      "!**/node_modules/better-sqlite3/prebuilds/win32-arm64/**",
+      "!**/node_modules/better-sqlite3/build/**",
+      "!**/app-data/**",
+      "!**/dist/win-unpacked/**",
+      "!**/dist/*.exe",
+      "!**/*.bak",
+      "!**/*.backup",
+      "!**/*.xlsx",
+      "!**/project_documentation.txt",
+      "!**/alfadime-projeto-completo.txt",
+      "!**/check-*.js",
+      "!**/test-*.js",
+      "!**/verificar-*.js",
+      "!**/populate-*.js",
+      "!**/sync-product-codes*.js",
+      "!**/database.html",
+      "!**/database-*.css",
+      "!**/database-*.js"
+    ],
+    "extraResources": [
+      {
+        "filter": [
+          "**/*.sql",
+          "**/*.js",
+          "**/*.json"
         ],
-        "files": [
-            "dist/**/*",
-            "src/main/**/*",
-            "src/preload/**/*",
-            "resources/**/*",
-            "package.json",
-            "database/migrations/**/*",
-            "database/seeds/**/*",
-            "!**/*.map",
-            "!**/.env",
-            "!**/.git/**",
-            "!**/node_modules/better-sqlite3/prebuilds/darwin-**",
-            "!**/node_modules/better-sqlite3/prebuilds/linux-**",
-            "!**/node_modules/better-sqlite3/prebuilds/linuxmusl-**",
-            "!**/node_modules/better-sqlite3/prebuilds/win32-arm64/**",
-            "!**/node_modules/better-sqlite3/build/**",
-            "!**/app-data/**",
-            "!**/dist/win-unpacked/**",
-            "!**/dist/*.exe",
-            "!**/*.bak",
-            "!**/*.backup",
-            "!**/*.xlsx",
-            "!**/project_documentation.txt",
-            "!**/alfadime-projeto-completo.txt",
-            "!**/check-*.js",
-            "!**/test-*.js",
-            "!**/verificar-*.js",
-            "!**/populate-*.js",
-            "!**/sync-product-codes*.js",
-            "!**/database.html",
-            "!**/database-*.css",
-            "!**/database-*.js"
-        ],
-        "extraResources": [
-            {
-                "filter": [
-                    "**/*.sql",
-                    "**/*.js",
-                    "**/*.json"
-                ],
-                "from": "database",
-                "to": "database"
-            }
-        ],
-        "win": {
-            "icon": "resources/Alfadime.ico",
-            "signExecutable": false,
-            "target": [
-                {
-                    "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
-                }
-            ]
-        },
-        "nsis": {
-            "oneClick": false,
-            "perMachine": false,
-            "allowToChangeInstallationDirectory": true,
-            "createDesktopShortcut": true,
-            "createStartMenuShortcut": true,
-            "shortcutName": "Alfadime",
-            "artifactName": "${productName}-Setup-${version}.${ext}",
-            "deleteAppDataOnUninstall": false
-        },
-        "portable": {
-            "artifactName": "${productName}-Portable-${version}.${ext}"
-        },
-        "publish": {
-            "provider": "github",
-            "owner": "Lekoti",
-            "repo": "Alfadime",
-            "releaseType": "release"
-        },
-        "mac": {
-            "icon": "resources/Alfadime.png"
-        },
-        "linux": {
-            "icon": "resources/Alfadime.png"
+        "from": "database",
+        "to": "database"
+      }
+    ],
+    "win": {
+      "icon": "resources/Alfadime.ico",
+      "signExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
         }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Alfadime",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Lekoti",
+      "repo": "Alfadime",
+      "releaseType": "release"
+    },
+    "mac": {
+      "icon": "resources/Alfadime.png"
+    },
+    "linux": {
+      "icon": "resources/Alfadime.png"
     }
+  }
 }
 
 ----------------------------------------------------------------
@@ -16346,11 +16984,12 @@ module.exports = {
 ----------------------------------------------------------------
 ARQUIVO: src\main\database\connection.js
 CAMINHO: C:\Users\USER\Alfadime\src\main\database\connection.js
-TAMANHO: 5091 bytes
+TAMANHO: 6739 bytes
 ----------------------------------------------------------------
 const fs = require("node:fs");
 const path = require("node:path");
 const Database = require("better-sqlite3");
+
 
 
 function getApp() {
@@ -16366,6 +17005,7 @@ function getApp() {
 }
 
 
+
 function getAppUserData() {
     const app = getApp();
     if (app && typeof app.getPath === "function") {
@@ -16373,10 +17013,11 @@ function getAppUserData() {
     }
 
 
-    // Fallback: usar pasta do projeto
+
     const projectRoot = path.resolve(__dirname, "../../..");
     return path.join(projectRoot, "app-data");
 }
+
 
 
 function getDataDirectory() {
@@ -16387,10 +17028,12 @@ function getDataDirectory() {
 }
 
 
+
 function getDatabasePath() {
     const configuredPath = String(
         process.env.ALFADIME_DB_PATH || ''
     ).trim();
+
 
 
     if (configuredPath) {
@@ -16398,11 +17041,40 @@ function getDatabasePath() {
     }
 
 
+
     return path.join(
         getDataDirectory(),
         "alfadime.db"
     );
 }
+
+
+
+function getUsersDatabaseDirectory() {
+    const configuredPath = String(
+        process.env.ALFADIME_USERS_DB_PATH || ''
+    ).trim();
+
+
+
+    if (configuredPath) {
+        return configuredPath;
+    }
+
+
+
+    return "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\USUARIOS";
+}
+
+
+
+function getUsersDatabasePath() {
+    return path.join(
+        getUsersDatabaseDirectory(),
+        "alfadime-users.db"
+    );
+}
+
 
 
 function getProjectDatabaseDirectory() {
@@ -16415,11 +17087,13 @@ function getProjectDatabaseDirectory() {
     }
 
 
+
     return path.join(
         __dirname,
         "../../../database"
     );
 }
+
 
 
 function getMigrationsDirectory() {
@@ -16430,6 +17104,16 @@ function getMigrationsDirectory() {
 }
 
 
+
+function getUserMigrationsDirectory() {
+    return path.join(
+        getProjectDatabaseDirectory(),
+        "user-migrations"
+    );
+}
+
+
+
 function getSeedsDirectory() {
     return path.join(
         getProjectDatabaseDirectory(),
@@ -16438,8 +17122,10 @@ function getSeedsDirectory() {
 }
 
 
+
 function ensureDataDirectory() {
     const dataDirectory = getDataDirectory();
+
 
 
     if (!fs.existsSync(dataDirectory)) {
@@ -16450,17 +17136,18 @@ function ensureDataDirectory() {
 }
 
 
-function runMigrations(database) {
-    const migrationsDirectory = getMigrationsDirectory();
 
+function runMigrations(database, migrationsDirectory) {
     console.log('[MIGRATIONS] Directory:', migrationsDirectory);
     console.log('[MIGRATIONS] Exists:', fs.existsSync(migrationsDirectory));
+
 
     if (!fs.existsSync(migrationsDirectory)) {
         throw new Error(
             `Diretório de migrations não encontrado: ${migrationsDirectory}`
         );
     }
+
 
     database.exec(`
         CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -16470,12 +17157,15 @@ function runMigrations(database) {
         );
     `);
 
+
     const migrationFiles = fs
         .readdirSync(migrationsDirectory)
         .filter((file) => file.endsWith(".sql"))
         .sort();
 
+
     console.log('[MIGRATIONS] Files found:', migrationFiles);
+
 
     for (const filename of migrationFiles) {
         const alreadyExecuted = database
@@ -16487,25 +17177,31 @@ function runMigrations(database) {
             `)
             .get(filename);
 
+
         if (alreadyExecuted) {
             console.log('[MIGRATIONS] Already executed:', filename);
             continue;
         }
 
+
         console.log('[MIGRATIONS] Executing:', filename);
+
 
         const migrationPath = path.join(
             migrationsDirectory,
             filename
         );
 
+
         const migrationSql = fs.readFileSync(
             migrationPath,
             "utf8"
         );
 
+
         const executeMigration = database.transaction(() => {
             database.exec(migrationSql);
+
 
             database
                 .prepare(`
@@ -16520,13 +17216,16 @@ function runMigrations(database) {
                 );
         });
 
+
         executeMigration();
+
 
         console.log(
             `Migration executada: ${filename}`
         );
     }
 }
+
 
 
 function runSeeds(database) {
@@ -16536,20 +17235,24 @@ function runSeeds(database) {
     );
 
 
+
     if (!fs.existsSync(seedPath)) {
         console.log(
             "Seed de preços e pendências não encontrado."
         );
 
 
+
         return;
     }
+
 
 
     const {
         seedPricePendingRows
     } = require(seedPath);
     const result = seedPricePendingRows(database);
+
 
 
     console.log(
@@ -16559,32 +17262,94 @@ function runSeeds(database) {
 }
 
 
+
 let database = null;
+let usersDatabase = null;
+
 
 
 function initializeDatabase() {
     if (!database) {
         ensureDataDirectory();
 
+
         console.log('[DB] Database path:', getDatabasePath());
+
 
         database = new Database(
             getDatabasePath()
         );
 
+
         database.pragma("journal_mode = WAL");
         database.pragma("foreign_keys = ON");
 
-        runMigrations(database);
+
+        runMigrations(
+            database,
+            getMigrationsDirectory()
+        );
+
         runSeeds(database);
+
 
         console.log(
             `Banco conectado: ${getDatabasePath()}`
         );
     }
 
+
     return database;
 }
+
+
+
+function initializeUsersDatabase() {
+    if (usersDatabase) {
+        return usersDatabase;
+    }
+
+
+    const usersDatabasePath =
+        getUsersDatabasePath();
+
+
+    if (!fs.existsSync(getUsersDatabaseDirectory())) {
+        throw new Error(
+            `Pasta de usuários na rede não está acessível: ${getUsersDatabaseDirectory()}`
+        );
+    }
+
+
+    console.log(
+        '[USERS DB] Database path:',
+        usersDatabasePath
+    );
+
+
+    usersDatabase = new Database(
+        usersDatabasePath
+    );
+
+
+    usersDatabase.pragma("journal_mode = DELETE");
+    usersDatabase.pragma("foreign_keys = ON");
+
+
+    runMigrations(
+        usersDatabase,
+        getUserMigrationsDirectory()
+    );
+
+
+    console.log(
+        `Banco de usuários conectado: ${usersDatabasePath}`
+    );
+
+
+    return usersDatabase;
+}
+
 
 
 function getDatabase() {
@@ -16592,17 +17357,33 @@ function getDatabase() {
 }
 
 
+
+function getUsersDatabase() {
+    return initializeUsersDatabase();
+}
+
+
+
 function closeDatabase() {
     if (database) {
         database.close();
         database = null;
     }
+
+
+    if (usersDatabase) {
+        usersDatabase.close();
+        usersDatabase = null;
+    }
 }
+
 
 
 module.exports = {
     getDatabase,
+    getUsersDatabase,
     getDatabasePath,
+    getUsersDatabasePath,
     closeDatabase
 };
 
@@ -17662,28 +18443,20 @@ module.exports = { registerAuthIpc };
 ----------------------------------------------------------------
 ARQUIVO: src\main\modules\auth\authHandler.js
 CAMINHO: C:\Users\USER\Alfadime\src\main\modules\auth\authHandler.js
-TAMANHO: 17589 bytes
+TAMANHO: 15543 bytes
 ----------------------------------------------------------------
 const crypto = require("node:crypto");
 const os = require("node:os");
 
-
-
-
 const {
-    getDatabase
+    getUsersDatabase
 } = require("../../database/connection");
 
-
-
+const granularPermissionsHandler = require("./granularPermissionsHandler");
 
 const {
     USER_ROLES
 } = require("./userRoles.constants");
-
-
-
-
 
 class AuthHandler {
     constructor() {
@@ -17691,46 +18464,20 @@ class AuthHandler {
         this.computerId = this.generateComputerId();
     }
 
-
-
-
-
     getDatabase() {
-        return getDatabase();
+        return getUsersDatabase();
     }
 
-
-
-
-
     generateComputerId() {
-        const hostname =
-            os.hostname();
+        const hostname = os.hostname();
+        const platform = os.platform();
+        const arch = os.arch();
 
-
-
-
-        const platform =
-            os.platform();
-
-
-
-
-        const arch =
-            os.arch();
-
-
-
-
-        const uniqueString =
-            [
-                hostname,
-                platform,
-                arch
-            ].join("-");
-
-
-
+        const uniqueString = [
+            hostname,
+            platform,
+            arch
+        ].join("-");
 
         return crypto
             .createHash("sha256")
@@ -17739,121 +18486,50 @@ class AuthHandler {
             .substring(0, 16);
     }
 
-
-
-
-
     getComputerName() {
         return os.hostname();
     }
 
-
-
-
-
     normalizeText(value) {
-        return String(
-            value || ""
-        ).trim();
+        return String(value || "").trim();
     }
 
-
-
-
-
     hashPassword(password) {
-        const salt =
-            crypto.randomBytes(16).toString("hex");
+        const salt = crypto.randomBytes(16).toString("hex");
 
-
-
-
-        const hash =
-            crypto
-                .scryptSync(
-                    password,
-                    salt,
-                    64
-                )
-                .toString("hex");
-
-
-
+        const hash = crypto
+            .scryptSync(password, salt, 64)
+            .toString("hex");
 
         return `${salt}:${hash}`;
     }
-
-
-
-
 
     verifyPassword(password, storedHash) {
         if (!storedHash) {
             return false;
         }
 
-
-
-
         const [
             salt,
             hash
         ] = String(storedHash).split(":");
 
-
         if (!salt || !hash) {
             return false;
         }
 
+        const candidate = crypto.scryptSync(password, salt, 64);
+        const stored = Buffer.from(hash, "hex");
 
-
-
-        const candidate =
-            crypto
-                .scryptSync(
-                    password,
-                    salt,
-                    64
-                );
-
-
-
-
-        const stored =
-            Buffer.from(
-                hash,
-                "hex"
-            );
-
-
-
-
-        if (
-            candidate.length !==
-            stored.length
-        ) {
+        if (candidate.length !== stored.length) {
             return false;
         }
 
-
-
-
-        return crypto.timingSafeEqual(
-            candidate,
-            stored
-        );
+        return crypto.timingSafeEqual(candidate, stored);
     }
 
-
-
-
-
     async getUserByUsername(username) {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         return database
             .prepare(`
@@ -17865,30 +18541,40 @@ class AuthHandler {
             .get(username);
     }
 
+    async getUserPermissions(user) {
+        if (
+            user.role === USER_ROLES.CREATOR ||
+            user.role === USER_ROLES.ADMIN
+        ) {
+            const result = await granularPermissionsHandler.getPermissionsForRole(
+                user.role
+            );
 
+            if (result?.success) {
+                return result.data.modules.map(
+                    (module) => ({
+                        ...module,
+                        can_view: true,
+                        can_edit: true,
+                        can_delete: true,
+                        can_approve: true,
+                        can_export: true,
+                        can_sync: true
+                    })
+                );
+            }
+        }
 
+        const result = await granularPermissionsHandler.getPermissionsForUser(
+            user.id
+        );
 
+        if (!result?.success) {
+            return [];
+        }
 
-    async getUserPermissions(role) {
-        const database =
-            this.getDatabase();
-
-
-
-
-        return database
-            .prepare(`
-                SELECT *
-                FROM module_permissions
-                WHERE role = ?
-                ORDER BY module_key
-            `)
-            .all(role);
+        return result.data.modules;
     }
-
-
-
-
 
     async register({
         username,
@@ -17896,23 +18582,9 @@ class AuthHandler {
         password
     }) {
         try {
-            const normalizedUsername =
-                this.normalizeText(username);
-
-
-
-
-            const normalizedDisplayName =
-                this.normalizeText(displayName);
-
-
-
-
-            const normalizedPassword =
-                String(password || "");
-
-
-
+            const normalizedUsername = this.normalizeText(username);
+            const normalizedDisplayName = this.normalizeText(displayName);
+            const normalizedPassword = String(password || "");
 
             if (!normalizedUsername) {
                 return {
@@ -17921,18 +18593,12 @@ class AuthHandler {
                 };
             }
 
-
-
-
             if (!normalizedDisplayName) {
                 return {
                     success: false,
                     error: "Informe o nome de exibição."
                 };
             }
-
-
-
 
             if (normalizedPassword.length < 6) {
                 return {
@@ -17941,16 +18607,7 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const existingUser =
-                await this.getUserByUsername(
-                    normalizedUsername
-                );
-
-
-
+            const existingUser = await this.getUserByUsername(normalizedUsername);
 
             if (existingUser) {
                 return {
@@ -17959,20 +18616,8 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const database =
-                this.getDatabase();
-
-
-
-
-            const now =
-                new Date().toISOString();
-
-
-
+            const database = this.getDatabase();
+            const now = new Date().toISOString();
 
             database
                 .prepare(`
@@ -17992,15 +18637,10 @@ class AuthHandler {
                     normalizedDisplayName,
                     USER_ROLES.VIEWER,
                     1,
-                    this.hashPassword(
-                        normalizedPassword
-                    ),
+                    this.hashPassword(normalizedPassword),
                     now,
                     now
                 );
-
-
-
 
             return {
                 success: true,
@@ -18009,42 +18649,18 @@ class AuthHandler {
                 }
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao criar conta:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao criar conta:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível criar a conta."
+                error: error?.message || "Não foi possível criar a conta."
             };
         }
     }
 
-
-
-
-
-    async createOrUpdateSession(
-        userId,
-        isPersistent
-    ) {
-        const database =
-            this.getDatabase();
-
-
-
-
-        const now =
-            new Date().toISOString();
-
-
-
+    async createOrUpdateSession(userId, isPersistent) {
+        const database = this.getDatabase();
+        const now = new Date().toISOString();
 
         database
             .prepare(`
@@ -18072,9 +18688,6 @@ class AuthHandler {
                 now
             );
 
-
-
-
         return database
             .prepare(`
                 SELECT *
@@ -18083,22 +18696,11 @@ class AuthHandler {
                  AND computer_id = ?
                 LIMIT 1
             `)
-            .get(
-                userId,
-                this.computerId
-            );
+            .get(userId, this.computerId);
     }
 
-
-
-
-
     async updateUserLastLogin(userId) {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         database
             .prepare(`
@@ -18114,16 +18716,8 @@ class AuthHandler {
             );
     }
 
-
-
-
-
     async updateLastAccess(userId) {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         database
             .prepare(`
@@ -18139,16 +18733,8 @@ class AuthHandler {
             );
     }
 
-
-
-
-
     async getSessionByComputer() {
-        const database =
-            this.getDatabase();
-
-
-
+        const database = this.getDatabase();
 
         return database
             .prepare(`
@@ -18167,14 +18753,8 @@ class AuthHandler {
                 ORDER BY us.last_access_at DESC
                 LIMIT 1
             `)
-            .get(
-                this.computerId
-            );
+            .get(this.computerId);
     }
-
-
-
-
 
     buildSession(user, permissions) {
         return {
@@ -18190,27 +18770,10 @@ class AuthHandler {
         };
     }
 
-
-
-
-
-    async login(
-        username,
-        password,
-        isPersistent = false
-    ) {
+    async login(username, password, isPersistent = false) {
         try {
-            const normalizedUsername =
-                this.normalizeText(username);
-
-
-
-
-            const normalizedPassword =
-                String(password || "");
-
-
-
+            const normalizedUsername = this.normalizeText(username);
+            const normalizedPassword = String(password || "");
 
             if (!normalizedUsername) {
                 return {
@@ -18219,9 +18782,6 @@ class AuthHandler {
                 };
             }
 
-
-
-
             if (!normalizedPassword) {
                 return {
                     success: false,
@@ -18229,16 +18789,7 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const user =
-                await this.getUserByUsername(
-                    normalizedUsername
-                );
-
-
-
+            const user = await this.getUserByUsername(normalizedUsername);
 
             if (!user || !user.is_active) {
                 return {
@@ -18246,9 +18797,6 @@ class AuthHandler {
                     error: "Usuário ou senha inválidos."
                 };
             }
-
-
-
 
             if (!user.password_hash) {
                 if (normalizedPassword.length < 6) {
@@ -18258,22 +18806,8 @@ class AuthHandler {
                     };
                 }
 
-
-
-
-                const database =
-                    this.getDatabase();
-
-
-
-
-                const newPasswordHash =
-                    this.hashPassword(
-                        normalizedPassword
-                    );
-
-
-
+                const database = this.getDatabase();
+                const newPasswordHash = this.hashPassword(normalizedPassword);
 
                 database
                     .prepare(`
@@ -18288,24 +18822,13 @@ class AuthHandler {
                         user.id
                     );
 
-
-
-
-                user.password_hash =
-                    newPasswordHash;
+                user.password_hash = newPasswordHash;
             }
 
-
-
-
-            const passwordIsValid =
-                this.verifyPassword(
-                    normalizedPassword,
-                    user.password_hash
-                );
-
-
-
+            const passwordIsValid = this.verifyPassword(
+                normalizedPassword,
+                user.password_hash
+            );
 
             if (!passwordIsValid) {
                 return {
@@ -18314,82 +18837,33 @@ class AuthHandler {
                 };
             }
 
+            const permissions = await this.getUserPermissions(user);
 
+            await this.createOrUpdateSession(user.id, Boolean(isPersistent));
+            await this.updateUserLastLogin(user.id);
 
+            this.currentSession = this.buildSession(user, permissions);
 
-            const permissions =
-                await this.getUserPermissions(
-                    user.role
-                );
-
-
-
-
-            await this.createOrUpdateSession(
-                user.id,
-                Boolean(isPersistent)
-            );
-
-
-
-
-            await this.updateUserLastLogin(
-                user.id
-            );
-
-
-
-
-            this.currentSession =
-                this.buildSession(
-                    user,
-                    permissions
-                );
-
-
-
-
-            await this.updateLastAccess(
-                user.id
-            );
-
-
-
+            await this.updateLastAccess(user.id);
 
             return {
                 success: true,
                 data: this.currentSession
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao fazer login:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao fazer login:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível realizar o login."
+                error: error?.message || "Não foi possível realizar o login."
             };
         }
     }
 
-
-
-
-
     async logout() {
         try {
             if (this.currentSession?.user?.id) {
-                const database =
-                    this.getDatabase();
-
-
-
+                const database = this.getDatabase();
 
                 database
                     .prepare(`
@@ -18403,48 +18877,25 @@ class AuthHandler {
                     );
             }
 
-
-
-
             this.currentSession = null;
-
-
-
 
             return {
                 success: true
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao sair:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao sair:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível encerrar a sessão."
+                error: error?.message || "Não foi possível encerrar a sessão."
             };
         }
     }
 
-
-
-
-
     async getCurrentSession() {
         try {
             if (this.currentSession) {
-                await this.updateLastAccess(
-                    this.currentSession.user.id
-                );
-
-
-
+                await this.updateLastAccess(this.currentSession.user.id);
 
                 return {
                     success: true,
@@ -18452,14 +18903,7 @@ class AuthHandler {
                 };
             }
 
-
-
-
-            const session =
-                await this.getSessionByComputer();
-
-
-
+            const session = await this.getSessionByComputer();
 
             if (!session) {
                 return {
@@ -18468,166 +18912,89 @@ class AuthHandler {
                 };
             }
 
+            const permissions = await this.getUserPermissions({
+                id: session.user_id,
+                role: session.role
+            });
 
-
-
-            const permissions =
-                await this.getUserPermissions(
-                    session.role
-                );
-
-
-
-
-            this.currentSession =
-                this.buildSession(
-                    {
-                        id: session.user_id,
-                        username: session.username,
-                        display_name: session.display_name,
-                        role: session.role,
-                        is_active: session.is_active
-                    },
-                    permissions
-                );
-
-
-
-
-            await this.updateLastAccess(
-                session.user_id
+            this.currentSession = this.buildSession(
+                {
+                    id: session.user_id,
+                    username: session.username,
+                    display_name: session.display_name,
+                    role: session.role,
+                    is_active: session.is_active
+                },
+                permissions
             );
 
-
-
+            await this.updateLastAccess(session.user_id);
 
             return {
                 success: true,
                 data: this.currentSession
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao recuperar sessão:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao recuperar sessão:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível recuperar a sessão."
+                error: error?.message || "Não foi possível recuperar a sessão."
             };
         }
     }
 
-
-
-
-
     async validateSession() {
         try {
-            const result =
-                await this.getCurrentSession();
+            const result = await this.getCurrentSession();
 
-
-
-
-            if (
-                !result.success ||
-                !result.data
-            ) {
+            if (!result.success || !result.data) {
                 return {
                     success: false,
                     error: "Nenhuma sessão ativa."
                 };
             }
 
-
-
-
             return result;
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao validar sessão:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao validar sessão:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Sessão inválida."
+                error: error?.message || "Sessão inválida."
             };
         }
     }
 
-
-
-
-
     async updateLastAccessHandler() {
         try {
-            if (
-                this.currentSession?.user?.id
-            ) {
-                await this.updateLastAccess(
-                    this.currentSession.user.id
-                );
+            if (this.currentSession?.user?.id) {
+                await this.updateLastAccess(this.currentSession.user.id);
             }
-
-
-
 
             return {
                 success: true
             };
         } catch (error) {
-            console.error(
-                "[AUTH] Erro ao atualizar acesso:",
-                error
-            );
-
-
-
+            console.error("[AUTH] Erro ao atualizar acesso:", error);
 
             return {
                 success: false,
-                error:
-                    error?.message ||
-                    "Não foi possível atualizar o acesso."
+                error: error?.message || "Não foi possível atualizar o acesso."
             };
         }
     }
 
-
-
-
-
     getAuthenticatedUser() {
         return this.currentSession?.user || null;
     }
-
-
-
-
 
     getComputerId() {
         return this.computerId;
     }
 }
 
-
-
-
-
-module.exports =
-    new AuthHandler();
+module.exports = new AuthHandler();
 
 ----------------------------------------------------------------
 ARQUIVO: src\main\modules\auth\granularPermissions.ipc.js
@@ -18712,10 +19079,10 @@ module.exports = {
 ----------------------------------------------------------------
 ARQUIVO: src\main\modules\auth\granularPermissionsHandler.js
 CAMINHO: C:\Users\USER\Alfadime\src\main\modules\auth\granularPermissionsHandler.js
-TAMANHO: 23637 bytes
+TAMANHO: 23712 bytes
 ----------------------------------------------------------------
 const {
-    getDatabase
+    getUsersDatabase
 } = require("../../database/connection");
 
 
@@ -18749,7 +19116,7 @@ function canManagePermissions(user) {
 function listModules() {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const modules =
             database
@@ -18779,7 +19146,7 @@ function listModules() {
 function listFunctions(moduleKey) {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const functions =
             database
@@ -18816,7 +19183,7 @@ function listFunctions(moduleKey) {
 
 function getRoleModulePermissions(role) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -18830,7 +19197,7 @@ function getRoleModulePermissions(role) {
 
 function getRoleFunctionPermissions(role) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -18844,7 +19211,7 @@ function getRoleFunctionPermissions(role) {
 
 function getUserModulePermissions(userId) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -18858,7 +19225,7 @@ function getUserModulePermissions(userId) {
 
 function getUserFunctionPermissions(userId) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     return database
         .prepare(`
@@ -18873,7 +19240,7 @@ function getUserFunctionPermissions(userId) {
 function getPermissionsForUser(userId) {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const user =
             database
@@ -19079,7 +19446,7 @@ function getPermissionsForUser(userId) {
 function getPermissionsForRole(role) {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         const modules =
             database
@@ -19221,7 +19588,7 @@ function saveRoleModulePermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -19273,7 +19640,7 @@ function saveRoleFunctionPermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -19317,7 +19684,7 @@ function saveUserModulePermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -19371,7 +19738,7 @@ function saveUserFunctionPermission(
     permissions
 ) {
     const database =
-        getDatabase();
+        getUsersDatabase();
 
     const now =
         new Date().toISOString();
@@ -19457,7 +19824,7 @@ function savePermissions(payload, currentUser) {
         }
 
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         if (targetType === "user") {
             const user =
@@ -19554,7 +19921,7 @@ function clearUserOverrides(userId, currentUser) {
         }
 
         const database =
-            getDatabase();
+            getUsersDatabase();
 
         database
             .prepare(`
@@ -19616,9 +19983,10 @@ module.exports = {
 ----------------------------------------------------------------
 ARQUIVO: src\main\modules\auth\users.ipc.js
 CAMINHO: C:\Users\USER\Alfadime\src\main\modules\auth\users.ipc.js
-TAMANHO: 1330 bytes
+TAMANHO: 1564 bytes
 ----------------------------------------------------------------
 const usersHandler = require("./usersHandler");
+
 
 
 function registerUsersIpc(ipcMain, getAuthenticatedUser) {
@@ -19626,12 +19994,14 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
         "[USERS] Registrando handlers IPC de usuários"
     );
 
+
     ipcMain.handle(
         "users:list",
         () => {
             return usersHandler.listUsers();
         }
     );
+
 
     ipcMain.handle(
         "users:create",
@@ -19642,6 +20012,7 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
             );
         }
     );
+
 
     ipcMain.handle(
         "users:update",
@@ -19654,6 +20025,18 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
         }
     );
 
+
+    ipcMain.handle(
+        "users:delete",
+        (_event, id) => {
+            return usersHandler.deleteUser(
+                id,
+                getAuthenticatedUser()
+            );
+        }
+    );
+
+
     ipcMain.handle(
         "users:set-active",
         (_event, id, isActive) => {
@@ -19665,6 +20048,7 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
         }
     );
 
+
     ipcMain.handle(
         "users:list-permissions",
         () => {
@@ -19672,10 +20056,12 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
         }
     );
 
+
     console.log(
         "[USERS] Handlers IPC registrados com sucesso"
     );
 }
+
 
 
 module.exports = {
@@ -19685,15 +20071,22 @@ module.exports = {
 ----------------------------------------------------------------
 ARQUIVO: src\main\modules\auth\usersHandler.js
 CAMINHO: C:\Users\USER\Alfadime\src\main\modules\auth\usersHandler.js
-TAMANHO: 11107 bytes
+TAMANHO: 14844 bytes
 ----------------------------------------------------------------
 const {
-    getDatabase
+    getUsersDatabase
 } = require("../../database/connection");
+
+
 
 const {
     USER_ROLES
 } = require("./userRoles.constants");
+
+
+const crypto = require("node:crypto");
+
+
 
 
 const ALLOWED_ROLES = [
@@ -19705,6 +20098,8 @@ const ALLOWED_ROLES = [
 ];
 
 
+
+
 function normalizeText(value) {
     return String(
         value || ""
@@ -19712,9 +20107,13 @@ function normalizeText(value) {
 }
 
 
+
+
 function validateRole(role) {
     return ALLOWED_ROLES.includes(role);
 }
+
+
 
 
 function buildSuccess(data) {
@@ -19725,6 +20124,8 @@ function buildSuccess(data) {
 }
 
 
+
+
 function buildError(message) {
     return {
         success: false,
@@ -19733,10 +20134,37 @@ function buildError(message) {
 }
 
 
+
+
+function hashPassword(password) {
+    const salt =
+        crypto.randomBytes(16).toString("hex");
+
+
+
+    const hash =
+        crypto
+            .scryptSync(
+                password,
+                salt,
+                64
+            )
+            .toString("hex");
+
+
+
+    return `${salt}:${hash}`;
+}
+
+
+
+
 function listUsers() {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
+
+
 
         const users =
             database
@@ -19755,12 +20183,16 @@ function listUsers() {
                 `)
                 .all();
 
+
+
         return buildSuccess(users);
     } catch (error) {
         console.error(
             "[USERS] Erro ao listar usuários:",
             error
         );
+
+
 
         return buildError(
             error?.message ||
@@ -19770,9 +20202,13 @@ function listUsers() {
 }
 
 
+
+
 function getUserById(id) {
     const database =
-        getDatabase();
+        getUsersDatabase();
+
+
 
     return database
         .prepare(`
@@ -19793,9 +20229,13 @@ function getUserById(id) {
 }
 
 
+
+
 function getUserByUsername(username) {
     const database =
-        getDatabase();
+        getUsersDatabase();
+
+
 
     return database
         .prepare(`
@@ -19813,6 +20253,8 @@ function getUserByUsername(username) {
 }
 
 
+
+
 function createUser(data, currentUser) {
     try {
         if (
@@ -19827,18 +20269,38 @@ function createUser(data, currentUser) {
             );
         }
 
+
+
         const username =
             normalizeText(data.username);
+
+
 
         const displayName =
             normalizeText(data.display_name);
 
+
+
+        const password =
+            String(data.password || "");
+
+
+
+        const confirmPassword =
+            String(data.confirmPassword || "");
+
+
+
         const role =
             normalizeText(data.role) ||
-            USER_ROLES.PENDING;
+            USER_ROLES.VIEWER;
+
+
 
         const isActive =
             Number(data.is_active ?? 1) ? 1 : 0;
+
+
 
         if (!username) {
             return buildError(
@@ -19846,11 +20308,31 @@ function createUser(data, currentUser) {
             );
         }
 
+
+
         if (!displayName) {
             return buildError(
                 "Informe o nome de exibição."
             );
         }
+
+
+
+        if (password.length < 6) {
+            return buildError(
+                "A senha deve ter pelo menos 6 caracteres."
+            );
+        }
+
+
+
+        if (password !== confirmPassword) {
+            return buildError(
+                "As senhas não são iguais."
+            );
+        }
+
+
 
         if (!validateRole(role)) {
             return buildError(
@@ -19858,26 +20340,41 @@ function createUser(data, currentUser) {
             );
         }
 
+
+
         if (
             role === USER_ROLES.CREATOR &&
             currentUser.role !== USER_ROLES.CREATOR
         ) {
             return buildError(
-                "Somente o Criador pode criar outro usuário Criador."
+                "Somente o Staff pode criar outro usuário Staff."
             );
         }
 
+
+
         const database =
-            getDatabase();
+            getUsersDatabase();
+
+
 
         const existingUser =
             getUserByUsername(username);
+
+
 
         if (existingUser) {
             return buildError(
                 "Já existe um usuário com este nome."
             );
         }
+
+
+
+        const now =
+            new Date().toISOString();
+
+
 
         const result =
             database
@@ -19887,24 +20384,30 @@ function createUser(data, currentUser) {
                         display_name,
                         role,
                         is_active,
+                        password_hash,
                         created_at,
                         updated_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 `)
                 .run(
                     username,
                     displayName,
                     role,
                     isActive,
-                    new Date().toISOString(),
-                    new Date().toISOString()
+                    hashPassword(password),
+                    now,
+                    now
                 );
+
+
 
         const createdUser =
             getUserById(
                 result.lastInsertRowid
             );
+
+
 
         return buildSuccess(createdUser);
     } catch (error) {
@@ -19913,12 +20416,16 @@ function createUser(data, currentUser) {
             error
         );
 
+
+
         return buildError(
             error?.message ||
             "Não foi possível criar o usuário."
         );
     }
 }
+
+
 
 
 function updateUser(id, data, currentUser) {
@@ -19935,11 +20442,17 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
+
         const userId =
             Number(id);
 
+
+
         const targetUser =
             getUserById(userId);
+
+
 
         if (!targetUser) {
             return buildError(
@@ -19947,18 +20460,28 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
+
         const username =
             normalizeText(data.username);
 
+
+
         const displayName =
             normalizeText(data.display_name);
+
+
 
         const role =
             normalizeText(data.role) ||
             targetUser.role;
 
+
+
         const isActive =
             Number(data.is_active ?? targetUser.is_active) ? 1 : 0;
+
+
 
         if (!username) {
             return buildError(
@@ -19966,11 +20489,15 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
+
         if (!displayName) {
             return buildError(
                 "Informe o nome de exibição."
             );
         }
+
+
 
         if (!validateRole(role)) {
             return buildError(
@@ -19978,38 +20505,50 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
+
         if (
             targetUser.role === USER_ROLES.CREATOR &&
             role !== USER_ROLES.CREATOR
         ) {
             return buildError(
-                "O perfil do usuário Criador não pode ser alterado."
+                "O perfil do usuário Staff não pode ser alterado."
             );
         }
+
+
 
         if (
             role === USER_ROLES.CREATOR &&
             currentUser.role !== USER_ROLES.CREATOR
         ) {
             return buildError(
-                "Somente o Criador pode definir outro usuário como Criador."
+                "Somente o Staff pode definir outro usuário como Staff."
             );
         }
+
+
 
         if (
             targetUser.role === USER_ROLES.CREATOR &&
             isActive === 0
         ) {
             return buildError(
-                "O usuário Criador não pode ser desativado."
+                "O usuário Staff não pode ser desativado."
             );
         }
 
+
+
         const database =
-            getDatabase();
+            getUsersDatabase();
+
+
 
         const existingUser =
             getUserByUsername(username);
+
+
 
         if (
             existingUser &&
@@ -20019,6 +20558,8 @@ function updateUser(id, data, currentUser) {
                 "Já existe um usuário com este nome."
             );
         }
+
+
 
         database
             .prepare(`
@@ -20040,6 +20581,8 @@ function updateUser(id, data, currentUser) {
                 userId
             );
 
+
+
         return buildSuccess(
             getUserById(userId)
         );
@@ -20049,12 +20592,139 @@ function updateUser(id, data, currentUser) {
             error
         );
 
+
+
         return buildError(
             error?.message ||
             "Não foi possível atualizar o usuário."
         );
     }
 }
+
+
+
+
+function deleteUser(id, currentUser) {
+    try {
+        if (
+            !currentUser ||
+            ![
+                USER_ROLES.CREATOR,
+                USER_ROLES.ADMIN
+            ].includes(currentUser.role)
+        ) {
+            return buildError(
+                "Você não tem permissão para excluir usuários."
+            );
+        }
+
+
+
+        const userId =
+            Number(id);
+
+
+
+        const targetUser =
+            getUserById(userId);
+
+
+
+        if (!targetUser) {
+            return buildError(
+                "Usuário não encontrado."
+            );
+        }
+
+
+
+        if (
+            targetUser.id === currentUser.id
+        ) {
+            return buildError(
+                "Não é possível excluir o usuário conectado."
+            );
+        }
+
+
+
+        if (
+            targetUser.role === USER_ROLES.CREATOR
+        ) {
+            return buildError(
+                "O usuário Staff não pode ser excluído."
+            );
+        }
+
+
+
+        const database =
+            getUsersDatabase();
+
+
+
+        const deleteUserTransaction =
+            database.transaction(() => {
+                database
+                    .prepare(`
+                        DELETE FROM user_function_permissions
+                        WHERE user_id = ?
+                    `)
+                    .run(userId);
+
+
+
+                database
+                    .prepare(`
+                        DELETE FROM user_module_permissions
+                        WHERE user_id = ?
+                    `)
+                    .run(userId);
+
+
+
+                database
+                    .prepare(`
+                        DELETE FROM user_sessions
+                        WHERE user_id = ?
+                    `)
+                    .run(userId);
+
+
+
+                database
+                    .prepare(`
+                        DELETE FROM users
+                        WHERE id = ?
+                    `)
+                    .run(userId);
+            });
+
+
+
+        deleteUserTransaction();
+
+
+
+        return buildSuccess({
+            id: userId
+        });
+    } catch (error) {
+        console.error(
+            "[USERS] Erro ao excluir usuário:",
+            error
+        );
+
+
+
+        return buildError(
+            error?.message ||
+            "Não foi possível excluir o usuário."
+        );
+    }
+}
+
+
 
 
 function setUserActive(id, isActive, currentUser) {
@@ -20071,17 +20741,25 @@ function setUserActive(id, isActive, currentUser) {
             );
         }
 
+
+
         const userId =
             Number(id);
 
+
+
         const targetUser =
             getUserById(userId);
+
+
 
         if (!targetUser) {
             return buildError(
                 "Usuário não encontrado."
             );
         }
+
+
 
         if (
             targetUser.id === currentUser.id
@@ -20091,16 +20769,22 @@ function setUserActive(id, isActive, currentUser) {
             );
         }
 
+
+
         if (
             targetUser.role === USER_ROLES.CREATOR
         ) {
             return buildError(
-                "O usuário Criador não pode ser desativado."
+                "O usuário Staff não pode ser desativado."
             );
         }
 
+
+
         const database =
-            getDatabase();
+            getUsersDatabase();
+
+
 
         database
             .prepare(`
@@ -20116,6 +20800,8 @@ function setUserActive(id, isActive, currentUser) {
                 userId
             );
 
+
+
         return buildSuccess(
             getUserById(userId)
         );
@@ -20125,6 +20811,8 @@ function setUserActive(id, isActive, currentUser) {
             error
         );
 
+
+
         return buildError(
             error?.message ||
             "Não foi possível alterar o status do usuário."
@@ -20133,10 +20821,14 @@ function setUserActive(id, isActive, currentUser) {
 }
 
 
+
+
 function listPermissions() {
     try {
         const database =
-            getDatabase();
+            getUsersDatabase();
+
+
 
         const permissions =
             database
@@ -20147,12 +20839,16 @@ function listPermissions() {
                 `)
                 .all();
 
+
+
         return buildSuccess(permissions);
     } catch (error) {
         console.error(
             "[USERS] Erro ao listar permissões:",
             error
         );
+
+
 
         return buildError(
             error?.message ||
@@ -20162,10 +20858,13 @@ function listPermissions() {
 }
 
 
+
+
 module.exports = {
     listUsers,
     createUser,
     updateUser,
+    deleteUser,
     setUserActive,
     listPermissions
 };
@@ -44106,7 +44805,7 @@ module.exports = {
 ----------------------------------------------------------------
 ARQUIVO: src\preload\preload.js
 CAMINHO: C:\Users\USER\Alfadime\src\preload\preload.js
-TAMANHO: 26978 bytes
+TAMANHO: 27256 bytes
 ----------------------------------------------------------------
 const {
     contextBridge,
@@ -44114,6 +44813,7 @@ const {
 } = require(
     "electron"
 );
+
 
 
 function invoke(
@@ -44125,6 +44825,7 @@ function invoke(
         ...args
     );
 }
+
 
 
 function subscribe(
@@ -44140,10 +44841,12 @@ function subscribe(
                 data
             );
 
+
     ipcRenderer.on(
         channel,
         listener
     );
+
 
     return () =>
         ipcRenderer.removeListener(
@@ -44151,6 +44854,7 @@ function subscribe(
             listener
         );
 }
+
 
 
 contextBridge.exposeInMainWorld(
@@ -44172,31 +44876,37 @@ contextBridge.exposeInMainWorld(
         ),
 
 
+
     register: (payload) =>
         invoke(
             "auth:register",
             payload
         ),
 
+
             logout: () =>
                 invoke(
                     "auth:logout"
                 ),
+
 
             getCurrentSession: () =>
                 invoke(
                     "auth:get_current_session"
                 ),
 
+
             getComputerId: () =>
                 invoke(
                     "auth:get_computer_id"
                 ),
 
+
             validateSession: () =>
                 invoke(
                     "auth:validate_session"
                 ),
+
 
             updateLastAccess: () =>
                 invoke(
@@ -44204,17 +44914,20 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         users: {
             list: () =>
                 invoke(
                     "users:list"
                 ),
 
+
             create: (data) =>
                 invoke(
                     "users:create",
                     data
                 ),
+
 
             update: (id, data) =>
                 invoke(
@@ -44223,6 +44936,14 @@ contextBridge.exposeInMainWorld(
                     data
                 ),
 
+
+            delete: (id) =>
+                invoke(
+                    "users:delete",
+                    id
+                ),
+
+
             setActive: (id, isActive) =>
                 invoke(
                     "users:set-active",
@@ -44230,11 +44951,13 @@ contextBridge.exposeInMainWorld(
                     isActive
                 ),
 
+
             listPermissions: () =>
                 invoke(
                     "users:list-permissions"
                 )
         },
+
 
         permissions: {
     listModules: () =>
@@ -44242,11 +44965,13 @@ contextBridge.exposeInMainWorld(
             "permissions:list-modules"
         ),
 
+
     listFunctions: (moduleKey) =>
         invoke(
             "permissions:list-functions",
             moduleKey
         ),
+
 
     getForUser: (userId) =>
         invoke(
@@ -44254,17 +44979,20 @@ contextBridge.exposeInMainWorld(
             userId
         ),
 
+
     getForRole: (role) =>
         invoke(
             "permissions:get-for-role",
             role
         ),
 
+
     save: (payload) =>
         invoke(
             "permissions:save",
             payload
         ),
+
 
     clearUserOverrides: (userId) =>
         invoke(
@@ -44273,16 +45001,19 @@ contextBridge.exposeInMainWorld(
         )
 },
 
+
         app: {
             getVersion: () =>
                 invoke(
                     "app:get-version"
                 ),
 
+
             getOpenAtLogin: () =>
                 invoke(
                     "app:get-open-at-login"
                 ),
+
 
             setOpenAtLogin: (
                 enabled
@@ -44292,25 +45023,30 @@ contextBridge.exposeInMainWorld(
                     enabled
                 ),
 
+
             checkForUpdates: () =>
                 invoke(
                     "app:check-for-updates"
                 ),
+
 
             downloadUpdate: () =>
                 invoke(
                     "app:download-update"
                 ),
 
+
             installUpdate: () =>
                 invoke(
                     "app:install-update"
                 ),
 
+
             isUpdateDownloaded: () =>
                 invoke(
                     "app:is-update-downloaded"
                 ),
+
 
             onUpdateStatus: (
                 callback
@@ -44321,11 +45057,13 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         pricePending: {
             list: () =>
                 invoke(
                     "price-pending:list"
                 ),
+
 
             getById: (
                 id
@@ -44335,6 +45073,7 @@ contextBridge.exposeInMainWorld(
                     id
                 ),
 
+
             create: (
                 data
             ) =>
@@ -44342,6 +45081,7 @@ contextBridge.exposeInMainWorld(
                     "price-pending:create",
                     data
                 ),
+
 
             updateCell: (
                 id,
@@ -44357,6 +45097,7 @@ contextBridge.exposeInMainWorld(
                     }
                 ),
 
+
             remove: (
                 id
             ) =>
@@ -44364,6 +45105,7 @@ contextBridge.exposeInMainWorld(
                     "price-pending:remove",
                     id
                 ),
+
 
             updateEmailReceipt: (
                 payload
@@ -44373,10 +45115,12 @@ contextBridge.exposeInMainWorld(
                     payload
                 ),
 
+
             refresh: () =>
                 invoke(
                     "price-pending:refresh"
                 ),
+
 
             export: (
                 options
@@ -44386,10 +45130,12 @@ contextBridge.exposeInMainWorld(
                     options
                 ),
 
+
             getDbConfig: () =>
                 invoke(
                     "price-pending:get-db-config"
                 ),
+
 
             saveDbConfig: (
                 config
@@ -44399,6 +45145,7 @@ contextBridge.exposeInMainWorld(
                     config
                 ),
 
+
             testConnection: (
                 path
             ) =>
@@ -44407,10 +45154,12 @@ contextBridge.exposeInMainWorld(
                     path
                 ),
 
+
             getFoldersConfig: () =>
                 invoke(
                     "price-pending:get-folders-config"
                 ),
+
 
             saveFoldersConfig: (
                 config
@@ -44419,6 +45168,7 @@ contextBridge.exposeInMainWorld(
                     "price-pending:save-folders-config",
                     config
                 ),
+
 
             onChanged: (
                 callback
@@ -44429,6 +45179,7 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         products: {
             list: (
                 filters
@@ -44438,6 +45189,7 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
+
             getFilterOptions: (
                 field
             ) =>
@@ -44446,10 +45198,12 @@ contextBridge.exposeInMainWorld(
                     field
                 ),
 
+
             syncExcel: () =>
                 invoke(
                     "products:sync-excel"
                 ),
+
 
             onChanged: (
                 callback
@@ -44460,16 +45214,19 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         industryContacts: {
             list: () =>
                 invoke(
                     "industry-contacts:list"
                 ),
 
+
             listWithoutContact: () =>
                 invoke(
                     "industry-contacts:without-contact"
                 ),
+
 
             save: (
                 data
@@ -44479,6 +45236,7 @@ contextBridge.exposeInMainWorld(
                     data
                 ),
 
+
             delete: (
                 id
             ) =>
@@ -44486,6 +45244,7 @@ contextBridge.exposeInMainWorld(
                     "industry-contacts:delete",
                     id
                 ),
+
 
             prepareCharge: (
                 payload
@@ -44495,6 +45254,7 @@ contextBridge.exposeInMainWorld(
                     payload
                 ),
 
+
             sendCharge: (
                 payload
             ) =>
@@ -44503,10 +45263,12 @@ contextBridge.exposeInMainWorld(
                     payload
                 ),
 
+
             getDbConfig: () =>
                 invoke(
                     "industry-contacts:get-db-config"
                 ),
+
 
             saveDbConfig: (
                 config
@@ -44515,6 +45277,7 @@ contextBridge.exposeInMainWorld(
                     "industry-contacts:save-db-config",
                     config
                 ),
+
 
             testConnection: (
                 path
@@ -44525,6 +45288,7 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         notifications: {
             list: (
                 filters
@@ -44534,6 +45298,7 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
+
             getById: (
                 id
             ) =>
@@ -44541,6 +45306,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:get-by-id",
                     id
                 ),
+
 
             create: (
                 data
@@ -44550,6 +45316,7 @@ contextBridge.exposeInMainWorld(
                     data
                 ),
 
+
             markAsRead: (
                 id
             ) =>
@@ -44557,6 +45324,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:mark-as-read",
                     id
                 ),
+
 
             dismiss: (
                 id
@@ -44566,6 +45334,7 @@ contextBridge.exposeInMainWorld(
                     id
                 ),
 
+
             updateStatus: (
                 payload
             ) =>
@@ -44574,6 +45343,7 @@ contextBridge.exposeInMainWorld(
                     payload
                 ),
 
+
             delete: (
                 id
             ) =>
@@ -44581,6 +45351,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:delete",
                     id
                 ),
+
 
             summary: (
                 filters
@@ -44591,6 +45362,7 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         productAudit: {
             list: (
                 filters
@@ -44599,6 +45371,7 @@ contextBridge.exposeInMainWorld(
                     "product-audit:list",
                     filters
                 ),
+
 
             getFilterOptions: (
                 field
@@ -44609,6 +45382,7 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         productCorrections: {
             list: (
                 filters
@@ -44618,10 +45392,12 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
+
             getFilterOptions: () =>
                 invoke(
                     "product-corrections:filter-options"
                 ),
+
 
             create: (
                 data
@@ -44631,6 +45407,7 @@ contextBridge.exposeInMainWorld(
                     data
                 ),
 
+
             cancel: (
                 id
             ) =>
@@ -44638,6 +45415,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:cancel",
                     id
                 ),
+
 
             cancelMany: (
                 ids
@@ -44647,6 +45425,7 @@ contextBridge.exposeInMainWorld(
                     ids
                 ),
 
+
             revert: (
                 id
             ) =>
@@ -44654,6 +45433,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:revert",
                     id
                 ),
+
 
             revertMany: (
                 ids
@@ -44663,6 +45443,7 @@ contextBridge.exposeInMainWorld(
                     ids
                 ),
 
+
             markSent: (
                 ids
             ) =>
@@ -44671,6 +45452,7 @@ contextBridge.exposeInMainWorld(
                     ids
                 ),
 
+
             getPendingByProducts: (
                 ids
             ) =>
@@ -44678,6 +45460,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:pending-by-products",
                     ids
                 ),
+
 
             getBulkTargets: (
                 ean,
@@ -44689,6 +45472,7 @@ contextBridge.exposeInMainWorld(
                     fields
                 ),
 
+
             createBulkCorrections: (
                 data
             ) =>
@@ -44696,6 +45480,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:create-bulk",
                     data
                 ),
+
 
             createBulk: (
                 data
@@ -44705,20 +45490,24 @@ contextBridge.exposeInMainWorld(
                     data
                 ),
 
+
             getFields: () =>
                 invoke(
                     "product-corrections:fields"
                 ),
+
 
             getBranches: () =>
                 invoke(
                     "product-corrections:branches"
                 ),
 
+
             getCsvBranches: () =>
                 invoke(
                     "product-corrections:export-csv-branches"
                 ),
+
 
             exportCsv: (
                 branch
@@ -44728,11 +45517,13 @@ contextBridge.exposeInMainWorld(
                     branch
                 ),
 
+
             exportAllCsv: () =>
                 invoke(
                     "product-corrections:export-csv-all"
                 )
         },
+
 
         purchases: {
             getAll: (
@@ -44743,6 +45534,7 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
+
             getById: (
                 id
             ) =>
@@ -44751,6 +45543,7 @@ contextBridge.exposeInMainWorld(
                     id
                 ),
 
+
             create: (
                 data
             ) =>
@@ -44758,6 +45551,7 @@ contextBridge.exposeInMainWorld(
                     "purchases:create",
                     data
                 ),
+
 
             update: (
                 id,
@@ -44769,6 +45563,7 @@ contextBridge.exposeInMainWorld(
                     data
                 ),
 
+
             updateStatus: (
                 id,
                 status
@@ -44779,6 +45574,7 @@ contextBridge.exposeInMainWorld(
                     status
                 ),
 
+
             delete: (
                 id
             ) =>
@@ -44786,6 +45582,7 @@ contextBridge.exposeInMainWorld(
                     "purchases:delete",
                     id
                 ),
+
 
             listSuggestions: (
                 filters
@@ -44795,6 +45592,7 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
+
             getFilterOptions: (
                 field
             ) =>
@@ -44803,10 +45601,12 @@ contextBridge.exposeInMainWorld(
                     field
                 ),
 
+
             syncCurveExcel: () =>
                 invoke(
                     "purchases:sync-curve-excel"
                 ),
+
 
             onChanged: (
                 callback
@@ -44815,6 +45615,7 @@ contextBridge.exposeInMainWorld(
                     "purchases:changed",
                     callback
                 ),
+
 
             exportExcel: (
                 payload
@@ -44825,6 +45626,7 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         export: {
             getPreference: (
                 moduleKey
@@ -44833,6 +45635,7 @@ contextBridge.exposeInMainWorld(
                     "export:preferences:get",
                     moduleKey
                 ),
+
 
             savePreference: (
                 moduleKey,
@@ -44844,6 +45647,7 @@ contextBridge.exposeInMainWorld(
                     columns
                 ),
 
+
             products: (
                 filters,
                 columns
@@ -44853,6 +45657,7 @@ contextBridge.exposeInMainWorld(
                     filters,
                     columns
                 ),
+
 
             productsPreview: (
                 filters,
@@ -44864,6 +45669,7 @@ contextBridge.exposeInMainWorld(
                     columns
                 ),
 
+
             productsAdvanced: (
                 filters,
                 columns
@@ -44873,6 +45679,7 @@ contextBridge.exposeInMainWorld(
                     filters,
                     columns
                 ),
+
 
             productAudit: (
                 filters,
@@ -44884,6 +45691,7 @@ contextBridge.exposeInMainWorld(
                     columns
                 ),
 
+
             productCorrections: (
                 filters,
                 columns
@@ -44893,6 +45701,7 @@ contextBridge.exposeInMainWorld(
                     filters,
                     columns
                 ),
+
 
             industryContacts: (
                 filters,
@@ -44906,6 +45715,7 @@ contextBridge.exposeInMainWorld(
                     rows
                 ),
 
+
             getTemplates: (
                 moduleKey
             ) =>
@@ -44913,6 +45723,7 @@ contextBridge.exposeInMainWorld(
                     "export:templates:get",
                     moduleKey
                 ),
+
 
             saveTemplate: (
                 moduleKey,
@@ -44928,6 +45739,7 @@ contextBridge.exposeInMainWorld(
                     columns
                 ),
 
+
             deleteTemplate: (
                 moduleKey,
                 templateId
@@ -44939,6 +45751,7 @@ contextBridge.exposeInMainWorld(
                 )
         },
 
+
         email: {
             received: {
                 runRoutine: () =>
@@ -44946,10 +45759,12 @@ contextBridge.exposeInMainWorld(
                         "email-received:run-routine"
                     ),
 
+
                 listMessages: () =>
                     invoke(
                         "email-received:messages:list"
                     ),
+
 
                 listAttachments: (
                     messageId
@@ -44959,6 +45774,7 @@ contextBridge.exposeInMainWorld(
                         messageId
                     ),
 
+
                 fetch: (
                     configId
                 ) =>
@@ -44966,6 +45782,7 @@ contextBridge.exposeInMainWorld(
                         "email-received:fetch",
                         configId
                     ),
+
 
                 process: (
                     data
@@ -44975,20 +45792,24 @@ contextBridge.exposeInMainWorld(
                         data
                     ),
 
+
                 dashboard: () =>
                     invoke(
                         "email-received:dashboard"
                     ),
+
 
                 listLogs: () =>
                     invoke(
                         "email-received:logs:list"
                     ),
 
+
                 listPatterns: () =>
                     invoke(
                         "email-received:patterns:list"
                     ),
+
 
                 createPattern: (
                     data
@@ -44998,6 +45819,7 @@ contextBridge.exposeInMainWorld(
                         data
                     ),
 
+
                 deletePattern: (
                     id
                 ) =>
@@ -45005,6 +45827,7 @@ contextBridge.exposeInMainWorld(
                         "email-received:patterns:delete",
                         id
                     ),
+
 
                 openFolder: (
                     folderType
@@ -45015,11 +45838,13 @@ contextBridge.exposeInMainWorld(
                     )
             },
 
+
             configs: {
                 list: () =>
                     invoke(
                         "email-configs:list"
                     ),
+
 
                 getById: (
                     id
@@ -45029,6 +45854,7 @@ contextBridge.exposeInMainWorld(
                         id
                     ),
 
+
                 create: (
                     data
                 ) =>
@@ -45036,6 +45862,7 @@ contextBridge.exposeInMainWorld(
                         "email-configs:create",
                         data
                     ),
+
 
                 update: (
                     id,
@@ -45047,6 +45874,7 @@ contextBridge.exposeInMainWorld(
                         data
                     ),
 
+
                 delete: (
                     id
                 ) =>
@@ -45055,6 +45883,7 @@ contextBridge.exposeInMainWorld(
                         id
                     ),
 
+
                 testSmtp: (
                     data
                 ) =>
@@ -45062,6 +45891,7 @@ contextBridge.exposeInMainWorld(
                         "email-configs:test-smtp",
                         data
                     ),
+
 
                 testImap: (
                     data
@@ -45072,11 +45902,13 @@ contextBridge.exposeInMainWorld(
                     )
             },
 
+
             campaigns: {
                 list: () =>
                     invoke(
                         "email-campaigns:list"
                     ),
+
 
                 getById: (
                     id
@@ -45086,6 +45918,7 @@ contextBridge.exposeInMainWorld(
                         id
                     ),
 
+
                 create: (
                     data
                 ) =>
@@ -45093,6 +45926,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:create",
                         data
                     ),
+
 
                 update: (
                     id,
@@ -45104,6 +45938,7 @@ contextBridge.exposeInMainWorld(
                         data
                     ),
 
+
                 delete: (
                     id
                 ) =>
@@ -45111,6 +45946,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:delete",
                         id
                     ),
+
 
                 send: (
                     campaignId,
@@ -45122,6 +45958,7 @@ contextBridge.exposeInMainWorld(
                         options
                     ),
 
+
                 processIncoming: (
                     campaignId
                 ) =>
@@ -45129,6 +45966,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:process-incoming",
                         campaignId
                     ),
+
 
                 getDashboard: (
                     campaignId
@@ -45138,6 +45976,7 @@ contextBridge.exposeInMainWorld(
                         campaignId
                     ),
 
+
                 getHistory: (
                     campaignId
                 ) =>
@@ -45145,6 +45984,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:history",
                         campaignId
                     ),
+
 
                 getSendLogs: (
                     campaignId
@@ -45155,6 +45995,7 @@ contextBridge.exposeInMainWorld(
                     )
             },
 
+
             recipients: {
                 list: (
                     campaignId
@@ -45164,6 +46005,7 @@ contextBridge.exposeInMainWorld(
                         campaignId
                     ),
 
+
                 getById: (
                     id
                 ) =>
@@ -45172,6 +46014,7 @@ contextBridge.exposeInMainWorld(
                         id
                     ),
 
+
                 create: (
                     data
                 ) =>
@@ -45179,6 +46022,7 @@ contextBridge.exposeInMainWorld(
                         "email-recipients:create",
                         data
                     ),
+
 
                 createBatch: (
                     campaignId,
@@ -45190,6 +46034,7 @@ contextBridge.exposeInMainWorld(
                         data
                     ),
 
+
                 delete: (
                     id
                 ) =>
@@ -45199,11 +46044,13 @@ contextBridge.exposeInMainWorld(
                     )
             },
 
+
             attachments: {
                 getDatabaseInfo: () =>
                     invoke(
                         "email-campaign-attachments:database-info"
                     ),
+
 
                 list: (
                     campaignId
@@ -45216,6 +46063,7 @@ contextBridge.exposeInMainWorld(
                         )
                     ),
 
+
                 selectAndSave: (
                     campaignId
                 ) =>
@@ -45227,6 +46075,7 @@ contextBridge.exposeInMainWorld(
                         )
                     ),
 
+
                 remove: (
                     attachmentId
                 ) =>
@@ -45236,11 +46085,13 @@ contextBridge.exposeInMainWorld(
                     )
             },
 
+
             processor: {
                 start: () =>
                     invoke(
                         "email-processor:start"
                     ),
+
 
                 stop: () =>
                     invoke(
@@ -45248,6 +46099,7 @@ contextBridge.exposeInMainWorld(
                     )
             }
         },
+
 
         ipc: {
             invoke: (
@@ -46656,7 +47508,7 @@ export default function PermissionRoute({
 ----------------------------------------------------------------
 ARQUIVO: src\renderer\modules\auth\constants\userRoles.js
 CAMINHO: C:\Users\USER\Alfadime\src\renderer\modules\auth\constants\userRoles.js
-TAMANHO: 728 bytes
+TAMANHO: 730 bytes
 ----------------------------------------------------------------
 export const USER_ROLES = {
   CREATOR: 'creator',
@@ -46666,13 +47518,15 @@ export const USER_ROLES = {
   PENDING: 'pending',
 };
 
+
 export const ROLE_LABELS = {
-  [USER_ROLES.CREATOR]: 'Criador',
+  [USER_ROLES.CREATOR]: 'Staff',
   [USER_ROLES.ADMIN]: 'Administrador',
   [USER_ROLES.EDITOR]: 'Editor',
   [USER_ROLES.VIEWER]: 'Visualizador',
   [USER_ROLES.PENDING]: 'Pendente',
 };
+
 
 export const ROLE_COLORS = {
   [USER_ROLES.CREATOR]: '#7c3aed',
@@ -46682,10 +47536,11 @@ export const ROLE_COLORS = {
   [USER_ROLES.PENDING]: '#d97706',
 };
 
+
 export const DEFAULT_USER = {
   id: 1,
   username: 'sLekoti',
-  display_name: 'sLekoti (Criador)',
+  display_name: 'sLekoti (Staff)',
   role: USER_ROLES.CREATOR,
   is_active: 1,
 };
@@ -50868,9 +51723,10 @@ export function openReceivedFolder(folderType) {
 ----------------------------------------------------------------
 ARQUIVO: src\renderer\modules\home\pages\HomePage.jsx
 CAMINHO: C:\Users\USER\Alfadime\src\renderer\modules\home\pages\HomePage.jsx
-TAMANHO: 3089 bytes
+TAMANHO: 4604 bytes
 ----------------------------------------------------------------
 import { useNavigate } from "react-router-dom";
+
 
 
 
@@ -50882,8 +51738,15 @@ import {
     History,
     Mail,
     Factory,
-    Settings
+    Settings,
+    Bell
 } from "lucide-react";
+
+
+
+
+import usePermissions from "../../auth/hooks/usePermissions";
+
 
 
 
@@ -50893,51 +51756,75 @@ import "../styles/home.css";
 
 
 
+
 const MODULES = [
     {
+        path: "/",
+        moduleKey: "home",
+        icon: DollarSign,
+        title: "Início",
+        description: "Acesso rápido aos módulos do Alfadime.",
+        exact: true
+    },
+    {
         path: "/price-pending",
+        moduleKey: "price-pending",
         icon: DollarSign,
         title: "Preços e Pendências",
         description: "Controle de recebimento de preços e pendências por filial."
     },
     {
         path: "/products",
+        moduleKey: "products",
         icon: Package,
         title: "Produtos",
         description: "Cadastro e gerenciamento de produtos do Sirius."
     },
     {
         path: "/purchases",
+        moduleKey: "purchases",
         icon: ShoppingCart,
         title: "Compras",
         description: "Gestão de compras e curva ABC."
     },
     {
         path: "/industry-contacts",
+        moduleKey: "industry-contacts",
         icon: Factory,
-        title: "Contatos de Indústrias",
+        title: "Cadastros",
         description: "Cadastro e consulta dos contatos dos laboratórios."
     },
     {
         path: "/product-corrections",
+        moduleKey: "product-corrections",
         icon: FileEdit,
         title: "Correções",
         description: "Solicitar e acompanhar correções de cadastro."
     },
     {
         path: "/product-audit",
+        moduleKey: "product-audit",
         icon: History,
         title: "Auditoria",
         description: "Histórico de alterações nos produtos."
     },
     {
+        path: "/notifications",
+        moduleKey: "notifications",
+        icon: Bell,
+        title: "Notificações",
+        description: "Acompanhe alertas e comunicados do sistema."
+    },
+    {
         path: "/email",
+        moduleKey: "email",
         icon: Mail,
         title: "E-mail",
         description: "Disparo e recebimento de e-mails automáticos."
     },
     {
         path: "/settings",
+        moduleKey: "settings",
         icon: Settings,
         title: "Configurações",
         description: "Preferências e configurações do aplicativo."
@@ -50948,8 +51835,27 @@ const MODULES = [
 
 
 
+
 function HomePage() {
     const navigate = useNavigate();
+
+
+
+    const {
+        isLoading,
+        canAccessModule
+    } = usePermissions();
+
+
+
+    const visibleModules =
+        MODULES.filter(
+            (module) =>
+                canAccessModule(
+                    module.moduleKey
+                )
+        );
+
 
 
 
@@ -50958,46 +51864,58 @@ function HomePage() {
     return (
         <div className="home-page">
             <div className="home-grid">
-                {MODULES.map((module) => {
-                    const Icon =
-                        module.icon;
+                {
+                    isLoading ? (
+                        <p>
+                            Carregando módulos...
+                        </p>
+                    ) : (
+                        visibleModules.map((module) => {
+                            const Icon =
+                                module.icon;
 
 
 
-                    return (
-                        <button
-                            key={module.path}
-                            type="button"
-                            className="home-card"
-                            onClick={() =>
-                                navigate(module.path)
-                            }
-                        >
-                            <span className="home-card-icon">
-                                <Icon
-                                    size={22}
-                                    strokeWidth={1.8}
-                                />
-                            </span>
+
+                            return (
+                                <button
+                                    key={module.path}
+                                    type="button"
+                                    className="home-card"
+                                    onClick={() =>
+                                        navigate(module.path)
+                                    }
+                                >
+                                    <span className="home-card-icon">
+                                        <Icon
+                                            size={22}
+                                            strokeWidth={1.8}
+                                        />
+                                    </span>
 
 
 
-                            <span className="home-card-title">
-                                {module.title}
-                            </span>
+
+                                    <span className="home-card-title">
+                                        {module.title}
+                                    </span>
 
 
 
-                            <span className="home-card-description">
-                                {module.description}
-                            </span>
-                        </button>
-                    );
-                })}
+
+                                    <span className="home-card-description">
+                                        {module.description}
+                                    </span>
+                                </button>
+                            );
+                        })
+                    )
+                }
             </div>
         </div>
     );
 }
+
 
 
 
@@ -71644,11 +72562,12 @@ export default SettingsLayout;
 ----------------------------------------------------------------
 ARQUIVO: src\renderer\modules\settings\pages\SettingsPermissionsPage.jsx
 CAMINHO: C:\Users\USER\Alfadime\src\renderer\modules\settings\pages\SettingsPermissionsPage.jsx
-TAMANHO: 31604 bytes
+TAMANHO: 34045 bytes
 ----------------------------------------------------------------
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/settings.css";
+
 
 
 
@@ -71680,6 +72599,7 @@ const MODULE_COLUMNS = [
 ];
 
 
+
 const FUNCTION_COLUMNS = [
     {
         key: "can_view",
@@ -71696,10 +72616,11 @@ const FUNCTION_COLUMNS = [
 ];
 
 
+
 const ROLES = [
     {
         value: "creator",
-        label: "Criador"
+        label: "Staff"
     },
     {
         value: "admin",
@@ -71721,6 +72642,7 @@ const ROLES = [
 
 
 
+
 function buildInitialState() {
     return {
         target_type: "role",
@@ -71732,9 +72654,11 @@ function buildInitialState() {
 
 
 
+
 export default function SettingsPermissionsPage() {
     const navigate =
         useNavigate();
+
 
 
     const [
@@ -71743,16 +72667,19 @@ export default function SettingsPermissionsPage() {
     ] = useState([]);
 
 
+
     const [
         modules,
         setModules
     ] = useState([]);
 
 
+
     const [
         functions,
         setFunctions
     ] = useState([]);
+
 
 
     const [
@@ -71763,10 +72690,12 @@ export default function SettingsPermissionsPage() {
     );
 
 
+
     const [
         selectedModule,
         setSelectedModule
     ] = useState("");
+
 
 
     const [
@@ -71775,10 +72704,12 @@ export default function SettingsPermissionsPage() {
     ] = useState(true);
 
 
+
     const [
         isSaving,
         setIsSaving
     ] = useState(false);
+
 
 
     const [
@@ -71787,10 +72718,39 @@ export default function SettingsPermissionsPage() {
     ] = useState("");
 
 
+
     const [
         error,
         setError
     ] = useState("");
+
+
+
+    const selectedUser =
+        useMemo(
+            () =>
+                users.find(
+                    (user) =>
+                        String(user.id) ===
+                        String(permissions.target_value)
+                ),
+            [
+                users,
+                permissions.target_value
+            ]
+        );
+
+
+
+    const selectedUserRoleLabel =
+        ROLES.find(
+            (role) =>
+                role.value ===
+                selectedUser?.role
+        )?.label ||
+        selectedUser?.role ||
+        "";
+
 
 
     const loadUsers =
@@ -71798,6 +72758,7 @@ export default function SettingsPermissionsPage() {
             async () => {
                 const response =
                     await window.alfadime.users.list();
+
 
 
                 if (
@@ -71813,11 +72774,13 @@ export default function SettingsPermissionsPage() {
         );
 
 
+
     const loadModules =
         useCallback(
             async () => {
                 const response =
                     await window.alfadime.permissions.listModules();
+
 
 
                 if (
@@ -71833,6 +72796,7 @@ export default function SettingsPermissionsPage() {
         );
 
 
+
     const loadPermissions =
         useCallback(
             async (targetType, targetValue) => {
@@ -71841,13 +72805,18 @@ export default function SettingsPermissionsPage() {
                     "user" &&
                     !targetValue
                 ) {
-                    setPermissions(
-                        buildInitialState()
-                    );
+                    setPermissions({
+                        target_type: "user",
+                        target_value: "",
+                        module_permissions: [],
+                        function_permissions: []
+                    });
+
 
 
                     return;
                 }
+
 
 
                 setIsLoading(
@@ -71855,7 +72824,9 @@ export default function SettingsPermissionsPage() {
                 );
 
 
+
                 setError("");
+
 
 
                 const response =
@@ -71867,6 +72838,7 @@ export default function SettingsPermissionsPage() {
                         : await window.alfadime.permissions.getForRole(
                             targetValue
                         );
+
 
 
                 if (
@@ -71890,12 +72862,14 @@ export default function SettingsPermissionsPage() {
                 }
 
 
+
                 setIsLoading(
                     false
                 );
             },
             []
         );
+
 
 
     useEffect(
@@ -71910,11 +72884,13 @@ export default function SettingsPermissionsPage() {
                     );
 
 
+
                     await loadPermissions(
                         "role",
                         "creator"
                     );
                 };
+
 
 
             initialize();
@@ -71925,6 +72901,7 @@ export default function SettingsPermissionsPage() {
             loadPermissions
         ]
     );
+
 
 
     const moduleFunctions =
@@ -71942,6 +72919,7 @@ export default function SettingsPermissionsPage() {
         );
 
 
+
     const handleTargetTypeChange =
         (value) => {
             const nextValue =
@@ -71951,9 +72929,14 @@ export default function SettingsPermissionsPage() {
                     : "";
 
 
-            setPermissions(
-                buildInitialState()
-            );
+
+            setPermissions({
+                target_type: value,
+                target_value: nextValue,
+                module_permissions: [],
+                function_permissions: []
+            });
+
 
 
             loadPermissions(
@@ -71963,11 +72946,13 @@ export default function SettingsPermissionsPage() {
         };
 
 
+
     const handleTargetValueChange =
         (value) => {
             setPermissions(
                 buildInitialState()
             );
+
 
 
             loadPermissions(
@@ -71977,11 +72962,13 @@ export default function SettingsPermissionsPage() {
         };
 
 
+
     const handleModuleSelect =
         async (moduleKey) => {
             setSelectedModule(
                 moduleKey
             );
+
 
 
             if (
@@ -71991,10 +72978,12 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             const response =
                 await window.alfadime.permissions.listFunctions(
                     moduleKey
                 );
+
 
 
             if (
@@ -72006,6 +72995,7 @@ export default function SettingsPermissionsPage() {
                 );
             }
         };
+
 
 
     const updateModulePermission =
@@ -72028,6 +73018,7 @@ export default function SettingsPermissionsPage() {
                 })
             );
         };
+
 
 
     const updateFunctionPermission =
@@ -72054,6 +73045,7 @@ export default function SettingsPermissionsPage() {
         };
 
 
+
     const handleSave =
         async () => {
             setIsSaving(
@@ -72061,10 +73053,13 @@ export default function SettingsPermissionsPage() {
             );
 
 
+
             setMessage("");
 
 
+
             setError("");
+
 
 
             const response =
@@ -72073,12 +73068,17 @@ export default function SettingsPermissionsPage() {
                 );
 
 
+
             if (
                 response?.success
             ) {
                 setMessage(
-                    "Permissões salvas com sucesso."
+                    permissions.target_type ===
+                        "user"
+                        ? "Permissões individuais salvas com sucesso."
+                        : "Permissões do perfil salvas com sucesso."
                 );
+
 
 
                 await loadPermissions(
@@ -72093,10 +73093,12 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             setIsSaving(
                 false
             );
         };
+
 
 
     const handleClearOverrides =
@@ -72109,9 +73111,11 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             setIsSaving(
                 true
             );
+
 
 
             const response =
@@ -72120,12 +73124,14 @@ export default function SettingsPermissionsPage() {
                 );
 
 
+
             if (
                 response?.success
             ) {
                 setMessage(
                     "Overrides removidos. O usuário voltou a seguir as permissões do perfil."
                 );
+
 
 
                 await loadPermissions(
@@ -72140,10 +73146,12 @@ export default function SettingsPermissionsPage() {
             }
 
 
+
             setIsSaving(
                 false
             );
         };
+
 
 
     return (
@@ -72155,9 +73163,11 @@ export default function SettingsPermissionsPage() {
                     </span>
 
 
+
                     <h1>
                         Permissões granulares
                     </h1>
+
 
 
                     <p>
@@ -72167,11 +73177,13 @@ export default function SettingsPermissionsPage() {
             </header>
 
 
+
             {error && (
                 <div className="settings-db-message settings-db-message-error">
                     {error}
                 </div>
             )}
+
 
 
             {message && (
@@ -72181,10 +73193,12 @@ export default function SettingsPermissionsPage() {
             )}
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Destino das permissões
                 </h2>
+
 
 
                 <div className="settings-permissions-filters">
@@ -72192,6 +73206,7 @@ export default function SettingsPermissionsPage() {
                         <label>
                             Configurar por
                         </label>
+
 
 
                         <select
@@ -72211,11 +73226,13 @@ export default function SettingsPermissionsPage() {
                             </option>
 
 
+
                             <option value="user">
                                 Usuário
                             </option>
                         </select>
                     </div>
+
 
 
                     {permissions.target_type ===
@@ -72224,6 +73241,7 @@ export default function SettingsPermissionsPage() {
                             <label>
                                 Perfil
                             </label>
+
 
 
                             <select
@@ -72265,6 +73283,7 @@ export default function SettingsPermissionsPage() {
                             </label>
 
 
+
                             <select
                                 value={
                                     permissions.target_value
@@ -72280,6 +73299,7 @@ export default function SettingsPermissionsPage() {
                                 <option value="">
                                     Selecione
                                 </option>
+
 
 
                                 {users.map(
@@ -72306,13 +73326,19 @@ export default function SettingsPermissionsPage() {
                     )}
 
 
+
                     <div className="settings-permissions-actions">
                         <button
                             type="button"
                             className="settings-db-button settings-db-button-primary"
                             disabled={
                                 isSaving ||
-                                isLoading
+                                isLoading ||
+                                (
+                                    permissions.target_type ===
+                                    "user" &&
+                                    !permissions.target_value
+                                )
                             }
                             onClick={
                                 handleSave
@@ -72324,6 +73350,7 @@ export default function SettingsPermissionsPage() {
                         </button>
 
 
+
                         {permissions.target_type ===
                             "user" && (
                             <button
@@ -72331,7 +73358,8 @@ export default function SettingsPermissionsPage() {
                                 className="settings-db-button"
                                 disabled={
                                     isSaving ||
-                                    isLoading
+                                    isLoading ||
+                                    !permissions.target_value
                                 }
                                 onClick={
                                     handleClearOverrides
@@ -72340,6 +73368,7 @@ export default function SettingsPermissionsPage() {
                                 Remover overrides
                             </button>
                         )}
+
 
 
                         <button
@@ -72355,13 +73384,40 @@ export default function SettingsPermissionsPage() {
                         </button>
                     </div>
                 </div>
+
+
+
+                {permissions.target_type ===
+                    "user" &&
+                    selectedUser && (
+                        <div className="settings-general-field">
+                            <p>
+                                <strong>
+                                    {selectedUser.display_name ||
+                                        selectedUser.username}
+                                </strong>{" "}
+                                — perfil:{" "}
+                                <strong>
+                                    {selectedUserRoleLabel}
+                                </strong>
+                            </p>
+
+
+
+                            <p>
+                                As permissões salvas serão aplicadas individualmente a este usuário e terão prioridade sobre o perfil.
+                            </p>
+                        </div>
+                    )}
             </div>
+
 
 
             <div className="settings-general-card">
                 <h2>
                     Permissões por módulo
                 </h2>
+
 
 
                 {isLoading ? (
@@ -72376,6 +73432,7 @@ export default function SettingsPermissionsPage() {
                                     <th>
                                         Módulo
                                     </th>
+
 
 
                                     {MODULE_COLUMNS.map(
@@ -72397,6 +73454,7 @@ export default function SettingsPermissionsPage() {
                             </thead>
 
 
+
                             <tbody>
                                 {permissions.module_permissions.map(
                                     (
@@ -72412,6 +73470,7 @@ export default function SettingsPermissionsPage() {
                                                     permission.module_label
                                                 }
                                             </td>
+
 
 
                                             {MODULE_COLUMNS.map(
@@ -72458,10 +73517,12 @@ export default function SettingsPermissionsPage() {
             </div>
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Colunas e ações
                 </h2>
+
 
 
                 <div className="settings-permissions-filters">
@@ -72469,6 +73530,7 @@ export default function SettingsPermissionsPage() {
                         <label>
                             Módulo
                         </label>
+
 
 
                         <select
@@ -72486,6 +73548,7 @@ export default function SettingsPermissionsPage() {
                             <option value="">
                                 Selecione
                             </option>
+
 
 
                             {modules.map(
@@ -72511,6 +73574,7 @@ export default function SettingsPermissionsPage() {
                 </div>
 
 
+
                 {selectedModule &&
                     moduleFunctions.length >
                         0 && (
@@ -72521,6 +73585,7 @@ export default function SettingsPermissionsPage() {
                                         <th>
                                             Item
                                         </th>
+
 
 
                                         {FUNCTION_COLUMNS.map(
@@ -72542,6 +73607,7 @@ export default function SettingsPermissionsPage() {
                                 </thead>
 
 
+
                                 <tbody>
                                     {moduleFunctions.map(
                                         (
@@ -72557,6 +73623,7 @@ export default function SettingsPermissionsPage() {
                                                 );
 
 
+
                                             return (
                                                 <tr
                                                     key={
@@ -72568,6 +73635,7 @@ export default function SettingsPermissionsPage() {
                                                             permissionFunction.function_label
                                                         }
                                                     </td>
+
 
 
                                                     {FUNCTION_COLUMNS.map(
@@ -72612,6 +73680,7 @@ export default function SettingsPermissionsPage() {
                             </table>
                         </div>
                     )}
+
 
 
                 {selectedModule &&
@@ -72949,9 +74018,11 @@ export default SettingsPricePendingPage;
 ----------------------------------------------------------------
 ARQUIVO: src\renderer\modules\settings\pages\SettingsUsersPage.jsx
 CAMINHO: C:\Users\USER\Alfadime\src\renderer\modules\settings\pages\SettingsUsersPage.jsx
-TAMANHO: 19020 bytes
+TAMANHO: 29005 bytes
 ----------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
+
+
 
 import useAuth from "../../auth/hooks/useAuth";
 import {
@@ -72960,15 +74031,23 @@ import {
 } from "../../auth/constants/userRoles";
 import settingsUsersService from "../services/settingsUsersService";
 
+
+
 import "../styles/settings-users.css";
+
+
 
 
 const EMPTY_FORM = {
     username: "",
     display_name: "",
-    role: USER_ROLES.PENDING,
+    password: "",
+    confirmPassword: "",
+    role: USER_ROLES.VIEWER,
     is_active: 1
 };
+
+
 
 
 export default function SettingsUsersPage() {
@@ -72978,30 +74057,42 @@ export default function SettingsUsersPage() {
         isAdmin
     } = useAuth();
 
+
+
     const [
         users,
         setUsers
     ] = useState([]);
+
+
 
     const [
         loading,
         setLoading
     ] = useState(true);
 
+
+
     const [
         error,
         setError
     ] = useState("");
+
+
 
     const [
         saving,
         setSaving
     ] = useState(false);
 
+
+
     const [
         form,
         setForm
     ] = useState(EMPTY_FORM);
+
+
 
     const [
         editingUser,
@@ -73009,8 +74100,26 @@ export default function SettingsUsersPage() {
     ] = useState(null);
 
 
+
+    const [
+        isModalOpen,
+        setIsModalOpen
+    ] = useState(false);
+
+
+
+    const [
+        deletingUser,
+        setDeletingUser
+    ] = useState(null);
+
+
+
+
     const canManageUsers =
         isCreator || isAdmin;
+
+
 
 
     const loadUsers =
@@ -73020,8 +74129,12 @@ export default function SettingsUsersPage() {
                     setLoading(true);
                     setError("");
 
+
+
                     const result =
                         await settingsUsersService.list();
+
+
 
                     if (
                         result?.success
@@ -73041,6 +74154,8 @@ export default function SettingsUsersPage() {
                         loadError
                     );
 
+
+
                     setError(
                         loadError?.message ||
                         "Não foi possível carregar os usuários."
@@ -73053,6 +74168,8 @@ export default function SettingsUsersPage() {
         );
 
 
+
+
     useEffect(() => {
         if (canManageUsers) {
             loadUsers();
@@ -73063,11 +74180,31 @@ export default function SettingsUsersPage() {
     ]);
 
 
+
+
     function resetForm() {
         setForm(EMPTY_FORM);
         setEditingUser(null);
         setError("");
     }
+
+
+
+
+    function openCreateModal() {
+        resetForm();
+        setIsModalOpen(true);
+    }
+
+
+
+
+    function closeModal() {
+        setIsModalOpen(false);
+        resetForm();
+    }
+
+
 
 
     function handleFormChange(event) {
@@ -73076,6 +74213,8 @@ export default function SettingsUsersPage() {
             value
         } = event.target;
 
+
+
         setForm((previous) => ({
             ...previous,
             [name]: value
@@ -73083,30 +74222,47 @@ export default function SettingsUsersPage() {
     }
 
 
+
+
     function handleEdit(user) {
         setEditingUser(user);
+
+
 
         setForm({
             username: user.username,
             display_name: user.display_name,
+            password: "",
+            confirmPassword: "",
             role: user.role,
             is_active: user.is_active
         });
 
+
+
         setError("");
+        setIsModalOpen(true);
     }
+
+
 
 
     async function handleSubmit(event) {
         event.preventDefault();
+
+
 
         if (!canManageUsers) {
             setError(
                 "Você não tem permissão para gerenciar usuários."
             );
 
+
+
             return;
         }
+
+
 
         if (
             !form.username.trim() ||
@@ -73116,10 +74272,45 @@ export default function SettingsUsersPage() {
                 "Informe o usuário e o nome de exibição."
             );
 
+
+
             return;
         }
 
+
+
+        if (!editingUser) {
+            if (form.password.length < 6) {
+                setError(
+                    "A senha deve ter pelo menos 6 caracteres."
+                );
+
+
+
+                return;
+            }
+
+
+
+            if (
+                form.password !==
+                form.confirmPassword
+            ) {
+                setError(
+                    "As senhas não são iguais."
+                );
+
+
+
+                return;
+            }
+        }
+
+
+
         setSaving(true);
+
+
 
         try {
             const result =
@@ -73136,18 +74327,26 @@ export default function SettingsUsersPage() {
                     : await settingsUsersService.create({
                         username: form.username.trim(),
                         display_name: form.display_name.trim(),
+                        password: form.password,
+                        confirmPassword: form.confirmPassword,
                         role: form.role,
                         is_active: Number(form.is_active)
                     });
 
+
+
             if (
                 result?.success
             ) {
-                resetForm();
+                closeModal();
                 await loadUsers();
+
+
 
                 return;
             }
+
+
 
             setError(
                 result?.error ||
@@ -73159,6 +74358,8 @@ export default function SettingsUsersPage() {
                 saveError
             );
 
+
+
             setError(
                 saveError?.message ||
                 "Não foi possível salvar o usuário."
@@ -73169,6 +74370,71 @@ export default function SettingsUsersPage() {
     }
 
 
+
+
+    async function handleDelete(user) {
+        setDeletingUser(user);
+    }
+
+
+
+
+    async function confirmDelete() {
+        if (!deletingUser) {
+            return;
+        }
+
+
+
+        setSaving(true);
+
+
+
+        try {
+            const result =
+                await settingsUsersService.delete(
+                    deletingUser.id
+                );
+
+
+
+            if (
+                result?.success
+            ) {
+                setDeletingUser(null);
+                await loadUsers();
+
+
+
+                return;
+            }
+
+
+
+            setError(
+                result?.error ||
+                "Não foi possível excluir o usuário."
+            );
+        } catch (deleteError) {
+            console.error(
+                "[USERS] Erro ao excluir:",
+                deleteError
+            );
+
+
+
+            setError(
+                deleteError?.message ||
+                "Não foi possível excluir o usuário."
+            );
+        } finally {
+            setSaving(false);
+        }
+    }
+
+
+
+
     async function handleToggleActive(user) {
         if (
             user.id === currentUser?.id
@@ -73177,8 +74443,12 @@ export default function SettingsUsersPage() {
                 "Não é possível desativar o usuário conectado."
             );
 
+
+
             return;
         }
+
+
 
         try {
             const result =
@@ -73187,13 +74457,19 @@ export default function SettingsUsersPage() {
                     user.is_active ? 0 : 1
                 );
 
+
+
             if (
                 result?.success
             ) {
                 await loadUsers();
 
+
+
                 return;
             }
+
+
 
             setError(
                 result?.error ||
@@ -73205,12 +74481,16 @@ export default function SettingsUsersPage() {
                 toggleError
             );
 
+
+
             setError(
                 toggleError?.message ||
                 "Não foi possível alterar o status."
             );
         }
     }
+
+
 
 
     if (!canManageUsers) {
@@ -73221,9 +74501,13 @@ export default function SettingsUsersPage() {
                         Configurações
                     </span>
 
+
+
                     <h1>
                         Usuários e permissões
                     </h1>
+
+
 
                     <p>
                         Você não tem permissão para acessar esta área.
@@ -73234,6 +74518,8 @@ export default function SettingsUsersPage() {
     }
 
 
+
+
     return (
         <main className="settings-users-page">
             <header className="settings-users-header">
@@ -73242,15 +74528,31 @@ export default function SettingsUsersPage() {
                         Configurações
                     </span>
 
+
+
                     <h1>
                         Usuários e permissões
                     </h1>
+
+
 
                     <p>
                         Gerencie os usuários, perfis e status de acesso ao Alfadime.
                     </p>
                 </div>
+
+
+
+                <button
+                    type="button"
+                    className="settings-users-primary-button"
+                    onClick={openCreateModal}
+                >
+                    Novo usuário
+                </button>
             </header>
+
+
 
             {
                 error && (
@@ -73263,150 +74565,14 @@ export default function SettingsUsersPage() {
                 )
             }
 
-            <section className="settings-users-card">
-                <h2>
-                    {
-                        editingUser
-                            ? "Editar usuário"
-                            : "Novo usuário"
-                    }
-                </h2>
 
-                <form
-                    className="settings-users-form"
-                    onSubmit={handleSubmit}
-                >
-                    <div className="settings-users-field">
-                        <label htmlFor="user-username">
-                            Usuário
-                        </label>
-
-                        <input
-                            id="user-username"
-                            name="username"
-                            value={form.username}
-                            onChange={handleFormChange}
-                            disabled={
-                                saving ||
-                                Boolean(editingUser)
-                            }
-                            placeholder="Ex.: joao.silva"
-                        />
-                    </div>
-
-                    <div className="settings-users-field">
-                        <label htmlFor="user-display-name">
-                            Nome de exibição
-                        </label>
-
-                        <input
-                            id="user-display-name"
-                            name="display_name"
-                            value={form.display_name}
-                            onChange={handleFormChange}
-                            disabled={saving}
-                            placeholder="Ex.: João Silva"
-                        />
-                    </div>
-
-                    <div className="settings-users-field">
-                        <label htmlFor="user-role">
-                            Perfil
-                        </label>
-
-                        <select
-                            id="user-role"
-                            name="role"
-                            value={form.role}
-                            onChange={handleFormChange}
-                            disabled={
-                                saving ||
-                                !isCreator
-                            }
-                        >
-                            {
-                                isCreator && (
-                                    <option value={USER_ROLES.CREATOR}>
-                                        Criador
-                                    </option>
-                                )
-                            }
-
-                            <option value={USER_ROLES.ADMIN}>
-                                Administrador
-                            </option>
-
-                            <option value={USER_ROLES.EDITOR}>
-                                Editor
-                            </option>
-
-                            <option value={USER_ROLES.VIEWER}>
-                                Visualizador
-                            </option>
-
-                            <option value={USER_ROLES.PENDING}>
-                                Pendente
-                            </option>
-                        </select>
-                    </div>
-
-                    <div className="settings-users-field">
-                        <label htmlFor="user-status">
-                            Status
-                        </label>
-
-                        <select
-                            id="user-status"
-                            name="is_active"
-                            value={form.is_active}
-                            onChange={handleFormChange}
-                            disabled={saving}
-                        >
-                            <option value={1}>
-                                Ativo
-                            </option>
-
-                            <option value={0}>
-                                Inativo
-                            </option>
-                        </select>
-                    </div>
-
-                    <div className="settings-users-form-actions">
-                        <button
-                            type="submit"
-                            className="settings-users-primary-button"
-                            disabled={saving}
-                        >
-                            {
-                                saving
-                                    ? "Salvando..."
-                                    : editingUser
-                                        ? "Salvar alterações"
-                                        : "Criar usuário"
-                            }
-                        </button>
-
-                        {
-                            editingUser && (
-                                <button
-                                    type="button"
-                                    className="settings-users-secondary-button"
-                                    onClick={resetForm}
-                                    disabled={saving}
-                                >
-                                    Cancelar
-                                </button>
-                            )
-                        }
-                    </div>
-                </form>
-            </section>
 
             <section className="settings-users-card">
                 <h2>
                     Usuários cadastrados
                 </h2>
+
+
 
                 {
                     loading ? (
@@ -73426,23 +74592,33 @@ export default function SettingsUsersPage() {
                                             Nome
                                         </th>
 
+
+
                                         <th>
                                             Usuário
                                         </th>
+
+
 
                                         <th>
                                             Perfil
                                         </th>
 
+
+
                                         <th>
                                             Status
                                         </th>
+
+
 
                                         <th>
                                             Ações
                                         </th>
                                     </tr>
                                 </thead>
+
+
 
                                 <tbody>
                                     {
@@ -73452,9 +74628,13 @@ export default function SettingsUsersPage() {
                                                     {user.display_name}
                                                 </td>
 
+
+
                                                 <td>
                                                     {user.username}
                                                 </td>
+
+
 
                                                 <td>
                                                     {
@@ -73464,6 +74644,8 @@ export default function SettingsUsersPage() {
                                                         user.role
                                                     }
                                                 </td>
+
+
 
                                                 <td>
                                                     <span
@@ -73481,6 +74663,8 @@ export default function SettingsUsersPage() {
                                                     </span>
                                                 </td>
 
+
+
                                                 <td>
                                                     <div className="settings-users-actions">
                                                         <button
@@ -73491,6 +74675,8 @@ export default function SettingsUsersPage() {
                                                         >
                                                             Editar
                                                         </button>
+
+
 
                                                         <button
                                                             type="button"
@@ -73508,6 +74694,24 @@ export default function SettingsUsersPage() {
                                                                     : "Ativar"
                                                             }
                                                         </button>
+
+
+
+                                                        <button
+                                                            type="button"
+                                                            className="settings-users-danger-button"
+                                                            onClick={() =>
+                                                                handleDelete(user)
+                                                            }
+                                                            disabled={
+                                                                user.id ===
+                                                                    currentUser?.id ||
+                                                                user.role ===
+                                                                    USER_ROLES.CREATOR
+                                                            }
+                                                        >
+                                                            Excluir
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -73519,6 +74723,289 @@ export default function SettingsUsersPage() {
                     )
                 }
             </section>
+
+
+
+            {
+                isModalOpen && (
+                    <div className="settings-users-modal-overlay">
+                        <div className="settings-users-modal">
+                            <header className="settings-users-modal-header">
+                                <h2>
+                                    {
+                                        editingUser
+                                            ? "Editar usuário"
+                                            : "Novo usuário"
+                                    }
+                                </h2>
+
+
+
+                                <button
+                                    type="button"
+                                    className="settings-users-modal-close"
+                                    onClick={closeModal}
+                                    disabled={saving}
+                                >
+                                    ×
+                                </button>
+                            </header>
+
+
+
+                            <form
+                                className="settings-users-form"
+                                onSubmit={handleSubmit}
+                            >
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-username">
+                                        Usuário
+                                    </label>
+
+
+
+                                    <input
+                                        id="user-username"
+                                        name="username"
+                                        value={form.username}
+                                        onChange={handleFormChange}
+                                        disabled={
+                                            saving ||
+                                            Boolean(editingUser)
+                                        }
+                                        placeholder="Ex.: joao.silva"
+                                    />
+                                </div>
+
+
+
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-display-name">
+                                        Nome de exibição
+                                    </label>
+
+
+
+                                    <input
+                                        id="user-display-name"
+                                        name="display_name"
+                                        value={form.display_name}
+                                        onChange={handleFormChange}
+                                        disabled={saving}
+                                        placeholder="Ex.: João Silva"
+                                    />
+                                </div>
+
+
+
+                                {
+                                    !editingUser && (
+                                        <>
+                                            <div className="settings-users-field">
+                                                <label htmlFor="user-password">
+                                                    Senha
+                                                </label>
+
+
+
+                                                <input
+                                                    id="user-password"
+                                                    name="password"
+                                                    type="password"
+                                                    value={form.password}
+                                                    onChange={handleFormChange}
+                                                    disabled={saving}
+                                                    placeholder="Mínimo de 6 caracteres"
+                                                />
+                                            </div>
+
+
+
+                                            <div className="settings-users-field">
+                                                <label htmlFor="user-confirm-password">
+                                                    Confirmar senha
+                                                </label>
+
+
+
+                                                <input
+                                                    id="user-confirm-password"
+                                                    name="confirmPassword"
+                                                    type="password"
+                                                    value={form.confirmPassword}
+                                                    onChange={handleFormChange}
+                                                    disabled={saving}
+                                                    placeholder="Repita a senha"
+                                                />
+                                            </div>
+                                        </>
+                                    )
+                                }
+
+
+
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-role">
+                                        Perfil
+                                    </label>
+
+
+
+                                    <select
+                                        id="user-role"
+                                        name="role"
+                                        value={form.role}
+                                        onChange={handleFormChange}
+                                        disabled={
+                                            saving ||
+                                            !isCreator
+                                        }
+                                    >
+                                        {
+                                            isCreator && (
+                                                <option value={USER_ROLES.CREATOR}>
+                                                    Staff
+                                                </option>
+                                            )
+                                        }
+
+
+
+                                        <option value={USER_ROLES.ADMIN}>
+                                            Administrador
+                                        </option>
+
+
+
+                                        <option value={USER_ROLES.EDITOR}>
+                                            Editor
+                                        </option>
+
+
+
+                                        <option value={USER_ROLES.VIEWER}>
+                                            Visualizador
+                                        </option>
+
+
+
+                                        <option value={USER_ROLES.PENDING}>
+                                            Pendente
+                                        </option>
+                                    </select>
+                                </div>
+
+
+
+                                <div className="settings-users-field">
+                                    <label htmlFor="user-status">
+                                        Status
+                                    </label>
+
+
+
+                                    <select
+                                        id="user-status"
+                                        name="is_active"
+                                        value={form.is_active}
+                                        onChange={handleFormChange}
+                                        disabled={saving}
+                                    >
+                                        <option value={1}>
+                                            Ativo
+                                        </option>
+
+
+
+                                        <option value={0}>
+                                            Inativo
+                                        </option>
+                                    </select>
+                                </div>
+
+
+
+                                <div className="settings-users-form-actions">
+                                    <button
+                                        type="submit"
+                                        className="settings-users-primary-button"
+                                        disabled={saving}
+                                    >
+                                        {
+                                            saving
+                                                ? "Salvando..."
+                                                : editingUser
+                                                    ? "Salvar alterações"
+                                                    : "Criar usuário"
+                                        }
+                                    </button>
+
+
+
+                                    <button
+                                        type="button"
+                                        className="settings-users-secondary-button"
+                                        onClick={closeModal}
+                                        disabled={saving}
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+
+
+
+            {
+                deletingUser && (
+                    <div className="settings-users-modal-overlay">
+                        <div className="settings-users-modal settings-users-confirm-modal">
+                            <h2>
+                                Excluir usuário
+                            </h2>
+
+
+
+                            <p>
+                                Deseja realmente excluir o usuário <strong>{deletingUser.display_name}</strong>?
+                            </p>
+
+
+
+                            <div className="settings-users-form-actions">
+                                <button
+                                    type="button"
+                                    className="settings-users-danger-button"
+                                    onClick={confirmDelete}
+                                    disabled={saving}
+                                >
+                                    {
+                                        saving
+                                            ? "Excluindo..."
+                                            : "Excluir"
+                                    }
+                                </button>
+
+
+
+                                <button
+                                    type="button"
+                                    className="settings-users-secondary-button"
+                                    onClick={() =>
+                                        setDeletingUser(null)
+                                    }
+                                    disabled={saving}
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </main>
     );
 }
@@ -73526,7 +75013,7 @@ export default function SettingsUsersPage() {
 ----------------------------------------------------------------
 ARQUIVO: src\renderer\modules\settings\services\settingsUsersService.js
 CAMINHO: C:\Users\USER\Alfadime\src\renderer\modules\settings\services\settingsUsersService.js
-TAMANHO: 749 bytes
+TAMANHO: 841 bytes
 ----------------------------------------------------------------
 function getUsersApi() {
     if (
@@ -73538,30 +75025,42 @@ function getUsersApi() {
         );
     }
 
+
     return window.alfadime.users;
 }
+
 
 export const settingsUsersService = {
     async list() {
         return getUsersApi().list();
     },
 
+
     async create(data) {
         return getUsersApi().create(data);
     },
+
 
     async update(id, data) {
         return getUsersApi().update(id, data);
     },
 
+
+    async delete(id) {
+        return getUsersApi().delete(id);
+    },
+
+
     async setActive(id, isActive) {
         return getUsersApi().setActive(id, isActive);
     },
+
 
     async listPermissions() {
         return getUsersApi().listPermissions();
     }
 };
+
 
 export default settingsUsersService;
 
@@ -73865,7 +75364,7 @@ TAMANHO: 5596 bytes
 ----------------------------------------------------------------
 ARQUIVO: src\renderer\modules\settings\styles\settings-users.css
 CAMINHO: C:\Users\USER\Alfadime\src\renderer\modules\settings\styles\settings-users.css
-TAMANHO: 4385 bytes
+TAMANHO: 6552 bytes
 ----------------------------------------------------------------
 .settings-users-page {
     display: flex;
@@ -74098,6 +75597,126 @@ TAMANHO: 4385 bytes
 @media (max-width: 680px) {
     .settings-users-form {
         grid-template-columns: 1fr;
+    }
+}
+
+.settings-users-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+
+.settings-users-danger-button {
+    min-height: 34px;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 0 16px;
+    background: #ffffff;
+    color: #b91c1c;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+
+.settings-users-danger-button:hover:not(:disabled) {
+    border-color: #b91c1c;
+    background: #fee2e2;
+}
+
+
+.settings-users-danger-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+
+.settings-users-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+
+.settings-users-modal {
+    width: 100%;
+    max-width: 620px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid #e1e6ed;
+    border-radius: 10px;
+    padding: 20px;
+    background: #ffffff;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+
+.settings-users-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+
+.settings-users-modal-header h2 {
+    margin: 0;
+    color: #344f6c;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+
+.settings-users-modal-close {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid #cdd6df;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #45515e;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+}
+
+
+.settings-users-modal-close:hover {
+    border-color: #aab7c5;
+    background: #f0f4f8;
+}
+
+
+.settings-users-confirm-modal {
+    max-width: 420px;
+}
+
+
+.settings-users-confirm-modal p {
+    margin: 0 0 18px;
+    color: #45515e;
+    font-size: 13px;
+}
+
+
+@media (max-width: 680px) {
+    .settings-users-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+
+    .settings-users-modal {
+        padding: 16px;
     }
 }
 
