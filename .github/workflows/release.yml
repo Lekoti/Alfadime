@@ -1,21 +1,26 @@
 name: Gerar e publicar Alfadime
 
+
 on:
   push:
     tags:
       - "v*"
 
+
 permissions:
   contents: write
+
 
 jobs:
   release-windows:
     name: Gerar Setup Windows e publicar Release
     runs-on: windows-latest
 
+
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
+
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
@@ -23,14 +28,28 @@ jobs:
           node-version: 22
           cache: npm
 
+
       - name: Instalar dependências
         run: npm ci
+
 
       - name: Gerar interface do aplicativo
         run: npm run build
 
+
+      - name: Preparar processo principal e preload
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path "dist\main", "dist\preload"
+
+
+          Copy-Item -Path "src\main\*" -Destination "dist\main" -Recurse -Force
+          Copy-Item -Path "src\preload\*" -Destination "dist\preload" -Recurse -Force
+
+
       - name: Gerar instalador Windows
         run: npx electron-builder --win nsis --x64 --publish never
+
 
       - name: Gerar latest.yml
         shell: powershell
@@ -38,14 +57,18 @@ jobs:
           $installer = Get-ChildItem -Path "dist" -Filter "Alfadime-Setup-*.exe" -File |
             Select-Object -First 1
 
+
           if (-not $installer) {
             throw "Instalador não encontrado em dist."
           }
 
+
           $version = node -p "require('./package.json').version"
+
 
           $sha512Hex = Get-FileHash -Path $installer.FullName -Algorithm SHA512 |
             Select-Object -ExpandProperty Hash
+
 
           $sha512Bytes = for (
             $index = 0;
@@ -61,13 +84,16 @@ jobs:
             )
           }
 
+
           $sha512Base64 = [Convert]::ToBase64String(
             [byte[]] $sha512Bytes
           )
 
+
           $releaseDate = (Get-Date).ToUniversalTime().ToString(
             "yyyy-MM-ddTHH:mm:ss.fffZ"
           )
+
 
           @"
           version: $version
@@ -80,7 +106,9 @@ jobs:
           releaseDate: '$releaseDate'
           "@ | Set-Content -Path "dist\latest.yml" -Encoding utf8
 
+
           Get-Content "dist\latest.yml"
+
 
       - name: Conferir arquivos gerados
         shell: powershell
@@ -88,17 +116,21 @@ jobs:
           Get-ChildItem -Path dist -File |
             Select-Object Name, Length
 
+
           if (-not (Test-Path "dist\Alfadime-Setup-*.exe")) {
             throw "O instalador .exe não foi gerado."
           }
+
 
           if (-not (Test-Path "dist\Alfadime-Setup-*.exe.blockmap")) {
             throw "O arquivo .blockmap não foi gerado."
           }
 
+
           if (-not (Test-Path "dist\latest.yml")) {
             throw "O latest.yml não foi gerado."
           }
+
 
       - name: Criar ou atualizar Release
         uses: softprops/action-gh-release@v2
