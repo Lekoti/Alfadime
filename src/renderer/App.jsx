@@ -1,12 +1,14 @@
 ﻿import React from "react";
 
 
+
 import {
     HashRouter,
     Routes,
     Route,
     Navigate
 } from "react-router-dom";
+
 
 
 import MainLayout from "./layouts/MainLayout.jsx";
@@ -30,9 +32,11 @@ import LoginPage from "./modules/auth/pages/LoginPage.jsx";
 import useAuth from "./modules/auth/hooks/useAuth.js";
 import PermissionRoute from "./modules/auth/components/PermissionRoute.jsx";
 import SettingsPermissionsPage from "./modules/settings/pages/SettingsPermissionsPage.jsx";
+import AppUpdater from "./components/app-updater/AppUpdater.jsx";
 import {
     AuthProvider
 } from "./modules/auth/context/AuthContext.jsx";
+
 
 
 
@@ -48,6 +52,7 @@ function LoadingScreen() {
 
 
 
+
 function ApplicationRoutes() {
     const {
         loading,
@@ -55,14 +60,17 @@ function ApplicationRoutes() {
     } = useAuth();
 
 
+
     if (loading) {
         return <LoadingScreen />;
     }
 
 
+
     if (!isAuthenticated) {
         return <LoginPage />;
     }
+
 
 
     return (
@@ -77,6 +85,7 @@ function ApplicationRoutes() {
                 />
 
 
+
                 <Route
                     path="products"
                     element={
@@ -85,6 +94,7 @@ function ApplicationRoutes() {
                         </PermissionRoute>
                     }
                 />
+
 
 
                 <Route
@@ -97,6 +107,7 @@ function ApplicationRoutes() {
                 />
 
 
+
                 <Route
                     path="product-corrections"
                     element={
@@ -105,6 +116,7 @@ function ApplicationRoutes() {
                         </PermissionRoute>
                     }
                 />
+
 
 
                 <Route
@@ -117,6 +129,7 @@ function ApplicationRoutes() {
                 />
 
 
+
                 <Route
                     path="purchases"
                     element={
@@ -125,6 +138,7 @@ function ApplicationRoutes() {
                         </PermissionRoute>
                     }
                 />
+
 
 
                 <Route
@@ -137,6 +151,7 @@ function ApplicationRoutes() {
                 />
 
 
+
                 <Route
                     path="notifications"
                     element={
@@ -145,6 +160,7 @@ function ApplicationRoutes() {
                         </PermissionRoute>
                     }
                 />
+
 
 
                 <Route
@@ -157,6 +173,7 @@ function ApplicationRoutes() {
                 />
 
 
+
                 <Route
                     path="email/received"
                     element={
@@ -165,6 +182,7 @@ function ApplicationRoutes() {
                         </PermissionRoute>
                     }
                 />
+
 
 
                 <Route
@@ -181,10 +199,12 @@ function ApplicationRoutes() {
                     />
 
 
+
                     <Route
                         path="email-configs"
                         element={<EmailConfigsPage />}
                     />
+
 
 
                     <Route
@@ -193,10 +213,12 @@ function ApplicationRoutes() {
                     />
 
 
+
                     <Route
                         path="contacts"
                         element={<SettingsContactsPage />}
                     />
+
 
 
                     <Route
@@ -205,11 +227,13 @@ function ApplicationRoutes() {
                     />
 
 
+
                     <Route
                         path="permissions"
                         element={<SettingsPermissionsPage />}
                     />
                 </Route>
+
 
 
                 <Route
@@ -228,15 +252,22 @@ function ApplicationRoutes() {
 
 
 
+
 function App() {
     return (
         <AuthProvider>
             <HashRouter>
-                <ApplicationRoutes />
+                <div className="app-root">
+                    <ApplicationRoutes />
+
+
+                    <AppUpdater />
+                </div>
             </HashRouter>
         </AuthProvider>
     );
 }
+
 
 
 
