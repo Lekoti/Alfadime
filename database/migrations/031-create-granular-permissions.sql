@@ -25,8 +25,7 @@ CREATE TABLE IF NOT EXISTS permission_functions (
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(module_key, function_key),
-    FOREIGN KEY (module_key) REFERENCES permission_modules(module_key) ON DELETE CASCADE
+    UNIQUE(module_key, function_key)
 );
 
 
@@ -43,8 +42,7 @@ CREATE TABLE IF NOT EXISTS role_module_permissions (
     can_sync INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(role, module_key),
-    FOREIGN KEY (module_key) REFERENCES permission_modules(module_key) ON DELETE CASCADE
+    UNIQUE(role, module_key)
 );
 
 
@@ -59,10 +57,7 @@ CREATE TABLE IF NOT EXISTS role_function_permissions (
     can_execute INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(role, module_key, function_key),
-    FOREIGN KEY (module_key, function_key) 
-        REFERENCES permission_functions(module_key, function_key) 
-        ON DELETE CASCADE
+    UNIQUE(role, module_key, function_key)
 );
 
 
@@ -80,8 +75,7 @@ CREATE TABLE IF NOT EXISTS user_module_permissions (
     override_role INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(user_id, module_key),
-    FOREIGN KEY (module_key) REFERENCES permission_modules(module_key) ON DELETE CASCADE
+    UNIQUE(user_id, module_key)
 );
 
 
@@ -97,10 +91,7 @@ CREATE TABLE IF NOT EXISTS user_function_permissions (
     override_role INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(user_id, module_key, function_key),
-    FOREIGN KEY (module_key, function_key) 
-        REFERENCES permission_functions(module_key, function_key) 
-        ON DELETE CASCADE
+    UNIQUE(user_id, module_key, function_key)
 );
 
 
