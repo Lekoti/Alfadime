@@ -454,6 +454,11 @@ class AuthHandler {
     }
 
 
+    getAuthenticatedUser() {
+        return this.currentSession?.user || null;
+    }
+
+
     getComputerId() {
         return this.computerId;
     }

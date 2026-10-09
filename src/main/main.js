@@ -89,6 +89,16 @@ const {
     "./modules/auth/auth.ipc"
 );
 
+const {
+    registerUsersIpc
+} = require(
+    "./modules/auth/users.ipc"
+);
+
+const authHandler = require(
+    "./modules/auth/authHandler"
+);
+
 let mainWindow = null;
 let appIpcRegistered = false;
 let updaterConfigured = false;
@@ -718,6 +728,11 @@ function registerAllIpc() {
 
     registerAuthIpc(
         ipcMain
+    );
+
+    registerUsersIpc(
+        ipcMain,
+        () => authHandler.getAuthenticatedUser()
     );
 
     registerPricePendingIpc(

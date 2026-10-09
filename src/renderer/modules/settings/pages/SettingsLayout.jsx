@@ -1,10 +1,24 @@
-import { NavLink, Outlet } from "react-router-dom";
+import {
+    NavLink,
+    Outlet
+} from "react-router-dom";
+
+import useAuth from
+    "../../auth/hooks/useAuth";
 
 import "../styles/settings.css";
 
 
-
 function SettingsLayout() {
+    const {
+        isCreator,
+        isAdmin
+    } = useAuth();
+
+    const canManageUsers =
+        isCreator || isAdmin;
+
+
     return (
         <div className="settings-layout">
             <nav className="settings-tabs">
@@ -20,8 +34,6 @@ function SettingsLayout() {
                     Geral
                 </NavLink>
 
-
-
                 <NavLink
                     to="/settings/email-configs"
                     className={({ isActive }) =>
@@ -32,8 +44,6 @@ function SettingsLayout() {
                 >
                     E-mail - Configurações
                 </NavLink>
-
-
 
                 <NavLink
                     to="/settings/price-pending"
@@ -46,8 +56,6 @@ function SettingsLayout() {
                     Preços e Pendências
                 </NavLink>
 
-
-
                 <NavLink
                     to="/settings/contacts"
                     className={({ isActive }) =>
@@ -58,15 +66,27 @@ function SettingsLayout() {
                 >
                     Contatos
                 </NavLink>
+
+                {
+                    canManageUsers && (
+                        <NavLink
+                            to="/settings/users"
+                            className={({ isActive }) =>
+                                isActive
+                                    ? "settings-tab active"
+                                    : "settings-tab"
+                            }
+                        >
+                            Usuários e permissões
+                        </NavLink>
+                    )
+                }
             </nav>
-
-
 
             <Outlet />
         </div>
     );
 }
-
 
 
 export default SettingsLayout;

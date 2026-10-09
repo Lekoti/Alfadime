@@ -22,6 +22,7 @@ import EmailConfigsPage from "./modules/email-dispatch/pages/EmailConfigsPage.js
 import SettingsGeneralPage from "./modules/settings/pages/SettingsGeneralPage.jsx";
 import SettingsPricePendingPage from "./modules/settings/pages/SettingsPricePendingPage.jsx";
 import SettingsContactsPage from "./modules/settings/pages/SettingsContactsPage.jsx";
+import SettingsUsersPage from "./modules/settings/pages/SettingsUsersPage.jsx";
 import SettingsLayout from "./modules/settings/pages/SettingsLayout.jsx";
 import LoginPage from "./modules/auth/pages/LoginPage.jsx";
 import useAuth from "./modules/auth/hooks/useAuth.js";
@@ -133,6 +134,11 @@ function ApplicationRoutes() {
                     <Route
                         path="contacts"
                         element={<SettingsContactsPage />}
+                    />
+
+                    <Route
+                        path="users"
+                        element={<SettingsUsersPage />}
                     />
                 </Route>
 
