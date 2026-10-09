@@ -237,3 +237,55 @@
 .settings-db-message-error {
     color: #b3261e;
 }
+
+.settings-permissions-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.settings-permissions-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.settings-permissions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.settings-permissions-table th,
+.settings-permissions-table td {
+    border-bottom: 1px solid #e3e8ee;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.settings-permissions-table th {
+    color: #6b7785;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.settings-permissions-table tbody tr:hover {
+    background: #f7f9fb;
+}
+
+.settings-permissions-table input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #3b5f86;
+    cursor: pointer;
+}
+
+.settings-permissions-table-wrapper {
+    max-height: 420px;
+    overflow: auto;
+    border: 1px solid #e3e8ee;
+    border-radius: 6px;
+}

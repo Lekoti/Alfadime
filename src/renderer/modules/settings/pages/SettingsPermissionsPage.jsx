@@ -499,41 +499,51 @@ export default function SettingsPermissionsPage() {
 
 
     return (
-        <section className="settings-page">
-            <header className="page-header">
+        <section className="settings-general-page">
+            <header className="settings-general-header">
                 <div>
+                    <span className="settings-general-eyebrow">
+                        Controle de acesso
+                    </span>
+
+
                     <h1>
-                        Permissões
+                        Permissões granulares
                     </h1>
 
 
                     <p>
-                        Configure o acesso por perfil, módulo, coluna e ação.
+                        Configure o acesso por perfil, usuário, módulo, coluna e ação.
                     </p>
                 </div>
             </header>
 
 
             {error && (
-                <div className="alert alert-error">
+                <div className="settings-db-message settings-db-message-error">
                     {error}
                 </div>
             )}
 
 
             {message && (
-                <div className="alert alert-success">
+                <div className="settings-db-message settings-db-message-success">
                     {message}
                 </div>
             )}
 
 
-            <div className="settings-card">
-                <div className="settings-filters">
-                    <label>
-                        <span>
+            <div className="settings-general-card">
+                <h2>
+                    Destino das permissões
+                </h2>
+
+
+                <div className="settings-permissions-filters">
+                    <div className="settings-general-field">
+                        <label>
                             Configurar por
-                        </span>
+                        </label>
 
 
                         <select
@@ -557,15 +567,15 @@ export default function SettingsPermissionsPage() {
                                 Usuário
                             </option>
                         </select>
-                    </label>
+                    </div>
 
 
                     {permissions.target_type ===
                         "role" ? (
-                        <label>
-                            <span>
+                        <div className="settings-general-field">
+                            <label>
                                 Perfil
-                            </span>
+                            </label>
 
 
                             <select
@@ -599,12 +609,12 @@ export default function SettingsPermissionsPage() {
                                     )
                                 )}
                             </select>
-                        </label>
+                        </div>
                     ) : (
-                        <label>
-                            <span>
+                        <div className="settings-general-field">
+                            <label>
                                 Usuário
-                            </span>
+                            </label>
 
 
                             <select
@@ -644,14 +654,14 @@ export default function SettingsPermissionsPage() {
                                     )
                                 )}
                             </select>
-                        </label>
+                        </div>
                     )}
 
 
-                    <div className="settings-actions">
+                    <div className="settings-permissions-actions">
                         <button
                             type="button"
-                            className="btn btn-primary"
+                            className="settings-db-button settings-db-button-primary"
                             disabled={
                                 isSaving ||
                                 isLoading
@@ -662,7 +672,7 @@ export default function SettingsPermissionsPage() {
                         >
                             {isSaving
                                 ? "Salvando..."
-                                : "Salvar"}
+                                : "Salvar permissões"}
                         </button>
 
 
@@ -670,7 +680,7 @@ export default function SettingsPermissionsPage() {
                             "user" && (
                             <button
                                 type="button"
-                                className="btn btn-secondary"
+                                className="settings-db-button"
                                 disabled={
                                     isSaving ||
                                     isLoading
@@ -686,7 +696,7 @@ export default function SettingsPermissionsPage() {
 
                         <button
                             type="button"
-                            className="btn btn-secondary"
+                            className="settings-db-button"
                             onClick={() =>
                                 navigate(
                                     "/settings"
@@ -700,9 +710,9 @@ export default function SettingsPermissionsPage() {
             </div>
 
 
-            <div className="settings-card">
+            <div className="settings-general-card">
                 <h2>
-                    Módulos
+                    Permissões por módulo
                 </h2>
 
 
@@ -711,8 +721,8 @@ export default function SettingsPermissionsPage() {
                         Carregando permissões...
                     </p>
                 ) : (
-                    <div className="table-wrapper">
-                        <table className="data-table">
+                    <div className="settings-permissions-table-wrapper">
+                        <table className="settings-permissions-table">
                             <thead>
                                 <tr>
                                     <th>
@@ -800,62 +810,64 @@ export default function SettingsPermissionsPage() {
             </div>
 
 
-            <div className="settings-card">
+            <div className="settings-general-card">
                 <h2>
                     Colunas e ações
                 </h2>
 
 
-                <label className="settings-inline-field">
-                    <span>
-                        Módulo
-                    </span>
+                <div className="settings-permissions-filters">
+                    <div className="settings-general-field">
+                        <label>
+                            Módulo
+                        </label>
 
 
-                    <select
-                        value={
-                            selectedModule
-                        }
-                        onChange={(
-                            event
-                        ) =>
-                            handleModuleSelect(
-                                event.target.value
-                            )
-                        }
-                    >
-                        <option value="">
-                            Selecione
-                        </option>
+                        <select
+                            value={
+                                selectedModule
+                            }
+                            onChange={(
+                                event
+                            ) =>
+                                handleModuleSelect(
+                                    event.target.value
+                                )
+                            }
+                        >
+                            <option value="">
+                                Selecione
+                            </option>
 
 
-                        {modules.map(
-                            (
-                                module
-                            ) => (
-                                <option
-                                    key={
-                                        module.module_key
-                                    }
-                                    value={
-                                        module.module_key
-                                    }
-                                >
-                                    {
-                                        module.module_label
-                                    }
-                                </option>
-                            )
-                        )}
-                    </select>
-                </label>
+                            {modules.map(
+                                (
+                                    module
+                                ) => (
+                                    <option
+                                        key={
+                                            module.module_key
+                                        }
+                                        value={
+                                            module.module_key
+                                        }
+                                    >
+                                        {
+                                            module.module_label
+                                        }
+                                    </option>
+                                )
+                            )}
+                        </select>
+                    </div>
+                </div>
 
 
                 {selectedModule &&
                     moduleFunctions.length >
                         0 && (
-                        <div className="table-wrapper">
-                            <table className="data-table">
+                        <div className="settings-permissions-table-wrapper">
+                            <table className="settings-permissions-table">
                                 <thead>
                                     <tr>
                                         <th>
