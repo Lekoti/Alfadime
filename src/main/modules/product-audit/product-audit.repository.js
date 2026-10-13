@@ -3,6 +3,7 @@
 } = require("../../database/connection");
 
 
+
 const ALLOWED_FILTER_FIELDS = [
     "branch",
     "brand",
@@ -16,8 +17,10 @@ const ALLOWED_FILTER_FIELDS = [
 ];
 
 
+
 function getActiveProducts() {
     const database = getDatabase();
+
 
 
     return database
@@ -27,6 +30,7 @@ function getActiveProducts() {
                 product_catalog.branch,
                 product_catalog.code,
 
+
                 COALESCE(
                     NULLIF(
                         TRIM(curve.cod_prod_global),
@@ -34,6 +38,7 @@ function getActiveProducts() {
                     ),
                     product_catalog.sirius_code
                 ) AS sirius_code,
+
 
                 product_catalog.ean,
                 product_catalog.sap_code,
@@ -58,10 +63,13 @@ function getActiveProducts() {
                 SELECT
                     product_id,
                     MAX(
-                        NULLIF(
-                            TRIM(cod_prod_global),
-                            ''
-                        )
+                        CASE
+                            WHEN cod_prod_global IS NOT NULL
+                                AND TRIM(CAST(cod_prod_global AS TEXT)) <> ''
+                                AND CAST(cod_prod_global AS TEXT) <> '1'
+                            THEN TRIM(CAST(cod_prod_global AS TEXT))
+                            ELSE NULL
+                        END
                     ) AS cod_prod_global
                 FROM product_purchase_curve
                 GROUP BY product_id
@@ -78,6 +86,7 @@ function getActiveProducts() {
 }
 
 
+
 function getDistinctValues(field) {
     if (!ALLOWED_FILTER_FIELDS.includes(field)) {
         throw new Error(
@@ -86,7 +95,9 @@ function getDistinctValues(field) {
     }
 
 
+
     const database = getDatabase();
+
 
 
     return database
@@ -101,6 +112,7 @@ function getDistinctValues(field) {
         .all()
         .map((row) => row.value);
 }
+
 
 
 module.exports = {
