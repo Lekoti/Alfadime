@@ -10,6 +10,13 @@ function send(res, statusCode, payload) {
     res.end(JSON.stringify(payload));
 }
 
+function unauthorized(res) {
+    send(res, 401, {
+        success: false,
+        error: "Sessão inválida ou expirada."
+    });
+}
+
 function notFound(res) {
     send(res, 404, {
         success: false,
@@ -17,9 +24,19 @@ function notFound(res) {
     });
 }
 
+function getAuth(req) {
+    const header = String(req.headers.authorization || "");
+    const token = header.startsWith("Bearer ")
+        ? header.slice(7)
+        : "";
+
+    return authService.verifyToken(token);
+}
+
 async function handleRequest(req, res, body) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const route = `${req.method} ${url.pathname}`;
+    const auth = getAuth(req);
 
     switch (route) {
         case "POST /auth/login":
@@ -27,12 +44,6 @@ async function handleRequest(req, res, body) {
 
         case "POST /auth/register":
             return send(res, 200, authService.register(body));
-
-        case "POST /auth/logout":
-            return send(res, 200, authService.logout(
-                body.userId,
-                body.computerId
-            ));
 
         case "GET /auth/session":
             return send(res, 200, await authService.getCurrentSession(
@@ -44,10 +55,31 @@ async function handleRequest(req, res, body) {
                 url.searchParams.get("computerId")
             ));
 
+        default:
+            break;
+    }
+
+    if (!auth) {
+        return unauthorized(res);
+    }
+
+    const currentUser = {
+        id: auth.userId,
+        username: auth.username,
+        role: auth.role
+    };
+
+    switch (route) {
+        case "POST /auth/logout":
+            return send(res, 200, authService.logout(
+                auth.userId,
+                auth.computerId
+            ));
+
         case "POST /auth/session/last-access":
             return send(res, 200, authService.updateLastAccessHandler(
-                body.userId,
-                body.computerId
+                auth.userId,
+                auth.computerId
             ));
 
         case "GET /users":
@@ -56,27 +88,27 @@ async function handleRequest(req, res, body) {
         case "POST /users":
             return send(res, 200, usersService.createUser(
                 body.data,
-                body.currentUser
+                currentUser
             ));
 
         case "PUT /users":
             return send(res, 200, usersService.updateUser(
                 body.id,
                 body.data,
-                body.currentUser
+                currentUser
             ));
 
         case "DELETE /users":
             return send(res, 200, usersService.deleteUser(
                 body.id,
-                body.currentUser
+                currentUser
             ));
 
         case "PATCH /users/active":
             return send(res, 200, usersService.setUserActive(
                 body.id,
                 body.isActive,
-                body.currentUser
+                currentUser
             ));
 
         case "GET /permissions/modules":
@@ -100,13 +132,13 @@ async function handleRequest(req, res, body) {
         case "POST /permissions/save":
             return send(res, 200, permissionsService.savePermissions(
                 body.payload,
-                body.currentUser
+                currentUser
             ));
 
         case "POST /permissions/clear-overrides":
             return send(res, 200, permissionsService.clearUserOverrides(
                 body.userId,
-                body.currentUser
+                currentUser
             ));
 
         case "GET /permissions/legacy":

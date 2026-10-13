@@ -3,12 +3,14 @@ const crypto = require("node:crypto");
 
 const API_BASE_URL = (
     process.env.ALFADIME_API_URL ||
-    "http://10.0.0.20:5178"
+    "http://10.0.0.178:5178"
 ).replace(/\/$/, "");
 
 const REQUEST_TIMEOUT_MS = Number(
     process.env.ALFADIME_API_TIMEOUT || 10000
 );
+
+let authToken = null;
 
 function getComputerId() {
     const uniqueString = [
@@ -28,6 +30,14 @@ function getComputerName() {
     return os.hostname();
 }
 
+function setAuthToken(token) {
+    authToken = token || null;
+}
+
+function getAuthToken() {
+    return authToken;
+}
+
 async function request(method, pathname, body = null) {
     const controller = new AbortController();
     const timeout = setTimeout(
@@ -35,12 +45,18 @@ async function request(method, pathname, body = null) {
         REQUEST_TIMEOUT_MS
     );
 
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}${pathname}`, {
             method,
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers,
             body: body ? JSON.stringify(body) : undefined,
             signal: controller.signal
         });
@@ -98,6 +114,8 @@ module.exports = {
     API_BASE_URL,
     getComputerId,
     getComputerName,
+    setAuthToken,
+    getAuthToken,
     get,
     post,
     put,

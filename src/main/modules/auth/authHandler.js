@@ -19,7 +19,8 @@ class AuthHandler {
             computerName: this.getComputerName()
         });
 
-        if (result?.success) {
+        if (result?.success && result.data?.token) {
+            apiClient.setAuthToken(result.data.token);
             this.currentSession = result.data;
         }
 
@@ -31,11 +32,9 @@ class AuthHandler {
     }
 
     async logout() {
-        const result = await apiClient.post("/auth/logout", {
-            userId: this.currentSession?.user?.id || null,
-            computerId: this.computerId
-        });
+        const result = await apiClient.post("/auth/logout", {});
 
+        apiClient.setAuthToken(null);
         this.currentSession = null;
 
         return result;
@@ -46,7 +45,8 @@ class AuthHandler {
             `/auth/session?computerId=${encodeURIComponent(this.computerId)}`
         );
 
-        if (result?.success) {
+        if (result?.success && result.data?.token) {
+            apiClient.setAuthToken(result.data.token);
             this.currentSession = result.data;
         }
 
@@ -58,7 +58,8 @@ class AuthHandler {
             `/auth/session/validate?computerId=${encodeURIComponent(this.computerId)}`
         );
 
-        if (result?.success) {
+        if (result?.success && result.data?.token) {
+            apiClient.setAuthToken(result.data.token);
             this.currentSession = result.data;
         }
 
@@ -66,10 +67,7 @@ class AuthHandler {
     }
 
     async updateLastAccessHandler() {
-        return apiClient.post("/auth/session/last-access", {
-            userId: this.currentSession?.user?.id || null,
-            computerId: this.computerId
-        });
+        return apiClient.post("/auth/session/last-access", {});
     }
 
     getAuthenticatedUser() {

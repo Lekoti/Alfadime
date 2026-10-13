@@ -9,6 +9,9 @@ const {
     USER_ROLES
 } = require("../../src/main/modules/auth/userRoles.constants");
 
+const API_SECRET = process.env.ALFADIME_API_SECRET ||
+    "alfadime-local-secret-change-me";
+
 function normalizeText(value) {
     return String(value || "").trim();
 }
@@ -42,6 +45,58 @@ function verifyPassword(password, storedHash) {
     }
 
     return crypto.timingSafeEqual(candidate, stored);
+}
+
+function createToken(user, computerId) {
+    const payload = JSON.stringify({
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        computerId,
+        exp: Date.now() + (12 * 60 * 60 * 1000)
+    });
+
+    const data = Buffer.from(payload).toString("base64url");
+    const signature = crypto
+        .createHmac("sha256", API_SECRET)
+        .update(data)
+        .digest("base64url");
+
+    return `${data}.${signature}`;
+}
+
+function verifyToken(token) {
+    try {
+        const [data, signature] = String(token || "").split(".");
+
+        if (!data || !signature) {
+            return null;
+        }
+
+        const expected = crypto
+            .createHmac("sha256", API_SECRET)
+            .update(data)
+            .digest("base64url");
+
+        const a = Buffer.from(signature);
+        const b = Buffer.from(expected);
+
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+            return null;
+        }
+
+        const payload = JSON.parse(
+            Buffer.from(data, "base64url").toString("utf8")
+        );
+
+        if (!payload.exp || payload.exp < Date.now()) {
+            return null;
+        }
+
+        return payload;
+    } catch {
+        return null;
+    }
 }
 
 function getUserByUsername(username) {
@@ -240,7 +295,10 @@ async function login(payload) {
 
         return {
             success: true,
-            data: buildSession(user, permissions, computerId)
+            data: {
+                ...buildSession(user, permissions, computerId),
+                token: createToken(user, computerId)
+            }
         };
     } catch (error) {
         console.error("[API][AUTH] Erro ao fazer login:", error);
@@ -336,17 +394,27 @@ async function getCurrentSession(computerId) {
 
         return {
             success: true,
-            data: buildSession(
-                {
-                    id: session.user_id,
-                    username: session.username,
-                    display_name: session.display_name,
-                    role: session.role,
-                    is_active: session.is_active
-                },
-                permissions,
-                computerId
-            )
+            data: {
+                ...buildSession(
+                    {
+                        id: session.user_id,
+                        username: session.username,
+                        display_name: session.display_name,
+                        role: session.role,
+                        is_active: session.is_active
+                    },
+                    permissions,
+                    computerId
+                ),
+                token: createToken(
+                    {
+                        id: session.user_id,
+                        username: session.username,
+                        role: session.role
+                    },
+                    computerId
+                )
+            }
         };
     } catch (error) {
         console.error("[API][AUTH] Erro ao recuperar sessão:", error);
@@ -414,5 +482,6 @@ module.exports = {
     getCurrentSession,
     validateSession,
     logout,
-    updateLastAccessHandler
+    updateLastAccessHandler,
+    verifyToken
 };
