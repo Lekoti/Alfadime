@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 
 
 
+
 import {
+    Home,
     DollarSign,
     Package,
     ShoppingCart,
@@ -18,7 +20,9 @@ import {
 
 
 
+
 import usePermissions from "../../auth/hooks/usePermissions";
+
 
 
 
@@ -30,11 +34,12 @@ import "../styles/home.css";
 
 
 
+
 const MODULES = [
     {
         path: "/",
         moduleKey: "home",
-        icon: DollarSign,
+        icon: Home,
         title: "Início",
         description: "Acesso rápido aos módulos do Alfadime.",
         exact: true
@@ -109,8 +114,10 @@ const MODULES = [
 
 
 
+
 function HomePage() {
     const navigate = useNavigate();
+
 
 
 
@@ -121,6 +128,7 @@ function HomePage() {
 
 
 
+
     const visibleModules =
         MODULES.filter(
             (module) =>
@@ -128,6 +136,7 @@ function HomePage() {
                     module.moduleKey
                 )
         );
+
 
 
 
@@ -146,6 +155,7 @@ function HomePage() {
                         visibleModules.map((module) => {
                             const Icon =
                                 module.icon;
+
 
 
 
@@ -169,9 +179,11 @@ function HomePage() {
 
 
 
+
                                     <span className="home-card-title">
                                         {module.title}
                                     </span>
+
 
 
 
@@ -188,6 +200,7 @@ function HomePage() {
         </div>
     );
 }
+
 
 
 

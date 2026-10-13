@@ -104,78 +104,60 @@ function IndustryContactsPage() {
     const [rows, setRows] =
         useState([]);
 
-
     const [filters, setFilters] =
         useState({
             ...EMPTY_INDUSTRY_CONTACT_FILTERS
         });
-
 
     const [form, setForm] =
         useState({
             ...EMPTY_INDUSTRY_CONTACT_FORM
         });
 
-
     const [filtersOpen, setFiltersOpen] =
         useState(false);
-
 
     const [formOpen, setFormOpen] =
         useState(false);
 
-
     const [loading, setLoading] =
         useState(true);
-
 
     const [saving, setSaving] =
         useState(false);
 
-
     const [exporting, setExporting] =
         useState(false);
-
 
     const [deleting, setDeleting] =
         useState(false);
 
-
     const [charging, setCharging] =
         useState(false);
-
 
     const [chargeRow, setChargeRow] =
         useState(null);
 
-
     const [chargeMenuOpen, setChargeMenuOpen] =
         useState(false);
-
 
     const [previewOpen, setPreviewOpen] =
         useState(false);
 
-
     const [chargeType, setChargeType] =
         useState("");
-
 
     const [chargePreview, setChargePreview] =
         useState(null);
 
-
     const [error, setError] =
         useState("");
-
 
     const [success, setSuccess] =
         useState("");
 
-
     const loadingRef =
         useRef(false);
-
 
     const requestIdRef =
         useRef(0);
@@ -193,14 +175,11 @@ function IndustryContactsPage() {
             requestIdRef.current +
             1;
 
-
         requestIdRef.current =
             requestId;
 
-
         loadingRef.current =
             true;
-
 
         setLoading(true);
         setError("");
@@ -432,7 +411,6 @@ function IndustryContactsPage() {
     const summary = useMemo(() => {
         const total =
             rows.length;
-
 
         const withContact =
             rows.filter(
@@ -1058,11 +1036,6 @@ function IndustryContactsPage() {
         setFiltersOpen(
             false
         );
-
-
-        setFormOpen(
-            false
-        );
     }
 
 
@@ -1227,34 +1200,40 @@ function IndustryContactsPage() {
                             clearFilters
                         }
                     />
+                </section>
+            )}
 
 
-                    {formOpen && (
-                        <IndustryContactsForm
-                            form={
-                                form
-                            }
-                            saving={
-                                saving
-                            }
-                            onChange={
-                                setForm
-                            }
-                            onSubmit={
-                                handleSubmit
-                            }
-                            onCancel={() => {
-                                setFormOpen(
-                                    false
-                                );
+            {formOpen && (
+                <section
+                    className={
+                        "industry-contacts-actions-panel"
+                    }
+                >
+                    <IndustryContactsForm
+                        form={
+                            form
+                        }
+                        saving={
+                            saving
+                        }
+                        onChange={
+                            setForm
+                        }
+                        onSubmit={
+                            handleSubmit
+                        }
+                        onCancel={() => {
+                            setFormOpen(
+                                false
+                            );
 
 
-                                setForm({
-                                    ...EMPTY_INDUSTRY_CONTACT_FORM
-                                });
-                            }}
-                        />
-                    )}
+                            setForm({
+                                ...EMPTY_INDUSTRY_CONTACT_FORM
+                            });
+                        }}
+                    />
                 </section>
             )}
 

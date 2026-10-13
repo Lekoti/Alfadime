@@ -3,34 +3,42 @@
     useState
 } from "react";
 
+
 import {
     useLocation,
     useNavigate
 } from "react-router-dom";
 
+
 import useAuth from
     "../modules/auth/hooks/useAuth.js";
+
 
 
 function Sidebar() {
     const navigate =
         useNavigate();
 
+
     const location =
         useLocation();
 
+
     const pathname =
         location.pathname;
+
 
     const [
         version,
         setVersion
     ] = useState("");
 
+
     const {
         user,
         logout
     } = useAuth();
+
 
 
     useEffect(() => {
@@ -44,6 +52,7 @@ function Sidebar() {
                 setVersion("")
             );
     }, []);
+
 
 
     const menuItems = [
@@ -71,7 +80,7 @@ function Sidebar() {
         {
             key: "/price-pending",
             label: "Preços e Pendências",
-            icon: "▦"
+            icon: "≡"
         },
         {
             key: "/purchases",
@@ -96,10 +105,12 @@ function Sidebar() {
     ];
 
 
+
     function isActive(item) {
         if (item.exact) {
             return pathname === item.key;
         }
+
 
         return (
             pathname === item.key ||
@@ -110,10 +121,12 @@ function Sidebar() {
     }
 
 
+
     const handleLogout =
         async () => {
             await logout();
         };
+
 
 
     return (
@@ -122,6 +135,7 @@ function Sidebar() {
                 <span className="alfadime-navigation-title">
                     Módulos
                 </span>
+
 
                 {
                     menuItems.map((item) => (
@@ -141,10 +155,12 @@ function Sidebar() {
                                     {item.icon}
                                 </span>
 
+
                                 <span>
                                     {item.label}
                                 </span>
                             </button>
+
 
                             {
                                 item.key === "/email" &&
@@ -172,6 +188,7 @@ function Sidebar() {
                                             Campanhas
                                         </button>
 
+
                                         <button
                                             type="button"
                                             className={
@@ -198,11 +215,13 @@ function Sidebar() {
                 }
             </nav>
 
+
             <div className="alfadime-sidebar-footer">
                 <div className="alfadime-sidebar-user">
                     <span className="alfadime-sidebar-user-label">
                         Usuário
                     </span>
+
 
                     <span className="alfadime-sidebar-user-name">
                         {
@@ -213,6 +232,7 @@ function Sidebar() {
                     </span>
                 </div>
 
+
                 <div className="alfadime-sidebar-footer-actions">
                     <small>
                         {
@@ -221,6 +241,7 @@ function Sidebar() {
                                 : "Carregando versão..."
                         }
                     </small>
+
 
                     <button
                         type="button"
@@ -240,6 +261,7 @@ function Sidebar() {
                         ⚙
                     </button>
 
+
                     <button
                         type="button"
                         className="alfadime-logout-button"
@@ -254,6 +276,7 @@ function Sidebar() {
         </aside>
     );
 }
+
 
 
 export default Sidebar;
