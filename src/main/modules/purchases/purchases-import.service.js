@@ -4,6 +4,7 @@ const repository = require("./purchases.repository");
 const { getEffectiveCurve } = require("./purchases-calculation.service");
 
 
+
 function normalizeHeader(value) {
     return String(value || "")
         .normalize("NFD")
@@ -14,12 +15,14 @@ function normalizeHeader(value) {
 }
 
 
+
 function normalizeText(value) {
     if (value === null || value === undefined) return null;
     const text = String(value).trim();
     if (!text || ["ND", "N/A", "NA", "NULL", "-"].includes(text.toUpperCase())) return null;
     return text;
 }
+
 
 
 function normalizeNumber(value) {
@@ -31,11 +34,13 @@ function normalizeNumber(value) {
 }
 
 
+
 function normalizeNullableNumber(value) {
     if (value === null || value === undefined || String(value).trim() === "") return null;
     const number = normalizeNumber(value);
     return number > 0 ? number : null;
 }
+
 
 
 function findColumn(row, candidates) {
@@ -49,11 +54,13 @@ function findColumn(row, candidates) {
 }
 
 
+
 function getMonthlyQuantity(row, shortMonth) {
     return normalizeNumber(findColumn(row, [
         `${shortMonth} Qtde`, `${shortMonth} Quantidade`, `${shortMonth} Qtd`
     ]));
 }
+
 
 
 function mapCurveRow(row) {
@@ -78,6 +85,7 @@ function mapCurveRow(row) {
     if (!company || !product_code) return null;
 
 
+
     const jan = getMonthlyQuantity(row, "Jan");
     const feb = getMonthlyQuantity(row, "Fev");
     const mar = getMonthlyQuantity(row, "Mar");
@@ -93,13 +101,19 @@ function mapCurveRow(row) {
     const sales12 = (jan + feb + mar + apr + may + jun + jul + aug + sep + oct + nov + dec) / 12;
 
 
+
     const curve_value = normalizeText(findColumn(row, ["Curva Valor", "Curva de Valor"]));
     const curve_unit = normalizeText(findColumn(row, ["Curva Unidade", "Curva Unid", "Curva Venda Produto"]));
+
 
 
     return {
         company,
         product_code,
+        cod_prod_global: normalizeText(findColumn(row, [
+            "Cod_Prod_Global", "Cod Prod Global", "Codigo Prod Global",
+            "Cód. Prod. Global", "Cod Sirius", "Código Sirius"
+        ])),
         cod_fabr_global: normalizeText(findColumn(row, [
             "Cod Fabr Global", "Codigo Fabr Global", "Cod_Fabr_Global",
             "Cód. Fabr. Global", "Fabr Global", "Fabricante Global",
@@ -134,6 +148,7 @@ function mapCurveRow(row) {
 }
 
 
+
 function calculateRecentAverages(product) {
     const quantities = [product.janquantity, product.febquantity, product.marquantity, product.aprquantity, product.mayquantity, product.junquantity, product.julquantity, product.augquantity, product.sepquantity, product.octquantity, product.novquantity, product.decquantity];
     const currentMonth = new Date().getMonth();
@@ -146,16 +161,19 @@ function calculateRecentAverages(product) {
 }
 
 
+
 function synchronizePurchasesCurveExcel(filePath) {
     const workbook = XLSX.readFile(filePath, { cellDates: false, raw: false });
     const sheetName = workbook.SheetNames[0];
     if (!sheetName) throw new Error("Nenhuma planilha encontrada na Curva Compras.");
 
 
+
     const sourceRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null, raw: false });
     const importHistory = repository.createImportHistory({
         sourcefilename: path.basename(filePath), sourcefilepath: filePath, totalrows: sourceRows.length, validrows: 0, ignoredrows: 0
     });
+
 
 
     try {
@@ -166,7 +184,9 @@ function synchronizePurchasesCurveExcel(filePath) {
         }).map(calculateRecentAverages);
 
 
+
         if (!products.length) throw new Error("Nenhuma linha válida encontrada. Verifique Empresa e Cod Prod.");
+
 
 
         const result = repository.upsertCurveProducts(products, { fileName: path.basename(filePath), filePath });
@@ -175,12 +195,14 @@ function synchronizePurchasesCurveExcel(filePath) {
         });
 
 
+
         return { success: true, fileName: path.basename(filePath), sheetName, totalRows: sourceRows.length, validRows: products.length, ignoredRows, insertedRows: result.inserted, updatedRows: result.updated };
     } catch (error) {
         repository.finishImportHistory(importHistory.id, { status: "error", errormessage: error.message });
         throw error;
     }
 }
+
 
 
 module.exports = { synchronizePurchasesCurveExcel };

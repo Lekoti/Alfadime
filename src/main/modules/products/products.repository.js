@@ -2,9 +2,11 @@
 
 
 
+
 const {
     getDatabase
 } = require("../../database/connection");
+
 
 
 
@@ -19,6 +21,7 @@ const {
 
 
 
+
 function buildProductsFilters(filters = {}) {
     let whereClause = `
         WHERE 1 = 1
@@ -26,7 +29,9 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
     const params = [];
+
 
 
 
@@ -40,10 +45,12 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
         params.push(
             toSafeNumber(filters.active, 0)
         );
     }
+
 
 
 
@@ -54,10 +61,12 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
         params.push(
             String(filters.branch)
         );
     }
+
 
 
 
@@ -68,10 +77,12 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
         params.push(
             String(filters.group_code)
         );
     }
+
 
 
 
@@ -82,10 +93,12 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
         params.push(
             String(filters.category_code)
         );
     }
+
 
 
 
@@ -94,11 +107,13 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
     if (laboratory) {
         const laboratoryValues = getMatchingGlobalLaboratoryCodes(
             getDatabase(),
             laboratory
         );
+
 
 
 
@@ -114,11 +129,13 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
             params.push(...laboratoryValues);
         } else {
             whereClause += " AND 1 = 0";
         }
     }
+
 
 
 
@@ -132,6 +149,7 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
         params.push(
             toSafeNumber(filters.controls_lot, 0)
         );
@@ -139,8 +157,10 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
     if (filters.search) {
         const search = `%${String(filters.search).trim()}%`;
+
 
 
 
@@ -160,6 +180,7 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
         params.push(
             search,
             search,
@@ -175,6 +196,7 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
     return {
         whereClause,
         params
@@ -183,8 +205,10 @@ function buildProductsFilters(filters = {}) {
 
 
 
+
 function listProducts(filters = {}) {
     const database = getDatabase();
+
 
 
 
@@ -192,6 +216,7 @@ function listProducts(filters = {}) {
         whereClause,
         params
     } = buildProductsFilters(filters);
+
 
 
 
@@ -205,6 +230,7 @@ function listProducts(filters = {}) {
 
 
 
+
     const page = Math.max(
         toSafeNumber(filters.page, 1),
         1
@@ -212,7 +238,7 @@ function listProducts(filters = {}) {
 
 
 
-    // CORREÇÃO: Usar COUNT(DISTINCT pc.id) para evitar duplicação do JOIN
+
     const total = database
         .prepare(`
             SELECT COUNT(DISTINCT pc.id) AS total
@@ -226,10 +252,12 @@ function listProducts(filters = {}) {
 
 
 
+
     const totalPages = Math.max(
         Math.ceil(total / pageSize),
         1
     );
+
 
 
 
@@ -240,9 +268,11 @@ function listProducts(filters = {}) {
 
 
 
+
     const offset = (
         currentPage - 1
     ) * pageSize;
+
 
 
 
@@ -250,16 +280,33 @@ function listProducts(filters = {}) {
         .prepare(`
             SELECT
                 pc.*,
-                ppc.cod_prod AS code,
-                ppc.cod_prod_global AS sirius_code
+                (
+                    SELECT curve.cod_prod
+                    FROM product_purchase_curve AS curve
+                    WHERE curve.product_id = pc.id
+                        AND curve.cod_prod IS NOT NULL
+                        AND TRIM(CAST(curve.cod_prod AS TEXT)) <> ''
+                    ORDER BY curve.empresa ASC
+                    LIMIT 1
+                ) AS code,
+                (
+                    SELECT curve.cod_prod_global
+                    FROM product_purchase_curve AS curve
+                    WHERE curve.product_id = pc.id
+                        AND curve.cod_prod_global IS NOT NULL
+                        AND TRIM(CAST(curve.cod_prod_global AS TEXT)) <> ''
+                        AND CAST(curve.cod_prod_global AS TEXT) <> '1'
+                    ORDER BY curve.empresa ASC
+                    LIMIT 1
+                ) AS sirius_code
             FROM product_catalog AS pc
             LEFT JOIN product_purchase_curve AS ppc
                 ON ppc.product_id = pc.id
             ${whereClause}
+            GROUP BY pc.id
             ORDER BY
                 pc.branch ASC,
-                pc.commercial_name ASC,
-                ppc.cod_prod ASC
+                pc.commercial_name ASC
             LIMIT ?
             OFFSET ?
         `)
@@ -268,6 +315,7 @@ function listProducts(filters = {}) {
             pageSize,
             offset
         );
+
 
 
 
@@ -285,6 +333,7 @@ function listProducts(filters = {}) {
 
 
 
+
 function getDistinctValues(field) {
     if (!PRODUCT_CATALOG_FIELDS.includes(field)) {
         throw new Error(
@@ -294,7 +343,9 @@ function getDistinctValues(field) {
 
 
 
+
     const database = getDatabase();
+
 
 
 
@@ -312,11 +363,12 @@ function getDistinctValues(field) {
 
 
 
-// Retorna valores unicos normalizados para filtros (agrupa nomes similares)
+
 function getUniqueFilterValues(field) {
     if (field === "laboratory") {
         return getUnifiedLaboratoryOptions(getDatabase());
     }
+
 
 
 
@@ -328,7 +380,9 @@ function getUniqueFilterValues(field) {
 
 
 
+
     const database = getDatabase();
+
 
 
 
@@ -345,7 +399,9 @@ function getUniqueFilterValues(field) {
 
 
 
+
     const normalizedMap = new Map();
+
 
 
 
@@ -359,10 +415,12 @@ function getUniqueFilterValues(field) {
 
 
 
+
         if (!normalizedMap.has(normalized)) {
             normalizedMap.set(normalized, value);
         }
     }
+
 
 
 
@@ -371,9 +429,11 @@ function getUniqueFilterValues(field) {
 
 
 
+
 function createImportHistory(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
 
 
@@ -397,6 +457,7 @@ function createImportHistory(data = {}) {
         finished_at: null,
         created_at: now
     };
+
 
 
 
@@ -438,13 +499,16 @@ function createImportHistory(data = {}) {
 
 
 
+
     return item;
 }
 
 
 
+
 function finishImportHistory(id, data = {}) {
     const database = getDatabase();
+
 
 
 
@@ -477,9 +541,11 @@ function finishImportHistory(id, data = {}) {
 
 
 
+
 function syncProducts(products = [], source = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
 
 
@@ -497,6 +563,7 @@ function syncProducts(products = [], source = {}) {
           )
         LIMIT 1
     `);
+
 
 
 
@@ -560,6 +627,7 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
     const updateProduct = database.prepare(`
         UPDATE product_catalog
         SET
@@ -591,10 +659,12 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
     const syncTransaction = database.transaction(() => {
         let inserted = 0;
         let updated = 0;
         let deactivated = 0;
+
 
 
 
@@ -607,8 +677,10 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
             DELETE FROM imported_product_keys;
         `);
+
 
 
 
@@ -619,6 +691,7 @@ function syncProducts(products = [], source = {}) {
                 ean
             ) VALUES (?, ?, ?)
         `);
+
 
 
 
@@ -634,12 +707,14 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
             const existing = findExisting.get(
                 item.branch,
                 item.code,
                 item.code,
                 item.ean
             );
+
 
 
 
@@ -653,12 +728,14 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
             saveKey.run(
                 item.branch,
                 item.code,
                 item.ean
             );
         }
+
 
 
 
@@ -689,7 +766,9 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
         deactivated = result.changes;
+
 
 
 
@@ -702,8 +781,10 @@ function syncProducts(products = [], source = {}) {
 
 
 
+
     return syncTransaction();
 }
+
 
 
 

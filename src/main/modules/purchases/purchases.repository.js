@@ -6,6 +6,7 @@ const {
 } = require("../../utils/laboratory-filter.utils");
 
 
+
 const BRANCHES = {
     DPR: "DIMEBRAS PR",
     AMS: "ALFAMED MS",
@@ -13,6 +14,7 @@ const BRANCHES = {
     DMS: "DIMEBRAS MS",
     DSC: "DIMEBRAS SC"
 };
+
 
 
 function getValue(object, ...keys) {
@@ -26,8 +28,10 @@ function getValue(object, ...keys) {
     }
 
 
+
     return null;
 }
+
 
 
 function normalizeText(value) {
@@ -36,11 +40,14 @@ function normalizeText(value) {
     }
 
 
+
     const text = String(value).trim();
+
 
 
     return text || null;
 }
+
 
 
 function normalizeNumber(value, fallback = 0) {
@@ -53,7 +60,9 @@ function normalizeNumber(value, fallback = 0) {
     }
 
 
+
     const number = Number(value);
+
 
 
     return Number.isFinite(number)
@@ -62,9 +71,11 @@ function normalizeNumber(value, fallback = 0) {
 }
 
 
+
 function buildWhereClause(filters = {}) {
     let whereClause = "WHERE 1 = 1";
     const params = [];
+
 
 
     if (filters.company) {
@@ -73,10 +84,12 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     const laboratoryCode = filters.laboratory_code ??
         filters.laboratory ??
         filters.laboratoryname ??
         filters.laboratory_name;
+
 
 
     if (laboratoryCode) {
@@ -84,6 +97,7 @@ function buildWhereClause(filters = {}) {
             getDatabase(),
             laboratoryCode
         );
+
 
 
         if (laboratoryValues.length) {
@@ -98,6 +112,7 @@ function buildWhereClause(filters = {}) {
             `;
 
 
+
             params.push(...laboratoryValues);
         } else {
             whereClause += " AND 1 = 0";
@@ -105,13 +120,16 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     const effectiveCurve =
         filters.effective_curve ??
         filters.effectivecurve;
 
 
+
     if (effectiveCurve) {
         whereClause += " AND effective_curve = ?";
+
 
 
         params.push(
@@ -122,8 +140,10 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     if (filters.search) {
         const search = `%${String(filters.search).trim()}%`;
+
 
 
         whereClause += `
@@ -137,6 +157,7 @@ function buildWhereClause(filters = {}) {
         `;
 
 
+
         params.push(
             search,
             search,
@@ -147,6 +168,7 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     return {
         whereClause,
         params
@@ -154,14 +176,17 @@ function buildWhereClause(filters = {}) {
 }
 
 
+
 function listCurveProducts(filters = {}) {
     const database = getDatabase();
+
 
 
     const {
         whereClause,
         params
     } = buildWhereClause(filters);
+
 
 
     const pageSize = Math.min(
@@ -173,10 +198,12 @@ function listCurveProducts(filters = {}) {
     );
 
 
+
     const page = Math.max(
         Number(filters.page) || 1,
         1
     );
+
 
 
     const total = database
@@ -189,10 +216,12 @@ function listCurveProducts(filters = {}) {
         .total;
 
 
+
     const totalPages = Math.max(
         Math.ceil(total / pageSize),
         1
     );
+
 
 
     const currentPage = Math.min(
@@ -201,9 +230,11 @@ function listCurveProducts(filters = {}) {
     );
 
 
+
     const offset = (
         currentPage - 1
     ) * pageSize;
+
 
 
     const baseRows = database
@@ -226,6 +257,7 @@ function listCurveProducts(filters = {}) {
         );
 
 
+
     if (!baseRows.length) {
         return {
             rows: [],
@@ -240,6 +272,7 @@ function listCurveProducts(filters = {}) {
     }
 
 
+
     const productCodes = [
         ...new Set(
             baseRows.map((row) => String(row.product_code))
@@ -247,9 +280,11 @@ function listCurveProducts(filters = {}) {
     ];
 
 
+
     const placeholders = productCodes
         .map(() => "?")
         .join(", ");
+
 
 
     const relatedRows = database
@@ -278,6 +313,7 @@ function listCurveProducts(filters = {}) {
         );
 
 
+
     const branchByCompany = Object.fromEntries(
         Object.entries(BRANCHES)
             .map(([branch, company]) => [
@@ -287,7 +323,9 @@ function listCurveProducts(filters = {}) {
     );
 
 
+
     const relatedByProduct = new Map();
+
 
 
     for (const row of relatedRows) {
@@ -295,9 +333,11 @@ function listCurveProducts(filters = {}) {
         const branch = branchByCompany[row.company];
 
 
+
         if (!branch) {
             continue;
         }
+
 
 
         if (!relatedByProduct.has(productCode)) {
@@ -305,15 +345,18 @@ function listCurveProducts(filters = {}) {
         }
 
 
+
         relatedByProduct
             .get(productCode)[branch] = row;
     }
+
 
 
     const rows = baseRows.map((row) => {
         const branchPrices = relatedByProduct.get(
             String(row.product_code)
         ) || {};
+
 
 
         const branchPriceValues = Object.values(branchPrices)
@@ -328,6 +371,7 @@ function listCurveProducts(filters = {}) {
             const sum = branchPriceValues.reduce((acc, val) => acc + Number(val), 0);
             averageCost = sum / branchPriceValues.length;
         }
+
 
 
         return {
@@ -352,6 +396,7 @@ function listCurveProducts(filters = {}) {
     });
 
 
+
     return {
         rows,
         pagination: {
@@ -365,14 +410,17 @@ function listCurveProducts(filters = {}) {
 }
 
 
+
 function listAllCurveProducts(filters = {}) {
     const database = getDatabase();
+
 
 
     const {
         whereClause,
         params
     } = buildWhereClause(filters);
+
 
 
     const baseRows = database
@@ -389,9 +437,11 @@ function listAllCurveProducts(filters = {}) {
         .all(...params);
 
 
+
     if (!baseRows.length) {
         return [];
     }
+
 
 
     const productCodes = [
@@ -401,9 +451,11 @@ function listAllCurveProducts(filters = {}) {
     ];
 
 
+
     const placeholders = productCodes
         .map(() => "?")
         .join(", ");
+
 
 
     const relatedRows = database
@@ -432,6 +484,7 @@ function listAllCurveProducts(filters = {}) {
         );
 
 
+
     const branchByCompany = Object.fromEntries(
         Object.entries(BRANCHES)
             .map(([branch, company]) => [
@@ -441,7 +494,9 @@ function listAllCurveProducts(filters = {}) {
     );
 
 
+
     const relatedByProduct = new Map();
+
 
 
     for (const row of relatedRows) {
@@ -449,9 +504,11 @@ function listAllCurveProducts(filters = {}) {
         const branch = branchByCompany[row.company];
 
 
+
         if (!branch) {
             continue;
         }
+
 
 
         if (!relatedByProduct.has(productCode)) {
@@ -459,15 +516,18 @@ function listAllCurveProducts(filters = {}) {
         }
 
 
+
         relatedByProduct
             .get(productCode)[branch] = row;
     }
+
 
 
     return baseRows.map((row) => {
         const branchPrices = relatedByProduct.get(
             String(row.product_code)
         ) || {};
+
 
 
         const branchPriceValues = Object.values(branchPrices)
@@ -482,6 +542,7 @@ function listAllCurveProducts(filters = {}) {
             const sum = branchPriceValues.reduce((acc, val) => acc + Number(val), 0);
             averageCost = sum / branchPriceValues.length;
         }
+
 
 
         return {
@@ -499,6 +560,7 @@ function listAllCurveProducts(filters = {}) {
         };
     });
 }
+
 
 function getFilterOptions(field) {
     const fieldMap = {
@@ -526,12 +588,15 @@ function getFilterOptions(field) {
     };
 
 
+
     const actualField = fieldMap[field] || field;
+
 
 
     if (actualField === "laboratory_name") {
         return getUnifiedLaboratoryOptions(getDatabase());
     }
+
 
 
     return getDatabase()
@@ -547,13 +612,16 @@ function getFilterOptions(field) {
 }
 
 
+
 function upsertCurveProducts(products, source = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
 
+
     database.exec("CREATE INDEX IF NOT EXISTS idx_product_catalog_branch_code ON product_catalog(branch, code)");
     database.exec("CREATE INDEX IF NOT EXISTS idx_product_catalog_branch_ean ON product_catalog(branch, ean)");
+
 
 
     console.log("Carregando produtos em memória...");
@@ -564,8 +632,10 @@ function upsertCurveProducts(products, source = {}) {
     `).all();
 
 
+
     const productByBranchCode = new Map();
     const productByBranchEan = new Map();
+
 
 
     for (const p of allProducts) {
@@ -585,9 +655,11 @@ function upsertCurveProducts(products, source = {}) {
     }
 
 
+
     const loadTime = ((Date.now() - loadStart) / 1000).toFixed(2);
     console.log(`Produtos carregados: ${allProducts.length} em ${loadTime}s`);
     console.log(`Map Cod: ${productByBranchCode.size}, Map EAN: ${productByBranchEan.size}`);
+
 
 
     const columns = [
@@ -607,9 +679,11 @@ function upsertCurveProducts(products, source = {}) {
     ];
 
 
+
     const updateColumns = columns.filter(
         (column) => !["id", "company", "product_code", "created_at"].includes(column)
     );
+
 
 
     const insertCurve = database.prepare(`
@@ -623,19 +697,21 @@ function upsertCurveProducts(products, source = {}) {
     `);
 
 
+
     const insertProductPurchaseCurve = database.prepare(`
         INSERT OR REPLACE INTO product_purchase_curve (
-            product_id, empresa, cod_prod, cod_fabr_global,
+            product_id, empresa, cod_prod, cod_prod_global, cod_fabr_global,
             cod_barras, descricao, lab, estoque, estoque_bloq, media_mes,
             ult_comp, penult_comp, curva_valor, curva_unidade,
             curva_fabr_valor, cx_padrao, created_at, updated_at
         ) VALUES (
-            @product_id, @empresa, @cod_prod, @cod_fabr_global,
+            @product_id, @empresa, @cod_prod, @cod_prod_global, @cod_fabr_global,
             @cod_barras, @descricao, @lab, @estoque, @estoque_bloq, @media_mes,
             @ult_comp, @penult_comp, @curva_valor, @curva_unidade,
             @curva_fabr_valor, @cx_padrao, @created_at, @updated_at
         )
     `);
+
 
 
     let inserted = 0;
@@ -647,8 +723,10 @@ function upsertCurveProducts(products, source = {}) {
     let invalidRows = 0;
 
 
+
     console.log("Processando Curva Compras...");
     const processStart = Date.now();
+
 
 
     const process = database.transaction((items) => {
@@ -666,10 +744,12 @@ function upsertCurveProducts(products, source = {}) {
             );
 
 
+
             if (!company || !productCode) {
                 invalidRows += 1;
                 continue;
             }
+
 
 
             let productRow = productByBranchCode.get(`${company}|${productCode}`);
@@ -685,10 +765,12 @@ function upsertCurveProducts(products, source = {}) {
             }
 
 
+
             if (!productRow) {
                 notLinked += 1;
                 continue;
             }
+
 
 
             const existing = database.prepare(`
@@ -696,6 +778,7 @@ function upsertCurveProducts(products, source = {}) {
                 WHERE company = ? AND product_code = ?
                 LIMIT 1
             `).get(company, productCode);
+
 
 
             const row = {
@@ -742,7 +825,9 @@ function upsertCurveProducts(products, source = {}) {
             };
 
 
+
             insertCurve.run(...columns.map((column) => row[column]));
+
 
 
             if (existing) {
@@ -752,10 +837,12 @@ function upsertCurveProducts(products, source = {}) {
             }
 
 
+
             insertProductPurchaseCurve.run({
                 product_id: productRow.id,
                 empresa: company,
                 cod_prod: productCode,
+                cod_prod_global: normalizeText(getValue(product, "Cod_Prod_Global", "cod_prod_global", "codProdGlobal", "COD_PROD_GLOBAL", "codigo_sirius", "cod_sirius", "sirius_code")),
                 cod_fabr_global: normalizeText(getValue(product, "cod_fabr_global", "codFabrGlobal", "manufacturer_global_code", "manufacturerGlobalCode")),
                 cod_barras: barcode,
                 descricao: row.description,
@@ -774,21 +861,26 @@ function upsertCurveProducts(products, source = {}) {
             });
 
 
+
             curveInserted += 1;
         }
     });
 
 
+
     process(products);
 
 
+
     const processTime = ((Date.now() - processStart) / 1000).toFixed(2);
+
 
 
     console.log(`purchase_curve_products: ${inserted} inseridos, ${updated} atualizados`);
     console.log(`product_purchase_curve: ${curveInserted} vinculados`);
     console.log(`Vínculos por Cod: ${linkedByCode}, por EAN: ${linkedByEan}, sem vínculo: ${notLinked}, inválidos: ${invalidRows}`);
     console.log(`Tempo total: ${processTime}s`);
+
 
 
     return {
@@ -803,9 +895,11 @@ function upsertCurveProducts(products, source = {}) {
 }
 
 
+
 function createImportHistory(data) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
 
     const item = {
@@ -819,6 +913,7 @@ function createImportHistory(data) {
         created_at: now,
         started_at: now
     };
+
 
 
     database
@@ -866,8 +961,10 @@ function createImportHistory(data) {
         );
 
 
+
     return item;
 }
+
 
 
 function finishImportHistory(id, data = {}) {
@@ -897,8 +994,10 @@ function finishImportHistory(id, data = {}) {
 }
 
 
+
 function getPurchaseSuggestionsByIds(selectedIds) {
     const database = getDatabase();
+
 
 
     if (
@@ -909,9 +1008,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
     }
 
 
+
     const placeholders = selectedIds
         .map(() => "?")
         .join(", ");
+
 
 
     const rows = database
@@ -927,9 +1028,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         .all(...selectedIds);
 
 
+
     if (!rows.length) {
         return [];
     }
+
 
 
     const productCodes = [
@@ -939,9 +1042,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
     ];
 
 
+
     const codePlaceholders = productCodes
         .map(() => "?")
         .join(", ");
+
 
 
     const relatedRows = database
@@ -970,6 +1075,7 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         );
 
 
+
     const branchByCompany = Object.fromEntries(
         Object.entries(BRANCHES)
             .map(([branch, company]) => [
@@ -979,7 +1085,9 @@ function getPurchaseSuggestionsByIds(selectedIds) {
     );
 
 
+
     const relatedByProduct = new Map();
+
 
 
     for (const row of relatedRows) {
@@ -987,9 +1095,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         const branch = branchByCompany[row.company];
 
 
+
         if (!branch) {
             continue;
         }
+
 
 
         if (!relatedByProduct.has(productCode)) {
@@ -997,9 +1107,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         }
 
 
+
         relatedByProduct
             .get(productCode)[branch] = row;
     }
+
 
 
     return rows.map((row) => {
@@ -1035,6 +1147,7 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         };
     });
 }
+
 
 
 module.exports = {
