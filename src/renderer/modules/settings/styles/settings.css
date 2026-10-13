@@ -289,3 +289,57 @@
     border: 1px solid #e3e8ee;
     border-radius: 6px;
 }
+
+.settings-general-description {
+    margin: 0 0 16px;
+    color: #7a8795;
+    font-size: 13px;
+}
+
+
+.settings-general-success {
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: #e6f4ea;
+    color: #1f7a3d;
+    font-size: 13px;
+}
+
+
+.settings-general-error {
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: #fee2e2;
+    color: #b3261e;
+    font-size: 13px;
+}
+
+
+.settings-general-primary-button {
+    min-height: 34px;
+    border: 1px solid #3b5f86;
+    border-radius: 5px;
+    padding: 0 14px;
+    background: #3b5f86;
+    color: #ffffff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+
+.settings-general-primary-button:hover:not(:disabled) {
+    background: #344b65;
+    border-color: #344b65;
+}
+
+
+.settings-general-primary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}

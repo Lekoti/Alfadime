@@ -1,1026 +1,52 @@
-const {
-    getUsersDatabase
-} = require("../../database/connection");
-
-
-
-
+const apiClient = require("./apiClient");
 
 const {
     USER_ROLES
 } = require("./userRoles.constants");
 
-
-
-
-
-const crypto = require("node:crypto");
 const { execFile } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-
-
-
-
 const PROTECTED_CREATOR_USERNAME = "sLekoti";
 
-
-
-
-
-const ALLOWED_ROLES = [
-    USER_ROLES.CREATOR,
-    USER_ROLES.ADMIN,
-    USER_ROLES.EDITOR,
-    USER_ROLES.VIEWER
-];
-
-
-
-
-
-
-function normalizeText(value) {
-    return String(
-        value || ""
-    ).trim();
-}
-
-
-
-
-
-
-function validateRole(role) {
-    return ALLOWED_ROLES.includes(role);
-}
-
-
-
-
-
-
-function isProtectedCreator(user) {
-    return Boolean(
-        user &&
-        user.username === PROTECTED_CREATOR_USERNAME
-    );
-}
-
-
-
-
-
-
-function buildSuccess(data) {
-    return {
-        success: true,
-        data
-    };
-}
-
-
-
-
-
-
-function buildError(message) {
-    return {
-        success: false,
-        error: message
-    };
-}
-
-
-
-
-
-
-function hashPassword(password) {
-    const salt =
-        crypto.randomBytes(16).toString("hex");
-
-
-
-
-
-    const hash =
-        crypto
-            .scryptSync(
-                password,
-                salt,
-                64
-            )
-            .toString("hex");
-
-
-
-
-
-    return `${salt}:${hash}`;
-}
-
-
-
-
-
-
 function listUsers() {
-    try {
-        const database =
-            getUsersDatabase();
-
-
-
-
-
-        const users =
-            database
-                .prepare(`
-                    SELECT
-                        id,
-                        username,
-                        display_name,
-                        role,
-                        is_active,
-                        created_at,
-                        updated_at,
-                        last_login_at
-                    FROM users
-                    ORDER BY display_name
-                `)
-                .all();
-
-
-
-
-
-        return buildSuccess(users);
-    } catch (error) {
-        console.error(
-            "[USERS] Erro ao listar usuários:",
-            error
-        );
-
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível listar os usuários."
-        );
-    }
+    return apiClient.get("/users");
 }
-
-
-
-
-
-
-function getUserById(id) {
-    const database =
-        getUsersDatabase();
-
-
-
-
-
-    return database
-        .prepare(`
-            SELECT
-                id,
-                username,
-                display_name,
-                role,
-                is_active,
-                created_at,
-                updated_at,
-                last_login_at
-            FROM users
-            WHERE id = ?
-            LIMIT 1
-        `)
-        .get(id);
-}
-
-
-
-
-
-
-function getUserByUsername(username) {
-    const database =
-        getUsersDatabase();
-
-
-
-
-
-    return database
-        .prepare(`
-            SELECT
-                id,
-                username,
-                display_name,
-                role,
-                is_active
-            FROM users
-            WHERE username = ?
-            LIMIT 1
-        `)
-        .get(username);
-}
-
-
-
-
-
 
 function createUser(data, currentUser) {
-    try {
-        if (
-            !currentUser ||
-            ![
-                USER_ROLES.CREATOR,
-                USER_ROLES.ADMIN
-            ].includes(currentUser.role)
-        ) {
-            return buildError(
-                "Você não tem permissão para criar usuários."
-            );
-        }
-
-
-
-
-
-        const username =
-            normalizeText(data.username);
-
-
-
-
-
-        const displayName =
-            normalizeText(data.display_name);
-
-
-
-
-
-        const password =
-            String(data.password || "");
-
-
-
-
-
-        const confirmPassword =
-            String(data.confirmPassword || "");
-
-
-
-
-
-        const role =
-            normalizeText(data.role) ||
-            USER_ROLES.VIEWER;
-
-
-
-
-
-        const isActive =
-            Number(data.is_active ?? 1) ? 1 : 0;
-
-
-
-
-
-        if (!username) {
-            return buildError(
-                "Informe o nome de usuário."
-            );
-        }
-
-
-
-
-
-        if (!displayName) {
-            return buildError(
-                "Informe o nome de exibição."
-            );
-        }
-
-
-
-
-
-        if (password.length < 6) {
-            return buildError(
-                "A senha deve ter pelo menos 6 caracteres."
-            );
-        }
-
-
-
-
-
-        if (password !== confirmPassword) {
-            return buildError(
-                "As senhas não são iguais."
-            );
-        }
-
-
-
-
-
-        if (!validateRole(role)) {
-            return buildError(
-                "Perfil inválido."
-            );
-        }
-
-
-
-
-
-        if (
-            role === USER_ROLES.CREATOR &&
-            currentUser.username !== PROTECTED_CREATOR_USERNAME
-        ) {
-            return buildError(
-                "Somente o Staff sLekoti pode criar outro usuário Staff."
-            );
-        }
-
-
-
-
-
-        const database =
-            getUsersDatabase();
-
-
-
-
-
-        const existingUser =
-            getUserByUsername(username);
-
-
-
-
-
-        if (existingUser) {
-            return buildError(
-                "Já existe um usuário com este nome."
-            );
-        }
-
-
-
-
-
-        const now =
-            new Date().toISOString();
-
-
-
-
-
-        const result =
-            database
-                .prepare(`
-                    INSERT INTO users (
-                        username,
-                        display_name,
-                        role,
-                        is_active,
-                        password_hash,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                `)
-                .run(
-                    username,
-                    displayName,
-                    role,
-                    isActive,
-                    hashPassword(password),
-                    now,
-                    now
-                );
-
-
-
-
-
-        const createdUser =
-            getUserById(
-                result.lastInsertRowid
-            );
-
-
-
-
-
-        return buildSuccess(createdUser);
-    } catch (error) {
-        console.error(
-            "[USERS] Erro ao criar usuário:",
-            error
-        );
-
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível criar o usuário."
-        );
-    }
+    return apiClient.post("/users", {
+        data,
+        currentUser
+    });
 }
-
-
-
-
-
 
 function updateUser(id, data, currentUser) {
-    try {
-        if (
-            !currentUser ||
-            ![
-                USER_ROLES.CREATOR,
-                USER_ROLES.ADMIN
-            ].includes(currentUser.role)
-        ) {
-            return buildError(
-                "Você não tem permissão para editar usuários."
-            );
-        }
-
-
-
-
-
-        const userId =
-            Number(id);
-
-
-
-
-
-        const targetUser =
-            getUserById(userId);
-
-
-
-
-
-        if (!targetUser) {
-            return buildError(
-                "Usuário não encontrado."
-            );
-        }
-
-
-
-
-
-        const username =
-            normalizeText(data.username);
-
-
-
-
-
-        const displayName =
-            normalizeText(data.display_name);
-
-
-
-
-
-        const role =
-            normalizeText(data.role) ||
-            targetUser.role;
-
-
-
-
-
-        const isActive =
-            Number(data.is_active ?? targetUser.is_active) ? 1 : 0;
-
-
-
-
-
-        if (!username) {
-            return buildError(
-                "Informe o nome de usuário."
-            );
-        }
-
-
-
-
-
-        if (!displayName) {
-            return buildError(
-                "Informe o nome de exibição."
-            );
-        }
-
-
-
-
-
-        if (!validateRole(role)) {
-            return buildError(
-                "Perfil inválido."
-            );
-        }
-
-
-
-
-
-        if (
-            isProtectedCreator(targetUser) &&
-            role !== USER_ROLES.CREATOR
-        ) {
-            return buildError(
-                "O perfil do usuário sLekoti não pode ser alterado."
-            );
-        }
-
-
-
-
-
-        if (
-            isProtectedCreator(targetUser) &&
-            isActive === 0
-        ) {
-            return buildError(
-                "O usuário sLekoti não pode ser desativado."
-            );
-        }
-
-
-
-
-
-        if (
-            role === USER_ROLES.CREATOR &&
-            currentUser.username !== PROTECTED_CREATOR_USERNAME
-        ) {
-            return buildError(
-                "Somente o Staff sLekoti pode definir outro usuário como Staff."
-            );
-        }
-
-
-
-
-
-        const database =
-            getUsersDatabase();
-
-
-
-
-
-        const existingUser =
-            getUserByUsername(username);
-
-
-
-
-
-        if (
-            existingUser &&
-            existingUser.id !== userId
-        ) {
-            return buildError(
-                "Já existe um usuário com este nome."
-            );
-        }
-
-
-
-
-
-        const roleChanged =
-            targetUser.role !== role;
-
-
-
-
-
-        const updateUserTransaction =
-            database.transaction(() => {
-                database
-                    .prepare(`
-                        UPDATE users
-                        SET
-                            username = ?,
-                            display_name = ?,
-                            role = ?,
-                            is_active = ?,
-                            updated_at = ?
-                        WHERE id = ?
-                    `)
-                    .run(
-                        username,
-                        displayName,
-                        role,
-                        isActive,
-                        new Date().toISOString(),
-                        userId
-                    );
-
-
-
-
-
-                if (roleChanged) {
-                    database
-                        .prepare(`
-                            DELETE FROM user_module_permissions
-                            WHERE user_id = ?
-                        `)
-                        .run(userId);
-
-
-
-
-
-                    database
-                        .prepare(`
-                            DELETE FROM user_function_permissions
-                            WHERE user_id = ?
-                        `)
-                        .run(userId);
-                }
-            });
-
-
-
-
-
-        updateUserTransaction();
-
-
-
-
-
-        return buildSuccess(
-            getUserById(userId)
-        );
-    } catch (error) {
-        console.error(
-            "[USERS] Erro ao atualizar usuário:",
-            error
-        );
-
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível atualizar o usuário."
-        );
-    }
+    return apiClient.put("/users", {
+        id,
+        data,
+        currentUser
+    });
 }
-
-
-
-
-
 
 function deleteUser(id, currentUser) {
-    try {
-        if (
-            !currentUser ||
-            ![
-                USER_ROLES.CREATOR,
-                USER_ROLES.ADMIN
-            ].includes(currentUser.role)
-        ) {
-            return buildError(
-                "Você não tem permissão para excluir usuários."
-            );
-        }
-
-
-
-
-
-        const userId =
-            Number(id);
-
-
-
-
-
-        const targetUser =
-            getUserById(userId);
-
-
-
-
-
-        if (!targetUser) {
-            return buildError(
-                "Usuário não encontrado."
-            );
-        }
-
-
-
-
-
-        if (
-            targetUser.id === currentUser.id
-        ) {
-            return buildError(
-                "Não é possível excluir o usuário conectado."
-            );
-        }
-
-
-
-
-
-        if (
-            isProtectedCreator(targetUser)
-        ) {
-            return buildError(
-                "O usuário sLekoti não pode ser excluído."
-            );
-        }
-
-
-
-
-
-        const database =
-            getUsersDatabase();
-
-
-
-
-
-        const deleteUserTransaction =
-            database.transaction(() => {
-                database
-                    .prepare(`
-                        DELETE FROM user_function_permissions
-                        WHERE user_id = ?
-                    `)
-                    .run(userId);
-
-
-
-
-
-                database
-                    .prepare(`
-                        DELETE FROM user_module_permissions
-                        WHERE user_id = ?
-                    `)
-                    .run(userId);
-
-
-
-
-
-                database
-                    .prepare(`
-                        DELETE FROM user_sessions
-                        WHERE user_id = ?
-                    `)
-                    .run(userId);
-
-
-
-
-
-                database
-                    .prepare(`
-                        DELETE FROM users
-                        WHERE id = ?
-                    `)
-                    .run(userId);
-            });
-
-
-
-
-
-        deleteUserTransaction();
-
-
-
-
-
-        return buildSuccess({
-            id: userId
-        });
-    } catch (error) {
-        console.error(
-            "[USERS] Erro ao excluir usuário:",
-            error
-        );
-
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível excluir o usuário."
-        );
-    }
+    return apiClient.del("/users", {
+        id,
+        currentUser
+    });
 }
-
-
-
-
-
 
 function setUserActive(id, isActive, currentUser) {
-    try {
-        if (
-            !currentUser ||
-            ![
-                USER_ROLES.CREATOR,
-                USER_ROLES.ADMIN
-            ].includes(currentUser.role)
-        ) {
-            return buildError(
-                "Você não tem permissão para alterar o status de usuários."
-            );
-        }
-
-
-
-
-
-        const userId =
-            Number(id);
-
-
-
-
-
-        const targetUser =
-            getUserById(userId);
-
-
-
-
-
-        if (!targetUser) {
-            return buildError(
-                "Usuário não encontrado."
-            );
-        }
-
-
-
-
-
-        if (
-            targetUser.id === currentUser.id
-        ) {
-            return buildError(
-                "Não é possível alterar o status do usuário conectado."
-            );
-        }
-
-
-
-
-
-        if (
-            isProtectedCreator(targetUser) &&
-            isActive === 0
-        ) {
-            return buildError(
-                "O usuário sLekoti não pode ser desativado."
-            );
-        }
-
-
-
-
-
-        const database =
-            getUsersDatabase();
-
-
-
-
-
-        database
-            .prepare(`
-                UPDATE users
-                SET
-                    is_active = ?,
-                    updated_at = ?
-                WHERE id = ?
-            `)
-            .run(
-                isActive ? 1 : 0,
-                new Date().toISOString(),
-                userId
-            );
-
-
-
-
-
-        return buildSuccess(
-            getUserById(userId)
-        );
-    } catch (error) {
-        console.error(
-            "[USERS] Erro ao alterar status:",
-            error
-        );
-
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível alterar o status do usuário."
-        );
-    }
+    return apiClient.patch("/users/active", {
+        id,
+        isActive,
+        currentUser
+    });
 }
-
-
-
-
-
 
 function listPermissions() {
-    try {
-        const database =
-            getUsersDatabase();
-
-
-
-
-
-        const permissions =
-            database
-                .prepare(`
-                    SELECT *
-                    FROM module_permissions
-                    ORDER BY role, module_key
-                `)
-                .all();
-
-
-
-
-
-        return buildSuccess(permissions);
-    } catch (error) {
-        console.error(
-            "[USERS] Erro ao listar permissões:",
-            error
-        );
-
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível listar as permissões."
-        );
-    }
+    return apiClient.get("/permissions/legacy");
 }
-
-
-
-
-
 
 function runGitCommand(arguments) {
     return new Promise((resolve, reject) => {
@@ -1041,16 +67,8 @@ function runGitCommand(arguments) {
                         )
                     );
 
-
-
-
-
                     return;
                 }
-
-
-
-
 
                 resolve(
                     String(stdout || "").trim()
@@ -1060,34 +78,22 @@ function runGitCommand(arguments) {
     });
 }
 
-
-
-
-
-
 async function publishRelease(currentUser) {
     try {
         if (
             !currentUser ||
             currentUser.role !== USER_ROLES.CREATOR
         ) {
-            return buildError(
-                "Somente o perfil Staff pode publicar atualizações."
-            );
+            return {
+                success: false,
+                error: "Somente o perfil Staff pode publicar atualizações."
+            };
         }
-
-
-
-
 
         const packagePath = path.join(
             process.cwd(),
             "package.json"
         );
-
-
-
-
 
         const packageJson = JSON.parse(
             fs.readFileSync(
@@ -1096,53 +102,26 @@ async function publishRelease(currentUser) {
             )
         );
 
-
-
-
-
         const versionParts =
             String(packageJson.version || "").split(".");
 
-
-
-
-
         if (versionParts.length !== 3) {
-            return buildError(
-                "Versão inválida no package.json."
-            );
+            return {
+                success: false,
+                error: "Versão inválida no package.json."
+            };
         }
-
-
-
-
 
         versionParts[2] = String(
             Number(versionParts[2]) + 1
         );
 
-
-
-
-
         const newVersion =
             versionParts.join(".");
 
-
-
-
-
         const newTag = `v${newVersion}`;
 
-
-
-
-
         packageJson.version = newVersion;
-
-
-
-
 
         fs.writeFileSync(
             packagePath,
@@ -1154,15 +133,7 @@ async function publishRelease(currentUser) {
             "utf8"
         );
 
-
-
-
-
         await runGitCommand(["add", "."]);
-
-
-
-
 
         try {
             await runGitCommand([
@@ -1174,27 +145,15 @@ async function publishRelease(currentUser) {
             // Continua se não houver alterações para commitar.
         }
 
-
-
-
-
         await runGitCommand([
             "pull",
             "--rebase"
         ]);
 
-
-
-
-
         await runGitCommand([
             "tag",
             newTag
         ]);
-
-
-
-
 
         await runGitCommand([
             "push",
@@ -1202,45 +161,32 @@ async function publishRelease(currentUser) {
             "main"
         ]);
 
-
-
-
-
         await runGitCommand([
             "push",
             "origin",
             newTag
         ]);
 
-
-
-
-
-        return buildSuccess({
-            version: newVersion,
-            tag: newTag
-        });
+        return {
+            success: true,
+            data: {
+                version: newVersion,
+                tag: newTag
+            }
+        };
     } catch (error) {
         console.error(
             "[USERS] Erro ao publicar atualização:",
             error
         );
 
-
-
-
-
-        return buildError(
-            error?.message ||
-            "Não foi possível publicar a atualização."
-        );
+        return {
+            success: false,
+            error: error?.message ||
+                "Não foi possível publicar a atualização."
+        };
     }
 }
-
-
-
-
-
 
 module.exports = {
     listUsers,

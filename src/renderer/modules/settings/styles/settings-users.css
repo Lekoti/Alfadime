@@ -6,11 +6,21 @@
     overflow-y: auto;
 }
 
+
 .settings-users-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+
+.settings-users-header > div:first-child {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
+
 
 .settings-users-eyebrow {
     color: #8a96a3;
@@ -20,6 +30,7 @@
     text-transform: uppercase;
 }
 
+
 .settings-users-header h1 {
     margin: 0;
     color: #344f6c;
@@ -27,11 +38,20 @@
     font-weight: 700;
 }
 
+
 .settings-users-header p {
     margin: 0;
     color: #7a8795;
     font-size: 13px;
 }
+
+
+.settings-users-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 
 .settings-users-error {
     border: 1px solid #fecaca;
@@ -42,6 +62,7 @@
     font-size: 13px;
 }
 
+
 .settings-users-card {
     border: 1px solid #e1e6ed;
     border-radius: 10px;
@@ -49,12 +70,14 @@
     background: #ffffff;
 }
 
+
 .settings-users-card h2 {
     margin: 0 0 16px;
     color: #344f6c;
     font-size: 16px;
     font-weight: 700;
 }
+
 
 .settings-users-form {
     display: grid;
@@ -66,17 +89,20 @@
     align-items: end;
 }
 
+
 .settings-users-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
 
+
 .settings-users-field label {
     color: #5e6b79;
     font-size: 12px;
     font-weight: 600;
 }
+
 
 .settings-users-field input,
 .settings-users-field select {
@@ -90,6 +116,7 @@
     font-size: 13px;
 }
 
+
 .settings-users-field input:disabled,
 .settings-users-field select:disabled {
     background: #f3f5f8;
@@ -97,10 +124,12 @@
     cursor: not-allowed;
 }
 
+
 .settings-users-form-actions {
     display: flex;
     gap: 8px;
 }
+
 
 .settings-users-primary-button {
     min-height: 34px;
@@ -115,14 +144,17 @@
     font-weight: 600;
 }
 
+
 .settings-users-primary-button:hover:not(:disabled) {
     background: #344f6c;
 }
+
 
 .settings-users-primary-button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
 }
+
 
 .settings-users-secondary-button {
     min-height: 34px;
@@ -136,19 +168,23 @@
     font-size: 13px;
 }
 
+
 .settings-users-secondary-button:hover {
     border-color: #aab7c5;
     background: #f0f4f8;
 }
 
+
 .settings-users-table-wrapper {
     overflow-x: auto;
 }
+
 
 .settings-users-table {
     width: 100%;
     border-collapse: collapse;
 }
+
 
 .settings-users-table th,
 .settings-users-table td {
@@ -159,6 +195,7 @@
     text-align: left;
 }
 
+
 .settings-users-table th {
     color: #8a96a3;
     font-size: 10px;
@@ -166,6 +203,7 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
 }
+
 
 .settings-users-status {
     display: inline-block;
@@ -175,20 +213,24 @@
     font-weight: 600;
 }
 
+
 .settings-users-status.active {
     background: #e6f4ea;
     color: #1f7a3d;
 }
+
 
 .settings-users-status.inactive {
     background: #fee2e2;
     color: #b91c1c;
 }
 
+
 .settings-users-actions {
     display: flex;
     gap: 6px;
 }
+
 
 .settings-users-actions button {
     border: 1px solid #cdd6df;
@@ -201,42 +243,23 @@
     font-size: 11px;
 }
 
+
 .settings-users-actions button:hover:not(:disabled) {
     border-color: #3b5f86;
     background: #f0f4f8;
 }
+
 
 .settings-users-actions button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
 
+
 .settings-users-empty {
     margin: 0;
     color: #7a8795;
     font-size: 13px;
-}
-
-@media (max-width: 1100px) {
-    .settings-users-form {
-        grid-template-columns: repeat(
-            2,
-            minmax(0, 1fr)
-        );
-    }
-}
-
-@media (max-width: 680px) {
-    .settings-users-form {
-        grid-template-columns: 1fr;
-    }
-}
-
-.settings-users-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
 }
 
 
@@ -291,11 +314,19 @@
 }
 
 
+.settings-users-modal-form {
+    max-width: 720px;
+    padding: 24px;
+}
+
+
 .settings-users-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #eef1f5;
+    margin-bottom: 20px;
 }
 
 
@@ -328,6 +359,41 @@
 }
 
 
+.settings-users-form-modal {
+    grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+    );
+    gap: 16px;
+}
+
+
+.settings-users-form-modal .settings-users-field input,
+.settings-users-form-modal .settings-users-field select {
+    min-height: 38px;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 13px;
+}
+
+
+.settings-users-form-modal .settings-users-field input:focus,
+.settings-users-form-modal .settings-users-field select:focus {
+    outline: none;
+    border-color: #3b5f86;
+    box-shadow: 0 0 0 3px rgba(59, 95, 134, 0.12);
+}
+
+
+.settings-users-form-modal .settings-users-form-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    margin-top: 6px;
+    padding-top: 16px;
+    border-top: 1px solid #eef1f5;
+}
+
+
 .settings-users-confirm-modal {
     max-width: 420px;
 }
@@ -340,7 +406,27 @@
 }
 
 
+@media (max-width: 1100px) {
+    .settings-users-form {
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
+    }
+}
+
+
 @media (max-width: 680px) {
+    .settings-users-form {
+        grid-template-columns: 1fr;
+    }
+
+
+    .settings-users-form-modal {
+        grid-template-columns: 1fr;
+    }
+
+
     .settings-users-header {
         flex-direction: column;
         align-items: stretch;

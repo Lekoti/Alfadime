@@ -22,7 +22,9 @@ import "../styles/settings-users.css";
 
 
 
+
 const PROTECTED_CREATOR_USERNAME = "sLekoti";
+
 
 
 
@@ -43,12 +45,14 @@ const EMPTY_FORM = {
 
 
 
+
 export default function SettingsUsersPage() {
     const {
         user: currentUser,
         isCreator,
         isAdmin
     } = useAuth();
+
 
 
 
@@ -63,10 +67,12 @@ export default function SettingsUsersPage() {
 
 
 
+
     const [
         loading,
         setLoading
     ] = useState(true);
+
 
 
 
@@ -81,10 +87,12 @@ export default function SettingsUsersPage() {
 
 
 
+
     const [
         saving,
         setSaving
     ] = useState(false);
+
 
 
 
@@ -99,10 +107,12 @@ export default function SettingsUsersPage() {
 
 
 
+
     const [
         editingUser,
         setEditingUser
     ] = useState(null);
+
 
 
 
@@ -117,6 +127,7 @@ export default function SettingsUsersPage() {
 
 
 
+
     const [
         deletingUser,
         setDeletingUser
@@ -126,27 +137,10 @@ export default function SettingsUsersPage() {
 
 
 
-    const [
-        publishing,
-        setPublishing
-    ] = useState(false);
-
-
-
-
-
-    const [
-        publishResult,
-        setPublishResult
-    ] = useState("");
-
-
-
-
-
 
     const canManageUsers =
         isCreator || isAdmin;
+
 
 
 
@@ -165,12 +159,14 @@ export default function SettingsUsersPage() {
 
 
 
+
     const loadUsers =
         useCallback(
             async () => {
                 try {
                     setLoading(true);
                     setError("");
+
 
 
 
@@ -205,6 +201,7 @@ export default function SettingsUsersPage() {
 
 
 
+
                     setError(
                         loadError?.message ||
                         "Não foi possível carregar os usuários."
@@ -215,6 +212,7 @@ export default function SettingsUsersPage() {
             },
             []
         );
+
 
 
 
@@ -235,11 +233,13 @@ export default function SettingsUsersPage() {
 
 
 
+
     function resetForm() {
         setForm(EMPTY_FORM);
         setEditingUser(null);
         setError("");
     }
+
 
 
 
@@ -256,10 +256,12 @@ export default function SettingsUsersPage() {
 
 
 
+
     function closeModal() {
         setIsModalOpen(false);
         resetForm();
     }
+
 
 
 
@@ -276,6 +278,7 @@ export default function SettingsUsersPage() {
 
 
 
+
         setForm((previous) => ({
             ...previous,
             [name]: value
@@ -287,8 +290,10 @@ export default function SettingsUsersPage() {
 
 
 
+
     function handleEdit(user) {
         setEditingUser(user);
+
 
 
 
@@ -307,6 +312,7 @@ export default function SettingsUsersPage() {
 
 
 
+
         setError("");
         setIsModalOpen(true);
     }
@@ -316,86 +322,10 @@ export default function SettingsUsersPage() {
 
 
 
-    async function handlePublishRelease() {
-        const confirmed = window.confirm(
-            "Publicar nova atualização do Alfadime?\n\n" +
-            "A versão será aumentada automaticamente, as alterações serão commitadas e a tag será enviada ao GitHub."
-        );
-
-
-
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-
-
-
-        setPublishing(true);
-        setPublishResult("");
-        setError("");
-
-
-
-
-
-        try {
-            const result =
-                await settingsUsersService.publishRelease();
-
-
-
-
-
-            if (result?.success) {
-                setPublishResult(
-                    `Atualização ${result.data.tag} publicada com sucesso.`
-                );
-
-
-
-
-
-                return;
-            }
-
-
-
-
-
-            setError(
-                result?.error ||
-                "Não foi possível publicar a atualização."
-            );
-        } catch (publishError) {
-            console.error(
-                "[USERS] Erro ao publicar atualização:",
-                publishError
-            );
-
-
-
-
-
-            setError(
-                publishError?.message ||
-                "Não foi possível publicar a atualização."
-            );
-        } finally {
-            setPublishing(false);
-        }
-    }
-
-
-
-
-
 
     async function handleSubmit(event) {
         event.preventDefault();
+
 
 
 
@@ -410,8 +340,10 @@ export default function SettingsUsersPage() {
 
 
 
+
             return;
         }
+
 
 
 
@@ -429,8 +361,10 @@ export default function SettingsUsersPage() {
 
 
 
+
             return;
         }
+
 
 
 
@@ -441,6 +375,7 @@ export default function SettingsUsersPage() {
                 setError(
                     "A senha deve ter pelo menos 6 caracteres."
                 );
+
 
 
 
@@ -460,6 +395,7 @@ export default function SettingsUsersPage() {
                 setError(
                     "As senhas não são iguais."
                 );
+
 
 
 
@@ -535,6 +471,7 @@ export default function SettingsUsersPage() {
 
 
 
+
             setError(
                 saveError?.message ||
                 "Não foi possível salvar o usuário."
@@ -549,9 +486,11 @@ export default function SettingsUsersPage() {
 
 
 
+
     async function handleDelete(user) {
         setDeletingUser(user);
     }
+
 
 
 
@@ -614,6 +553,7 @@ export default function SettingsUsersPage() {
 
 
 
+
             setError(
                 deleteError?.message ||
                 "Não foi possível excluir o usuário."
@@ -628,6 +568,7 @@ export default function SettingsUsersPage() {
 
 
 
+
     async function handleToggleActive(user) {
         if (
             user.id === currentUser?.id
@@ -635,6 +576,7 @@ export default function SettingsUsersPage() {
             setError(
                 "Não é possível desativar o usuário conectado."
             );
+
 
 
 
@@ -688,12 +630,14 @@ export default function SettingsUsersPage() {
 
 
 
+
             setError(
                 toggleError?.message ||
                 "Não foi possível alterar o status."
             );
         }
     }
+
 
 
 
@@ -712,9 +656,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                     <h1>
                         Usuários e permissões
                     </h1>
+
 
 
 
@@ -733,6 +679,7 @@ export default function SettingsUsersPage() {
 
 
 
+
     return (
         <main className="settings-users-page">
             <header className="settings-users-header">
@@ -745,9 +692,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                     <h1>
                         Usuários e permissões
                     </h1>
+
 
 
 
@@ -762,24 +711,8 @@ export default function SettingsUsersPage() {
 
 
 
+
                 <div className="settings-users-header-actions">
-                    {isCreator && (
-                        <button
-                            type="button"
-                            className="settings-users-primary-button"
-                            onClick={handlePublishRelease}
-                            disabled={publishing}
-                        >
-                            {publishing
-                                ? "Publicando..."
-                                : "Publicar atualização"}
-                        </button>
-                    )}
-
-
-
-
-
                     <button
                         type="button"
                         className="settings-users-primary-button"
@@ -789,6 +722,7 @@ export default function SettingsUsersPage() {
                     </button>
                 </div>
             </header>
+
 
 
 
@@ -809,25 +743,11 @@ export default function SettingsUsersPage() {
 
 
 
-            {
-                publishResult && (
-                    <div
-                        className="settings-users-error"
-                        role="status"
-                    >
-                        {publishResult}
-                    </div>
-                )
-            }
-
-
-
-
-
             <section className="settings-users-card">
                 <h2>
                     Usuários cadastrados
                 </h2>
+
 
 
 
@@ -855,9 +775,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                                         <th>
                                             Usuário
                                         </th>
+
 
 
 
@@ -871,9 +793,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                                         <th>
                                             Status
                                         </th>
+
 
 
 
@@ -884,6 +808,7 @@ export default function SettingsUsersPage() {
                                         </th>
                                     </tr>
                                 </thead>
+
 
 
 
@@ -901,9 +826,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                                                 <td>
                                                     {user.username}
                                                 </td>
+
 
 
 
@@ -917,6 +844,7 @@ export default function SettingsUsersPage() {
                                                         user.role
                                                     }
                                                 </td>
+
 
 
 
@@ -942,6 +870,7 @@ export default function SettingsUsersPage() {
 
 
 
+
                                                 <td>
                                                     <div className="settings-users-actions">
                                                         <button
@@ -955,6 +884,7 @@ export default function SettingsUsersPage() {
                                                         >
                                                             Editar
                                                         </button>
+
 
 
 
@@ -977,6 +907,7 @@ export default function SettingsUsersPage() {
                                                                     : "Ativar"
                                                             }
                                                         </button>
+
 
 
 
@@ -1012,10 +943,11 @@ export default function SettingsUsersPage() {
 
 
 
+
             {
                 isModalOpen && (
                     <div className="settings-users-modal-overlay">
-                        <div className="settings-users-modal">
+                        <div className="settings-users-modal settings-users-modal-form">
                             <header className="settings-users-modal-header">
                                 <h2>
                                     {
@@ -1024,6 +956,7 @@ export default function SettingsUsersPage() {
                                             : "Novo usuário"
                                     }
                                 </h2>
+
 
 
 
@@ -1043,14 +976,16 @@ export default function SettingsUsersPage() {
 
 
 
+
                             <form
-                                className="settings-users-form"
+                                className="settings-users-form settings-users-form-modal"
                                 onSubmit={handleSubmit}
                             >
                                 <div className="settings-users-field">
                                     <label htmlFor="user-username">
                                         Usuário
                                     </label>
+
 
 
 
@@ -1073,10 +1008,12 @@ export default function SettingsUsersPage() {
 
 
 
+
                                 <div className="settings-users-field">
                                     <label htmlFor="user-display-name">
                                         Nome de exibição
                                     </label>
+
 
 
 
@@ -1096,6 +1033,7 @@ export default function SettingsUsersPage() {
 
 
 
+
                                 {
                                     !editingUser && (
                                         <>
@@ -1103,6 +1041,7 @@ export default function SettingsUsersPage() {
                                                 <label htmlFor="user-password">
                                                     Senha
                                                 </label>
+
 
 
 
@@ -1123,10 +1062,12 @@ export default function SettingsUsersPage() {
 
 
 
+
                                             <div className="settings-users-field">
                                                 <label htmlFor="user-confirm-password">
                                                     Confirmar senha
                                                 </label>
+
 
 
 
@@ -1150,10 +1091,12 @@ export default function SettingsUsersPage() {
 
 
 
+
                                 <div className="settings-users-field">
                                     <label htmlFor="user-role">
                                         Perfil
                                     </label>
+
 
 
 
@@ -1189,9 +1132,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                                         <option value={USER_ROLES.EDITOR}>
                                             Editor
                                         </option>
+
 
 
 
@@ -1207,10 +1152,12 @@ export default function SettingsUsersPage() {
 
 
 
+
                                 <div className="settings-users-field">
                                     <label htmlFor="user-status">
                                         Status
                                     </label>
+
 
 
 
@@ -1231,11 +1178,13 @@ export default function SettingsUsersPage() {
 
 
 
+
                                         <option value={0}>
                                             Inativo
                                         </option>
                                     </select>
                                 </div>
+
 
 
 
@@ -1260,6 +1209,7 @@ export default function SettingsUsersPage() {
 
 
 
+
                                     <button
                                         type="button"
                                         className="settings-users-secondary-button"
@@ -1279,6 +1229,7 @@ export default function SettingsUsersPage() {
 
 
 
+
             {
                 deletingUser && (
                     <div className="settings-users-modal-overlay">
@@ -1291,9 +1242,11 @@ export default function SettingsUsersPage() {
 
 
 
+
                             <p>
                                 Deseja realmente excluir o usuário <strong>{deletingUser.display_name}</strong>?
                             </p>
+
 
 
 
@@ -1312,6 +1265,7 @@ export default function SettingsUsersPage() {
                                             : "Excluir"
                                     }
                                 </button>
+
 
 
 
