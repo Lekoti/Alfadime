@@ -7,6 +7,7 @@ const {
 
 
 
+
 function invoke(
     channel,
     ...args
@@ -16,6 +17,7 @@ function invoke(
         ...args
     );
 }
+
 
 
 
@@ -33,10 +35,12 @@ function subscribe(
             );
 
 
+
     ipcRenderer.on(
         channel,
         listener
     );
+
 
 
     return () =>
@@ -48,31 +52,34 @@ function subscribe(
 
 
 
+
 contextBridge.exposeInMainWorld(
     "alfadime",
     {
         auth: {
-    login: (
-        username,
-        password,
-        isPersistent
-    ) =>
-        invoke(
-            "auth:login",
-            {
+            login: (
                 username,
                 password,
                 isPersistent
-            }
-        ),
+            ) =>
+                invoke(
+                    "auth:login",
+                    {
+                        username,
+                        password,
+                        isPersistent
+                    }
+                ),
 
 
 
-    register: (payload) =>
-        invoke(
-            "auth:register",
-            payload
-        ),
+
+            register: (payload) =>
+                invoke(
+                    "auth:register",
+                    payload
+                ),
+
 
 
             logout: () =>
@@ -81,10 +88,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getCurrentSession: () =>
                 invoke(
                     "auth:get_current_session"
                 ),
+
 
 
             getComputerId: () =>
@@ -93,10 +102,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             validateSession: () =>
                 invoke(
                     "auth:validate_session"
                 ),
+
 
 
             updateLastAccess: () =>
@@ -106,6 +117,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         users: {
             list: () =>
                 invoke(
@@ -113,11 +125,13 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             create: (data) =>
                 invoke(
                     "users:create",
                     data
                 ),
+
 
 
             update: (id, data) =>
@@ -128,11 +142,13 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             delete: (id) =>
                 invoke(
                     "users:delete",
                     id
                 ),
+
 
 
             setActive: (id, isActive) =>
@@ -143,54 +159,69 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             listPermissions: () =>
                 invoke(
                     "users:list-permissions"
+                ),
+
+
+
+            publishRelease: () =>
+                invoke(
+                    "users:publish-release"
                 )
         },
 
 
+
         permissions: {
-    listModules: () =>
-        invoke(
-            "permissions:list-modules"
-        ),
+            listModules: () =>
+                invoke(
+                    "permissions:list-modules"
+                ),
 
 
-    listFunctions: (moduleKey) =>
-        invoke(
-            "permissions:list-functions",
-            moduleKey
-        ),
+
+            listFunctions: (moduleKey) =>
+                invoke(
+                    "permissions:list-functions",
+                    moduleKey
+                ),
 
 
-    getForUser: (userId) =>
-        invoke(
-            "permissions:get-for-user",
-            userId
-        ),
+
+            getForUser: (userId) =>
+                invoke(
+                    "permissions:get-for-user",
+                    userId
+                ),
 
 
-    getForRole: (role) =>
-        invoke(
-            "permissions:get-for-role",
-            role
-        ),
+
+            getForRole: (role) =>
+                invoke(
+                    "permissions:get-for-role",
+                    role
+                ),
 
 
-    save: (payload) =>
-        invoke(
-            "permissions:save",
-            payload
-        ),
+
+            save: (payload) =>
+                invoke(
+                    "permissions:save",
+                    payload
+                ),
 
 
-    clearUserOverrides: (userId) =>
-        invoke(
-            "permissions:clear-user-overrides",
-            userId
-        )
-},
+
+            clearUserOverrides: (userId) =>
+                invoke(
+                    "permissions:clear-user-overrides",
+                    userId
+                )
+        },
+
 
 
         app: {
@@ -200,10 +231,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getOpenAtLogin: () =>
                 invoke(
                     "app:get-open-at-login"
                 ),
+
 
 
             setOpenAtLogin: (
@@ -215,10 +248,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             checkForUpdates: () =>
                 invoke(
                     "app:check-for-updates"
                 ),
+
 
 
             downloadUpdate: () =>
@@ -227,16 +262,19 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             installUpdate: () =>
                 invoke(
                     "app:install-update"
                 ),
 
 
+
             isUpdateDownloaded: () =>
                 invoke(
                     "app:is-update-downloaded"
                 ),
+
 
 
             onUpdateStatus: (
@@ -249,11 +287,13 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         pricePending: {
             list: () =>
                 invoke(
                     "price-pending:list"
                 ),
+
 
 
             getById: (
@@ -265,6 +305,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             create: (
                 data
             ) =>
@@ -272,6 +313,7 @@ contextBridge.exposeInMainWorld(
                     "price-pending:create",
                     data
                 ),
+
 
 
             updateCell: (
@@ -289,6 +331,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             remove: (
                 id
             ) =>
@@ -296,6 +339,7 @@ contextBridge.exposeInMainWorld(
                     "price-pending:remove",
                     id
                 ),
+
 
 
             updateEmailReceipt: (
@@ -307,10 +351,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             refresh: () =>
                 invoke(
                     "price-pending:refresh"
                 ),
+
 
 
             export: (
@@ -322,10 +368,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getDbConfig: () =>
                 invoke(
                     "price-pending:get-db-config"
                 ),
+
 
 
             saveDbConfig: (
@@ -337,6 +385,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             testConnection: (
                 path
             ) =>
@@ -346,10 +395,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getFoldersConfig: () =>
                 invoke(
                     "price-pending:get-folders-config"
                 ),
+
 
 
             saveFoldersConfig: (
@@ -359,6 +410,7 @@ contextBridge.exposeInMainWorld(
                     "price-pending:save-folders-config",
                     config
                 ),
+
 
 
             onChanged: (
@@ -371,6 +423,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         products: {
             list: (
                 filters
@@ -379,6 +432,7 @@ contextBridge.exposeInMainWorld(
                     "products:list",
                     filters
                 ),
+
 
 
             getFilterOptions: (
@@ -390,10 +444,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             syncExcel: () =>
                 invoke(
                     "products:sync-excel"
                 ),
+
 
 
             onChanged: (
@@ -406,6 +462,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         industryContacts: {
             list: () =>
                 invoke(
@@ -413,10 +470,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             listWithoutContact: () =>
                 invoke(
                     "industry-contacts:without-contact"
                 ),
+
 
 
             save: (
@@ -428,6 +487,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             delete: (
                 id
             ) =>
@@ -435,6 +495,7 @@ contextBridge.exposeInMainWorld(
                     "industry-contacts:delete",
                     id
                 ),
+
 
 
             prepareCharge: (
@@ -446,6 +507,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             sendCharge: (
                 payload
             ) =>
@@ -455,10 +517,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getDbConfig: () =>
                 invoke(
                     "industry-contacts:get-db-config"
                 ),
+
 
 
             saveDbConfig: (
@@ -468,6 +532,7 @@ contextBridge.exposeInMainWorld(
                     "industry-contacts:save-db-config",
                     config
                 ),
+
 
 
             testConnection: (
@@ -480,6 +545,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         notifications: {
             list: (
                 filters
@@ -488,6 +554,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:list",
                     filters
                 ),
+
 
 
             getById: (
@@ -499,6 +566,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             create: (
                 data
             ) =>
@@ -506,6 +574,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:create",
                     data
                 ),
+
 
 
             markAsRead: (
@@ -517,6 +586,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             dismiss: (
                 id
             ) =>
@@ -524,6 +594,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:dismiss",
                     id
                 ),
+
 
 
             updateStatus: (
@@ -535,6 +606,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             delete: (
                 id
             ) =>
@@ -542,6 +614,7 @@ contextBridge.exposeInMainWorld(
                     "notifications:delete",
                     id
                 ),
+
 
 
             summary: (
@@ -554,6 +627,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         productAudit: {
             list: (
                 filters
@@ -562,6 +636,7 @@ contextBridge.exposeInMainWorld(
                     "product-audit:list",
                     filters
                 ),
+
 
 
             getFilterOptions: (
@@ -574,6 +649,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         productCorrections: {
             list: (
                 filters
@@ -584,10 +660,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getFilterOptions: () =>
                 invoke(
                     "product-corrections:filter-options"
                 ),
+
 
 
             create: (
@@ -599,6 +677,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             cancel: (
                 id
             ) =>
@@ -606,6 +685,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:cancel",
                     id
                 ),
+
 
 
             cancelMany: (
@@ -617,6 +697,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             revert: (
                 id
             ) =>
@@ -624,6 +705,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:revert",
                     id
                 ),
+
 
 
             revertMany: (
@@ -635,6 +717,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             markSent: (
                 ids
             ) =>
@@ -644,6 +727,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getPendingByProducts: (
                 ids
             ) =>
@@ -651,6 +735,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:pending-by-products",
                     ids
                 ),
+
 
 
             getBulkTargets: (
@@ -664,6 +749,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             createBulkCorrections: (
                 data
             ) =>
@@ -671,6 +757,7 @@ contextBridge.exposeInMainWorld(
                     "product-corrections:create-bulk",
                     data
                 ),
+
 
 
             createBulk: (
@@ -682,10 +769,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getFields: () =>
                 invoke(
                     "product-corrections:fields"
                 ),
+
 
 
             getBranches: () =>
@@ -694,10 +783,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getCsvBranches: () =>
                 invoke(
                     "product-corrections:export-csv-branches"
                 ),
+
 
 
             exportCsv: (
@@ -709,11 +800,13 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             exportAllCsv: () =>
                 invoke(
                     "product-corrections:export-csv-all"
                 )
         },
+
 
 
         purchases: {
@@ -726,6 +819,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getById: (
                 id
             ) =>
@@ -735,6 +829,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             create: (
                 data
             ) =>
@@ -742,6 +837,7 @@ contextBridge.exposeInMainWorld(
                     "purchases:create",
                     data
                 ),
+
 
 
             update: (
@@ -755,6 +851,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             updateStatus: (
                 id,
                 status
@@ -766,6 +863,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             delete: (
                 id
             ) =>
@@ -773,6 +871,7 @@ contextBridge.exposeInMainWorld(
                     "purchases:delete",
                     id
                 ),
+
 
 
             listSuggestions: (
@@ -784,6 +883,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getFilterOptions: (
                 field
             ) =>
@@ -793,10 +893,12 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             syncCurveExcel: () =>
                 invoke(
                     "purchases:sync-curve-excel"
                 ),
+
 
 
             onChanged: (
@@ -806,6 +908,7 @@ contextBridge.exposeInMainWorld(
                     "purchases:changed",
                     callback
                 ),
+
 
 
             exportExcel: (
@@ -818,6 +921,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         export: {
             getPreference: (
                 moduleKey
@@ -826,6 +930,7 @@ contextBridge.exposeInMainWorld(
                     "export:preferences:get",
                     moduleKey
                 ),
+
 
 
             savePreference: (
@@ -839,6 +944,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             products: (
                 filters,
                 columns
@@ -848,6 +954,7 @@ contextBridge.exposeInMainWorld(
                     filters,
                     columns
                 ),
+
 
 
             productsPreview: (
@@ -861,6 +968,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             productsAdvanced: (
                 filters,
                 columns
@@ -870,6 +978,7 @@ contextBridge.exposeInMainWorld(
                     filters,
                     columns
                 ),
+
 
 
             productAudit: (
@@ -883,15 +992,19 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             productCorrections: (
                 filters,
-                columns
+                columns,
+                rows
             ) =>
                 invoke(
                     "export:product-corrections",
                     filters,
-                    columns
+                    columns,
+                    rows
                 ),
+
 
 
             industryContacts: (
@@ -907,6 +1020,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             getTemplates: (
                 moduleKey
             ) =>
@@ -914,6 +1028,7 @@ contextBridge.exposeInMainWorld(
                     "export:templates:get",
                     moduleKey
                 ),
+
 
 
             saveTemplate: (
@@ -931,6 +1046,7 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+
             deleteTemplate: (
                 moduleKey,
                 templateId
@@ -943,6 +1059,7 @@ contextBridge.exposeInMainWorld(
         },
 
 
+
         email: {
             received: {
                 runRoutine: () =>
@@ -951,10 +1068,12 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 listMessages: () =>
                     invoke(
                         "email-received:messages:list"
                     ),
+
 
 
                 listAttachments: (
@@ -966,6 +1085,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 fetch: (
                     configId
                 ) =>
@@ -973,6 +1093,7 @@ contextBridge.exposeInMainWorld(
                         "email-received:fetch",
                         configId
                     ),
+
 
 
                 process: (
@@ -984,10 +1105,12 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 dashboard: () =>
                     invoke(
                         "email-received:dashboard"
                     ),
+
 
 
                 listLogs: () =>
@@ -996,10 +1119,12 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 listPatterns: () =>
                     invoke(
                         "email-received:patterns:list"
                     ),
+
 
 
                 createPattern: (
@@ -1011,6 +1136,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 deletePattern: (
                     id
                 ) =>
@@ -1018,6 +1144,7 @@ contextBridge.exposeInMainWorld(
                         "email-received:patterns:delete",
                         id
                     ),
+
 
 
                 openFolder: (
@@ -1030,11 +1157,13 @@ contextBridge.exposeInMainWorld(
             },
 
 
+
             configs: {
                 list: () =>
                     invoke(
                         "email-configs:list"
                     ),
+
 
 
                 getById: (
@@ -1046,6 +1175,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 create: (
                     data
                 ) =>
@@ -1053,6 +1183,7 @@ contextBridge.exposeInMainWorld(
                         "email-configs:create",
                         data
                     ),
+
 
 
                 update: (
@@ -1066,6 +1197,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 delete: (
                     id
                 ) =>
@@ -1075,6 +1207,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 testSmtp: (
                     data
                 ) =>
@@ -1082,6 +1215,7 @@ contextBridge.exposeInMainWorld(
                         "email-configs:test-smtp",
                         data
                     ),
+
 
 
                 testImap: (
@@ -1094,6 +1228,7 @@ contextBridge.exposeInMainWorld(
             },
 
 
+
             campaigns: {
                 list: () =>
                     invoke(
@@ -1101,13 +1236,15 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 getById: (
-                    id
+                    campaignId
                 ) =>
                     invoke(
                         "email-campaigns:get-by-id",
-                        id
+                        campaignId
                     ),
+
 
 
                 create: (
@@ -1117,6 +1254,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:create",
                         data
                     ),
+
 
 
                 update: (
@@ -1130,6 +1268,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 delete: (
                     id
                 ) =>
@@ -1137,6 +1276,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:delete",
                         id
                     ),
+
 
 
                 send: (
@@ -1150,6 +1290,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 processIncoming: (
                     campaignId
                 ) =>
@@ -1157,6 +1298,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:process-incoming",
                         campaignId
                     ),
+
 
 
                 getDashboard: (
@@ -1168,6 +1310,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 getHistory: (
                     campaignId
                 ) =>
@@ -1175,6 +1318,7 @@ contextBridge.exposeInMainWorld(
                         "email-campaigns:history",
                         campaignId
                     ),
+
 
 
                 getSendLogs: (
@@ -1187,6 +1331,7 @@ contextBridge.exposeInMainWorld(
             },
 
 
+
             recipients: {
                 list: (
                     campaignId
@@ -1195,6 +1340,7 @@ contextBridge.exposeInMainWorld(
                         "email-recipients:list",
                         campaignId
                     ),
+
 
 
                 getById: (
@@ -1206,6 +1352,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 create: (
                     data
                 ) =>
@@ -1213,6 +1360,7 @@ contextBridge.exposeInMainWorld(
                         "email-recipients:create",
                         data
                     ),
+
 
 
                 createBatch: (
@@ -1226,6 +1374,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 delete: (
                     id
                 ) =>
@@ -1236,11 +1385,13 @@ contextBridge.exposeInMainWorld(
             },
 
 
+
             attachments: {
                 getDatabaseInfo: () =>
                     invoke(
                         "email-campaign-attachments:database-info"
                     ),
+
 
 
                 list: (
@@ -1255,6 +1406,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 selectAndSave: (
                     campaignId
                 ) =>
@@ -1267,6 +1419,7 @@ contextBridge.exposeInMainWorld(
                     ),
 
 
+
                 remove: (
                     attachmentId
                 ) =>
@@ -1277,11 +1430,13 @@ contextBridge.exposeInMainWorld(
             },
 
 
+
             processor: {
                 start: () =>
                     invoke(
                         "email-processor:start"
                     ),
+
 
 
                 stop: () =>
@@ -1290,6 +1445,7 @@ contextBridge.exposeInMainWorld(
                     )
             }
         },
+
 
 
         ipc: {

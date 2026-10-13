@@ -9,8 +9,10 @@ function getUsersApi() {
     }
 
 
+
     return window.alfadime.users;
 }
+
 
 
 export const settingsUsersService = {
@@ -19,9 +21,11 @@ export const settingsUsersService = {
     },
 
 
+
     async create(data) {
         return getUsersApi().create(data);
     },
+
 
 
     async update(id, data) {
@@ -29,9 +33,11 @@ export const settingsUsersService = {
     },
 
 
+
     async delete(id) {
         return getUsersApi().delete(id);
     },
+
 
 
     async setActive(id, isActive) {
@@ -39,10 +45,18 @@ export const settingsUsersService = {
     },
 
 
+
     async listPermissions() {
         return getUsersApi().listPermissions();
+    },
+
+
+
+    async publishRelease() {
+        return getUsersApi().publishRelease();
     }
 };
+
 
 
 export default settingsUsersService;
