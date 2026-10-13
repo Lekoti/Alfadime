@@ -83,7 +83,7 @@ async function handleRequest(req, res, body) {
             ));
 
         case "GET /users":
-            return send(res, 200, usersService.listUsers());
+            return send(res, 200, usersService.listUsers(currentUser));
 
         case "POST /users":
             return send(res, 200, usersService.createUser(

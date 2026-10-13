@@ -1,14 +1,18 @@
 const crypto = require("node:crypto");
 
+
 const {
     getUsersDatabase
 } = require("../../src/main/database/connection");
+
 
 const {
     USER_ROLES
 } = require("../../src/main/modules/auth/userRoles.constants");
 
+
 const PROTECTED_CREATOR_USERNAME = "sLekoti";
+
 
 const ALLOWED_ROLES = [
     USER_ROLES.CREATOR,
@@ -17,13 +21,19 @@ const ALLOWED_ROLES = [
     USER_ROLES.VIEWER
 ];
 
+
+const ONLINE_THRESHOLD_MINUTES = 5;
+
+
 function normalizeText(value) {
     return String(value || "").trim();
 }
 
+
 function validateRole(role) {
     return ALLOWED_ROLES.includes(role);
 }
+
 
 function isProtectedCreator(user) {
     return Boolean(
@@ -32,25 +42,88 @@ function isProtectedCreator(user) {
     );
 }
 
+
+function canSeeOnlineStatus(user) {
+    return Boolean(
+        user &&
+        [
+            USER_ROLES.CREATOR,
+            USER_ROLES.ADMIN,
+            USER_ROLES.STAFF
+        ].includes(user.role)
+    );
+}
+
+
 function buildSuccess(data) {
     return { success: true, data };
 }
+
 
 function buildError(message) {
     return { success: false, error: message };
 }
 
+
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
+
 
     const hash = crypto
         .scryptSync(password, salt, 64)
         .toString("hex");
 
+
     return `${salt}:${hash}`;
 }
 
-function listUsers() {
+
+function getLastSessionByUser(userId) {
+    return getUsersDatabase()
+        .prepare(`
+            SELECT
+                last_access_at
+            FROM user_sessions
+            WHERE user_id = ?
+            ORDER BY last_access_at DESC
+            LIMIT 1
+        `)
+        .get(userId);
+}
+
+
+function buildOnlineInfo(user) {
+    if (!canSeeOnlineStatus(user)) {
+        return {};
+    }
+
+
+    const session = getLastSessionByUser(user.id);
+    const lastAccessAt = session?.last_access_at || null;
+
+
+    let isOnline = false;
+
+
+    if (lastAccessAt) {
+        const lastAccess = new Date(lastAccessAt).getTime();
+        const threshold = ONLINE_THRESHOLD_MINUTES * 60 * 1000;
+
+
+        isOnline =
+            Number.isFinite(lastAccess) &&
+            Date.now() - lastAccess <= threshold;
+    }
+
+
+    return {
+        is_online: isOnline,
+        last_access_at: lastAccessAt
+    };
+}
+
+
+function listUsers(currentUser) {
     try {
         const users = getUsersDatabase()
             .prepare(`
@@ -68,12 +141,20 @@ function listUsers() {
             `)
             .all();
 
-        return buildSuccess(users);
+
+        const data = users.map((user) => ({
+            ...user,
+            ...buildOnlineInfo(user)
+        }));
+
+
+        return buildSuccess(data);
     } catch (error) {
         console.error("[API][USERS] Erro ao listar usuários:", error);
         return buildError(error?.message || "Não foi possível listar os usuários.");
     }
 }
+
 
 function getUserById(id) {
     return getUsersDatabase()
@@ -94,6 +175,7 @@ function getUserById(id) {
         .get(id);
 }
 
+
 function getUserByUsername(username) {
     return getUsersDatabase()
         .prepare(`
@@ -110,6 +192,7 @@ function getUserByUsername(username) {
         .get(username);
 }
 
+
 function createUser(data, currentUser) {
     try {
         if (
@@ -124,6 +207,7 @@ function createUser(data, currentUser) {
             );
         }
 
+
         const username = normalizeText(data.username);
         const displayName = normalizeText(data.display_name);
         const password = String(data.password || "");
@@ -131,25 +215,31 @@ function createUser(data, currentUser) {
         const role = normalizeText(data.role) || USER_ROLES.VIEWER;
         const isActive = Number(data.is_active ?? 1) ? 1 : 0;
 
+
         if (!username) {
             return buildError("Informe o nome de usuário.");
         }
+
 
         if (!displayName) {
             return buildError("Informe o nome de exibição.");
         }
 
+
         if (password.length < 6) {
             return buildError("A senha deve ter pelo menos 6 caracteres.");
         }
+
 
         if (password !== confirmPassword) {
             return buildError("As senhas não são iguais.");
         }
 
+
         if (!validateRole(role)) {
             return buildError("Perfil inválido.");
         }
+
 
         if (
             role === USER_ROLES.CREATOR &&
@@ -160,11 +250,14 @@ function createUser(data, currentUser) {
             );
         }
 
+
         if (getUserByUsername(username)) {
             return buildError("Já existe um usuário com este nome.");
         }
 
+
         const now = new Date().toISOString();
+
 
         const result = getUsersDatabase()
             .prepare(`
@@ -189,6 +282,7 @@ function createUser(data, currentUser) {
                 now
             );
 
+
         return buildSuccess(
             getUserById(result.lastInsertRowid)
         );
@@ -197,6 +291,7 @@ function createUser(data, currentUser) {
         return buildError(error?.message || "Não foi possível criar o usuário.");
     }
 }
+
 
 function updateUser(id, data, currentUser) {
     try {
@@ -212,29 +307,36 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
         const userId = Number(id);
         const targetUser = getUserById(userId);
+
 
         if (!targetUser) {
             return buildError("Usuário não encontrado.");
         }
+
 
         const username = normalizeText(data.username);
         const displayName = normalizeText(data.display_name);
         const role = normalizeText(data.role) || targetUser.role;
         const isActive = Number(data.is_active ?? targetUser.is_active) ? 1 : 0;
 
+
         if (!username) {
             return buildError("Informe o nome de usuário.");
         }
+
 
         if (!displayName) {
             return buildError("Informe o nome de exibição.");
         }
 
+
         if (!validateRole(role)) {
             return buildError("Perfil inválido.");
         }
+
 
         if (
             isProtectedCreator(targetUser) &&
@@ -245,6 +347,7 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
         if (
             isProtectedCreator(targetUser) &&
             isActive === 0
@@ -253,6 +356,7 @@ function updateUser(id, data, currentUser) {
                 "O usuário sLekoti não pode ser desativado."
             );
         }
+
 
         if (
             role === USER_ROLES.CREATOR &&
@@ -263,7 +367,9 @@ function updateUser(id, data, currentUser) {
             );
         }
 
+
         const existingUser = getUserByUsername(username);
+
 
         if (
             existingUser &&
@@ -272,8 +378,10 @@ function updateUser(id, data, currentUser) {
             return buildError("Já existe um usuário com este nome.");
         }
 
+
         const roleChanged = targetUser.role !== role;
         const database = getUsersDatabase();
+
 
         const updateUserTransaction = database.transaction(() => {
             database
@@ -296,6 +404,7 @@ function updateUser(id, data, currentUser) {
                     userId
                 );
 
+
             if (roleChanged) {
                 database
                     .prepare(`
@@ -303,6 +412,7 @@ function updateUser(id, data, currentUser) {
                         WHERE user_id = ?
                     `)
                     .run(userId);
+
 
                 database
                     .prepare(`
@@ -313,7 +423,9 @@ function updateUser(id, data, currentUser) {
             }
         });
 
+
         updateUserTransaction();
+
 
         return buildSuccess(getUserById(userId));
     } catch (error) {
@@ -321,6 +433,7 @@ function updateUser(id, data, currentUser) {
         return buildError(error?.message || "Não foi possível atualizar o usuário.");
     }
 }
+
 
 function deleteUser(id, currentUser) {
     try {
@@ -336,12 +449,15 @@ function deleteUser(id, currentUser) {
             );
         }
 
+
         const userId = Number(id);
         const targetUser = getUserById(userId);
+
 
         if (!targetUser) {
             return buildError("Usuário não encontrado.");
         }
+
 
         if (targetUser.id === currentUser.id) {
             return buildError(
@@ -349,13 +465,16 @@ function deleteUser(id, currentUser) {
             );
         }
 
+
         if (isProtectedCreator(targetUser)) {
             return buildError(
                 "O usuário sLekoti não pode ser excluído."
             );
         }
 
+
         const database = getUsersDatabase();
+
 
         const deleteUserTransaction = database.transaction(() => {
             database
@@ -365,6 +484,7 @@ function deleteUser(id, currentUser) {
                 `)
                 .run(userId);
 
+
             database
                 .prepare(`
                     DELETE FROM user_module_permissions
@@ -372,12 +492,14 @@ function deleteUser(id, currentUser) {
                 `)
                 .run(userId);
 
+
             database
                 .prepare(`
                     DELETE FROM user_sessions
                     WHERE user_id = ?
                 `)
                 .run(userId);
+
 
             database
                 .prepare(`
@@ -387,7 +509,9 @@ function deleteUser(id, currentUser) {
                 .run(userId);
         });
 
+
         deleteUserTransaction();
+
 
         return buildSuccess({ id: userId });
     } catch (error) {
@@ -395,6 +519,7 @@ function deleteUser(id, currentUser) {
         return buildError(error?.message || "Não foi possível excluir o usuário.");
     }
 }
+
 
 function setUserActive(id, isActive, currentUser) {
     try {
@@ -410,18 +535,22 @@ function setUserActive(id, isActive, currentUser) {
             );
         }
 
+
         const userId = Number(id);
         const targetUser = getUserById(userId);
+
 
         if (!targetUser) {
             return buildError("Usuário não encontrado.");
         }
+
 
         if (targetUser.id === currentUser.id) {
             return buildError(
                 "Não é possível alterar o status do usuário conectado."
             );
         }
+
 
         if (
             isProtectedCreator(targetUser) &&
@@ -431,6 +560,7 @@ function setUserActive(id, isActive, currentUser) {
                 "O usuário sLekoti não pode ser desativado."
             );
         }
+
 
         getUsersDatabase()
             .prepare(`
@@ -446,12 +576,14 @@ function setUserActive(id, isActive, currentUser) {
                 userId
             );
 
+
         return buildSuccess(getUserById(userId));
     } catch (error) {
         console.error("[API][USERS] Erro ao alterar status:", error);
         return buildError(error?.message || "Não foi possível alterar o status do usuário.");
     }
 }
+
 
 function listPermissions() {
     try {
@@ -463,12 +595,14 @@ function listPermissions() {
             `)
             .all();
 
+
         return buildSuccess(permissions);
     } catch (error) {
         console.error("[API][USERS] Erro ao listar permissões:", error);
         return buildError(error?.message || "Não foi possível listar as permissões.");
     }
 }
+
 
 module.exports = {
     listUsers,
