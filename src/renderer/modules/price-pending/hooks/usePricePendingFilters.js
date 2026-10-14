@@ -1,13 +1,16 @@
 import { useMemo } from "react";
 
 
+
 import { useModuleState } from "../../../hooks/useModuleState";
+
 
 
 import {
     COLUMN_GROUPS,
     PRICE_PENDING_COLUMNS
 } from "../constants/price-pending.constants";
+
 
 
 import {
@@ -17,14 +20,16 @@ import {
 } from "../utils/price-pending.utils";
 
 
+
 const MODULE_ID = "price-pending";
+
 
 
 const INITIAL_STATE = {
     searchTerm: "",
     visibleColumns: {
-        env_precos: true,
-        env_pend: true,
+        env_precos: false,
+        env_pend: false,
         precos_ok: true,
         pendencias_ok: true
     },
@@ -36,6 +41,7 @@ const INITIAL_STATE = {
 };
 
 
+
 export default function usePricePendingFilters({
     permissions
 }) {
@@ -44,18 +50,22 @@ export default function usePricePendingFilters({
         INITIAL_STATE
     );
 
+
     const searchTerm = state.searchTerm || "";
+
 
     const visibleColumns = useMemo(() => ({
         ...INITIAL_STATE.visibleColumns,
         ...(state.visibleColumns || {})
     }), [state.visibleColumns]);
 
+
     const filterUpdated = Boolean(state.filterUpdated);
     const filterOutdated = Boolean(state.filterOutdated);
     const filterBranch = state.filterBranch || "";
     const filtersPanelOpen = Boolean(state.filtersPanelOpen);
     const tableScrollTop = Number(state.tableScrollTop || 0);
+
 
 
     function setFiltersPanelOpen(next) {
@@ -68,10 +78,12 @@ export default function usePricePendingFilters({
     }
 
 
+
     function setSearchTerm(next) {
         if (!permissions.canSearch) {
             return;
         }
+
 
         setField(
             "searchTerm",
@@ -80,6 +92,7 @@ export default function usePricePendingFilters({
                 : next
         );
     }
+
 
 
     function setVisibleColumns(next) {
@@ -92,10 +105,12 @@ export default function usePricePendingFilters({
     }
 
 
+
     function setFilterUpdated(next) {
         if (!permissions.canFilterUpdated) {
             return;
         }
+
 
         setField(
             "filterUpdated",
@@ -106,10 +121,12 @@ export default function usePricePendingFilters({
     }
 
 
+
     function setFilterOutdated(next) {
         if (!permissions.canFilterOutdated) {
             return;
         }
+
 
         setField(
             "filterOutdated",
@@ -120,10 +137,12 @@ export default function usePricePendingFilters({
     }
 
 
+
     function setFilterBranch(next) {
         if (!permissions.canFilterBranch) {
             return;
         }
+
 
         setField(
             "filterBranch",
@@ -134,9 +153,11 @@ export default function usePricePendingFilters({
     }
 
 
+
     function setTableScrollTop(next) {
         setField("tableScrollTop", next);
     }
+
 
 
     function clearFilters() {
@@ -145,6 +166,7 @@ export default function usePricePendingFilters({
         setFilterOutdated(false);
         setFilterBranch("");
     }
+
 
 
     const visibleGroups = useMemo(() => {
@@ -163,11 +185,13 @@ export default function usePricePendingFilters({
     ]);
 
 
+
     const visibleColumnGroups = useMemo(() => {
         return COLUMN_GROUPS.filter((group) =>
             visibleGroups.includes(group.key)
         );
     }, [visibleGroups]);
+
 
 
     const visibleColumnsList = useMemo(() => {
@@ -189,6 +213,7 @@ export default function usePricePendingFilters({
     ]);
 
 
+
     const headerGroups = useMemo(() => {
         return visibleColumnGroups
             .map((group) => ({
@@ -204,10 +229,12 @@ export default function usePricePendingFilters({
     ]);
 
 
+
     function filterRows(rowsToFilter) {
         let filtered = Array.isArray(rowsToFilter)
             ? rowsToFilter
             : [];
+
 
 
         if (
@@ -216,12 +243,14 @@ export default function usePricePendingFilters({
         ) {
             const term = searchTerm.toLowerCase().trim();
 
+
             filtered = filtered.filter((row) =>
                 String(row.laboratory || "")
                     .toLowerCase()
                     .includes(term)
             );
         }
+
 
 
         if (
@@ -237,7 +266,9 @@ export default function usePricePendingFilters({
         }
 
 
+
         const datePredicates = [];
+
 
 
         if (
@@ -248,12 +279,14 @@ export default function usePricePendingFilters({
         }
 
 
+
         if (
             permissions.canFilterOutdated &&
             filterOutdated
         ) {
             datePredicates.push(isOutdatedPeriod);
         }
+
 
 
         if (datePredicates.length > 0) {
@@ -267,8 +300,10 @@ export default function usePricePendingFilters({
         }
 
 
+
         return filtered;
     }
+
 
 
     const hasActiveFilters = Boolean(
@@ -277,6 +312,7 @@ export default function usePricePendingFilters({
         filterOutdated ||
         filterBranch
     );
+
 
 
     return {

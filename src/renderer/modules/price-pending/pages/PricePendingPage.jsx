@@ -19,6 +19,48 @@ import { PRICE_PENDING_EXPORT_COLUMNS } from "../constants/price-pending.constan
 import "../styles/price-pending.css";
 
 
+function buildSummary(rows, visibleColumnsList) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    const safeColumns = Array.isArray(visibleColumnsList)
+        ? visibleColumnsList
+        : [];
+
+    const priceColumns = safeColumns.filter(
+        (column) => column.group === "precos_ok"
+    );
+
+    const pendingColumns = safeColumns.filter(
+        (column) => column.group === "pendencias_ok"
+    );
+
+    const countFilled = (columns) => {
+        let filled = 0;
+
+        safeRows.forEach((row) => {
+            columns.forEach((column) => {
+                if (String(row[column.key] ?? "").trim() !== "") {
+                    filled += 1;
+                }
+            });
+        });
+
+        return filled;
+    };
+
+    const pricesUpdated = countFilled(priceColumns);
+    const pendingUpdated = countFilled(pendingColumns);
+    const pricesTotal = safeRows.length * priceColumns.length;
+    const pendingTotal = safeRows.length * pendingColumns.length;
+
+    return {
+        pricesUpdated,
+        pricesPending: Math.max(0, pricesTotal - pricesUpdated),
+        pendingUpdated,
+        pendingPending: Math.max(0, pendingTotal - pendingUpdated)
+    };
+}
+
+
 export default function PricePendingPage() {
     const permissions = usePricePendingPermissions();
 
@@ -43,6 +85,14 @@ export default function PricePendingPage() {
         [
             filters,
             rowsState.allRows
+        ]
+    );
+
+    const summary = useMemo(
+        () => buildSummary(rows, filters.visibleColumnsList),
+        [
+            rows,
+            filters.visibleColumnsList
         ]
     );
 
@@ -192,6 +242,29 @@ export default function PricePendingPage() {
                     onExport={() => setExportModalOpen(true)}
                 />
             )}
+
+
+            <div className="price-pending-summary">
+                <div className="price-pending-summary-item">
+                    <span>Preços atualizados</span>
+                    <strong>{summary.pricesUpdated}</strong>
+                </div>
+
+                <div className="price-pending-summary-item pending">
+                    <span>Preços pendentes</span>
+                    <strong>{summary.pricesPending}</strong>
+                </div>
+
+                <div className="price-pending-summary-item">
+                    <span>Pendências atualizadas</span>
+                    <strong>{summary.pendingUpdated}</strong>
+                </div>
+
+                <div className="price-pending-summary-item pending">
+                    <span>Pendências pendentes</span>
+                    <strong>{summary.pendingPending}</strong>
+                </div>
+            </div>
 
 
             {rowsState.error && (
