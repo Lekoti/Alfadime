@@ -4,240 +4,136 @@ import {
     NOTIFICATION_TYPE_LABELS
 } from "../constants/notifications.constants";
 
-function formatDate(
-    value
-) {
+
+const SOURCE_MODULE_LABELS = {
+    products: "Produtos",
+    "price-pending": "Preços e Pendências",
+    "industry-contacts": "Contatos",
+    purchases: "Compras"
+};
+
+
+function formatDate(value) {
     if (!value) {
         return "-";
     }
 
-    const date = new Date(
-        value
-    );
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
         return value;
     }
 
-    return date.toLocaleString(
-        "pt-BR"
-    );
+
+    return date.toLocaleString("pt-BR");
 }
 
-function getNotificationValue(
-    notification,
-    keys
-) {
+
+function getValue(item, keys) {
     for (const key of keys) {
-        if (
-            notification?.[key] !==
-                undefined &&
-            notification?.[key] !==
-                null &&
-            notification?.[key] !== ""
-        ) {
-            return notification[key];
+        const value = item?.[key];
+
+        if (value !== undefined && value !== null && value !== "") {
+            return value;
         }
     }
+
 
     return "-";
 }
 
-function NotificationsTable({
+
+export default function NotificationsTable({
     notifications = []
 }) {
+    const safeNotifications = Array.isArray(notifications)
+        ? notifications
+        : [];
+
+
+    if (safeNotifications.length === 0) {
+        return (
+            <div className="notifications-empty">
+                Nenhuma notificação encontrada.
+            </div>
+        );
+    }
+
+
     return (
         <div className="notifications-table-wrapper">
             <table className="notifications-table">
                 <thead>
                     <tr>
-                        <th>
-                            Tipo
-                        </th>
-
-                        <th>
-                            Título
-                        </th>
-
-                        <th>
-                            Mensagem
-                        </th>
-
-                        <th>
-                            Prioridade
-                        </th>
-
-                        <th>
-                            Situação
-                        </th>
-
-                        <th>
-                            Filial
-                        </th>
-
-                        <th>
-                            Origem
-                        </th>
-
-                        <th>
-                            Data
-                        </th>
-
-                        <th>
-                            Estado
-                        </th>
+                        <th>Tipo</th>
+                        <th>Título</th>
+                        <th>Mensagem</th>
+                        <th>Prioridade</th>
+                        <th>Situação</th>
+                        <th>Filial</th>
+                        <th>Origem</th>
+                        <th>Data</th>
                     </tr>
                 </thead>
 
+
                 <tbody>
-                    {notifications.map(
-                        (notification) => {
-                            const id =
-                                notification.id;
+                    {safeNotifications.map((notification) => {
+                        const type = getValue(notification, [
+                            "type",
+                            "notification_type"
+                        ]);
 
-                            const type =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "type",
-                                        "notification_type"
-                                    ]
-                                );
+                        const priority = getValue(notification, ["priority"]);
+                        const status = getValue(notification, ["status"]);
+                        const title = getValue(notification, ["title", "subject"]);
+                        const message = getValue(notification, ["message", "description"]);
+                        const branch = getValue(notification, ["branch"]);
+                        const sourceModule = getValue(notification, ["source_module"]);
+                        const createdAt = getValue(notification, [
+                            "created_at",
+                            "createdAt",
+                            "date"
+                        ]);
 
-                            const priority =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "priority"
-                                    ]
-                                );
 
-                            const status =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "status"
-                                    ]
-                                );
+                        return (
+                            <tr key={notification.id}>
+                                <td>
+                                    {NOTIFICATION_TYPE_LABELS[type] || type}
+                                </td>
 
-                            const title =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "title",
-                                        "subject"
-                                    ]
-                                );
+                                <td>{title}</td>
 
-                            const message =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "message",
-                                        "description"
-                                    ]
-                                );
+                                <td className="notifications-message-cell">
+                                    {message}
+                                </td>
 
-                            const branch =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "branch"
-                                    ]
-                                );
+                                <td>
+                                    <span
+                                        className={`notification-priority notification-priority-${priority}`}
+                                    >
+                                        {NOTIFICATION_PRIORITY_LABELS[priority] || priority}
+                                    </span>
+                                </td>
 
-                            const sourceModule =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "source_module"
-                                    ]
-                                );
+                                <td>
+                                    {NOTIFICATION_STATUS_LABELS[status] || status}
+                                </td>
 
-                            const createdAt =
-                                getNotificationValue(
-                                    notification,
-                                    [
-                                        "created_at",
-                                        "createdAt",
-                                        "date"
-                                    ]
-                                );
+                                <td>{branch}</td>
 
-                            return (
-                                <tr
-                                    key={id}
-                                >
-                                    <td>
-                                        {
-                                            NOTIFICATION_TYPE_LABELS[
-                                                type
-                                            ] ||
-                                                type
-                                        }
-                                    </td>
+                                <td>
+                                    {SOURCE_MODULE_LABELS[sourceModule] || sourceModule}
+                                </td>
 
-                                    <td>
-                                        {title}
-                                    </td>
-
-                                    <td className="notifications-message-cell">
-                                        {message}
-                                    </td>
-
-                                    <td>
-                                        <span
-                                            className={`notification-priority notification-priority-${priority}`}
-                                        >
-                                            {
-                                                NOTIFICATION_PRIORITY_LABELS[
-                                                    priority
-                                                ] ||
-                                                    priority
-                                            }
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        {
-                                            NOTIFICATION_STATUS_LABELS[
-                                                status
-                                            ] ||
-                                                status
-                                        }
-                                    </td>
-
-                                    <td>
-                                        {branch}
-                                    </td>
-
-                                    <td className="notifications-source-cell">
-                                        {sourceModule}
-                                    </td>
-
-                                    <td>
-                                        {formatDate(
-                                            createdAt
-                                        )}
-                                    </td>
-
-                                    <td>
-                                        <span className="notifications-automatic-label">
-                                            Automática
-                                        </span>
-                                    </td>
-                                </tr>
-                            );
-                        }
-                    )}
+                                <td>{formatDate(createdAt)}</td>
+                            </tr>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>
     );
 }
-
-export default NotificationsTable;

@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getPurchaseFilterOptions } from "../services/purchases.service";
+
 
 
 function PurchaseFilters({
@@ -7,39 +8,61 @@ function PurchaseFilters({
     onFiltersChange
 }) {
     const [options, setOptions] = useState({
-        company: [],
         laboratory: [],
+        company: [],
         effectivecurve: []
     });
+
 
 
     useEffect(() => {
         let active = true;
 
 
+
         async function loadOptions() {
             try {
-                const fields = ["company", "laboratoryname", "effectivecurve"];
+                const fields = [
+                    "company",
+                    "laboratoryname",
+                    "effectivecurve"
+                ];
+
+
+
                 const entries = await Promise.all(
                     fields.map(async (field) => {
-                        const result = field === "laboratoryname"
-                            ? ["laboratory", await getPurchaseFilterOptions(field)]
-                            : [field, await getPurchaseFilterOptions(field)];
-                        return result;
+                        const values =
+                            await getPurchaseFilterOptions(field);
+
+
+
+                        return [
+                            field === "laboratoryname"
+                                ? "laboratory"
+                                : field,
+                            Array.isArray(values) ? values : []
+                        ];
                     })
                 );
+
 
 
                 if (active) {
                     setOptions(Object.fromEntries(entries));
                 }
             } catch (error) {
-                console.error("Erro ao carregar filtros de Compras:", error);
+                console.error(
+                    "Erro ao carregar filtros de Compras:",
+                    error
+                );
             }
         }
 
 
+
         loadOptions();
+
 
 
         return () => {
@@ -48,30 +71,29 @@ function PurchaseFilters({
     }, []);
 
 
+
     function update(key, value) {
-        console.log('[DEBUG PurchaseFilters] update called:', key, value);
-        const newFilters = {
+        onFiltersChange({
             ...filters,
             [key]: value,
             page: 1
-        };
-        console.log('[DEBUG PurchaseFilters] newFilters:', newFilters);
-        onFiltersChange(newFilters);
+        });
     }
 
 
+
     function clear() {
-        const clearedFilters = {
+        onFiltersChange({
+            ...filters,
             search: "",
             company: "",
             laboratoryname: "",
             effectivecurve: "",
             status: "",
             page: 1
-        };
-        console.log('[DEBUG PurchaseFilters] clear called, setting:', clearedFilters);
-        onFiltersChange(clearedFilters);
+        });
     }
+
 
 
     return (
@@ -87,6 +109,7 @@ function PurchaseFilters({
                     }
                 />
             </div>
+
 
 
             <div className="purchases-filter-field">
@@ -107,6 +130,7 @@ function PurchaseFilters({
             </div>
 
 
+
             <div className="purchases-filter-field">
                 <label>Laboratório</label>
                 <select
@@ -125,6 +149,7 @@ function PurchaseFilters({
             </div>
 
 
+
             <div className="purchases-filter-field">
                 <label>Curva</label>
                 <select
@@ -141,6 +166,7 @@ function PurchaseFilters({
                     ))}
                 </select>
             </div>
+
 
 
             <div className="purchases-filter-field">
@@ -164,6 +190,7 @@ function PurchaseFilters({
             </div>
 
 
+
             <button
                 type="button"
                 className="purchases-clear-button"
@@ -174,6 +201,7 @@ function PurchaseFilters({
         </section>
     );
 }
+
 
 
 export default PurchaseFilters;

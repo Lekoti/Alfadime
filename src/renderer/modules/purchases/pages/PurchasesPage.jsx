@@ -184,7 +184,7 @@ export default function PurchasesPage() {
     async function handleSync() {
         const confirmed = window.confirm(
             "Atualizar Curva Compras com base na planilha agora? " +
-            "Novos produtos serao incluidos e produtos existentes serao atualizados conforme os dados disponiveis na planilha."
+            "Novos produtos serão incluídos e produtos existentes serão atualizados conforme os dados disponíveis na planilha."
         );
 
         if (!confirmed) return;
@@ -197,7 +197,7 @@ export default function PurchasesPage() {
             if (manualCount > 0) {
                 const removeManual = window.confirm(
                     `A curva foi atualizada. Existem ${manualCount} quantidade(s) de compra informadas manualmente.\n\n` +
-                    "Deseja remover os valores manuais e voltar a usar a sugestao calculada pela curva?\n\n" +
+                    "Deseja remover os valores manuais e voltar a usar a sugestão calculada pela curva?\n\n" +
                     "Clique em OK para REMOVER ou em Cancelar para MANTER os valores manuais."
                 );
 
@@ -220,7 +220,7 @@ export default function PurchasesPage() {
             console.error(quantityError);
             window.alert(
                 quantityError.message ||
-                "Nao foi possivel salvar a quantidade manual."
+                "Não foi possível salvar a quantidade manual."
             );
         }
     }
@@ -400,7 +400,7 @@ export default function PurchasesPage() {
                                 onClick={handleSync}
                                 disabled={syncing}
                             >
-                                {syncing ? "Sincronizando..." : "Atualizar banco de dados"}
+                                {syncing ? "Atualizando..." : "Atualizar"}
                             </button>
                         </div>
                     </div>

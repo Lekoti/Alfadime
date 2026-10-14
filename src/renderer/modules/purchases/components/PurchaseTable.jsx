@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 
 
+
 function formatValue(product, column) {
     const value = product?.[column.key];
+
 
     if (column.key === "availablestock") {
         const current = product?.currentstock ?? 0;
@@ -12,10 +14,12 @@ function formatValue(product, column) {
         return `${current} ${blockedDisplay} = ${total}`;
     }
 
+
     if (column.type === "currency") {
         if (value === null || value === undefined || value === "" || value === 0) {
             return "-";
         }
+
 
         return new Intl.NumberFormat("pt-BR", {
             style: "currency",
@@ -23,93 +27,62 @@ function formatValue(product, column) {
         }).format(value);
     }
 
+
     if (column.key === "coverageMonths") {
         if (value === null || value === undefined || value === "") {
             return "-";
         }
 
+
         return Number(value).toFixed(1);
     }
 
-    if (column.key === "lastPurchaseAMS") {
-        const priceValue = product?.lastPurchaseAMS;
+
+    if (
+        [
+            "lastPurchaseAMS",
+            "lastPurchaseDPR",
+            "lastPurchaseDMT",
+            "lastPurchaseDMS",
+            "lastPurchaseDSC"
+        ].includes(column.key)
+    ) {
+        const priceValue = product?.[column.key];
+
 
         if (priceValue === null || priceValue === undefined || priceValue === "" || priceValue === 0) {
             return "-";
         }
 
-        return `AMS · ${new Intl.NumberFormat("pt-BR", {
+
+        const branchLabel = column.key.replace("lastPurchase", "");
+
+
+        return `${branchLabel} · ${new Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL"
         }).format(priceValue)}`;
     }
 
-    if (column.key === "lastPurchaseDPR") {
-        const priceValue = product?.lastPurchaseDPR;
-
-        if (priceValue === null || priceValue === undefined || priceValue === "" || priceValue === 0) {
-            return "-";
-        }
-
-        return `DPR · ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        }).format(priceValue)}`;
-    }
-
-    if (column.key === "lastPurchaseDMT") {
-        const priceValue = product?.lastPurchaseDMT;
-
-        if (priceValue === null || priceValue === undefined || priceValue === "" || priceValue === 0) {
-            return "-";
-        }
-
-        return `DMT · ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        }).format(priceValue)}`;
-    }
-
-    if (column.key === "lastPurchaseDMS") {
-        const priceValue = product?.lastPurchaseDMS;
-
-        if (priceValue === null || priceValue === undefined || priceValue === "" || priceValue === 0) {
-            return "-";
-        }
-
-        return `DMS · ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        }).format(priceValue)}`;
-    }
-
-    if (column.key === "lastPurchaseDSC") {
-        const priceValue = product?.lastPurchaseDSC;
-
-        if (priceValue === null || priceValue === undefined || priceValue === "" || priceValue === 0) {
-            return "-";
-        }
-
-        return `DSC · ${new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        }).format(priceValue)}`;
-    }
 
     if (column.key === "priceSource") {
         return value || "-";
     }
 
+
     if (column.type === "boolean") {
         return Number(value) === 1 ? "Sim" : "Não";
     }
+
 
     if (value === null || value === undefined || value === "") {
         return "-";
     }
 
+
     return String(value);
 }
+
 
 
 function QuantityInput({ product, onQuantityChange }) {
@@ -119,9 +92,11 @@ function QuantityInput({ product, onQuantityChange }) {
         manualQuantity !== undefined &&
         manualQuantity !== "";
 
+
     const [quantity, setQuantity] = useState(
         hasManualQuantity ? String(manualQuantity) : String(product?.suggestedquantity ?? 0)
     );
+
 
     useEffect(() => {
         setQuantity(
@@ -136,15 +111,19 @@ function QuantityInput({ product, onQuantityChange }) {
         hasManualQuantity
     ]);
 
+
     function commit() {
         const rawValue = String(quantity).trim();
+
 
         if (rawValue === "") {
             onQuantityChange(product, null);
             return;
         }
 
+
         const parsed = Number(rawValue.replace(",", "."));
+
 
         if (!Number.isFinite(parsed) || parsed < 0) {
             setQuantity(
@@ -155,8 +134,10 @@ function QuantityInput({ product, onQuantityChange }) {
             return;
         }
 
+
         onQuantityChange(product, parsed);
     }
+
 
     return (
         <div className="purchase-quantity-cell">
@@ -177,10 +158,11 @@ function QuantityInput({ product, onQuantityChange }) {
                 }}
                 title={
                     hasManualQuantity
-                        ? "Quantidade manual informada. Apague o valor e pressione Enter para voltar ao calculo automatico."
+                        ? "Quantidade manual informada. Apague o valor e pressione Enter para voltar ao cálculo automático."
                         : "Quantidade calculada pela curva"
                 }
             />
+
 
             {hasManualQuantity && (
                 <span
@@ -193,6 +175,7 @@ function QuantityInput({ product, onQuantityChange }) {
         </div>
     );
 }
+
 
 
 export default function PurchaseTable({
@@ -214,39 +197,49 @@ export default function PurchaseTable({
         : safeColumns.map((column) => column.key);
     const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
+
     const orderedColumns = safeColumnOrder
         .map((key) => safeColumns.find((column) => column.key === key))
         .filter(Boolean);
+
 
     const activeColumns = orderedColumns.filter((column) =>
         safeVisibleColumns.includes(column.key)
     );
 
+
     const allSelected =
         safeRows.length > 0 &&
         safeRows.every((row) => safeSelectedIds.includes(row.id));
+
 
     const someSelected = safeRows.some((row) =>
         safeSelectedIds.includes(row.id)
     );
 
+
     const isIndeterminate = someSelected && !allSelected;
+
 
     useEffect(() => {
         const checkbox = document.querySelector(".purchase-select-all-checkbox");
+
 
         if (checkbox) {
             checkbox.indeterminate = isIndeterminate;
         }
     }, [isIndeterminate]);
 
+
     function isRowSelected(product) {
         if (selectAllFiltered) {
             return true;
         }
 
+
         return safeSelectedIds.includes(product.id);
     }
+
 
     return (
         <div className="purchases-table-wrapper">
@@ -268,11 +261,13 @@ export default function PurchaseTable({
                             />
                         </th>
 
+
                         {activeColumns.map((column) => (
                             <th key={column.key}>{column.label}</th>
                         ))}
                     </tr>
                 </thead>
+
 
                 <tbody>
                     {safeRows.length === 0 ? (
@@ -288,6 +283,7 @@ export default function PurchaseTable({
                         safeRows.map((product) => {
                             const isSelected = isRowSelected(product);
 
+
                             return (
                                 <tr
                                     key={product.id}
@@ -301,6 +297,7 @@ export default function PurchaseTable({
                                             disabled={selectAllFiltered}
                                         />
                                     </td>
+
 
                                     {activeColumns.map((column) => (
                                         <td key={column.key}>

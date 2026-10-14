@@ -1,4 +1,4 @@
-﻿import {
+import {
     useEffect,
     useMemo,
     useState
@@ -10,7 +10,6 @@ import CorrectionHistoryTable from
 
 
 import {
-    cancelCorrection,
     cancelCorrections,
     exportAllCorrectionsCsv,
     exportCorrectionsCsv,
@@ -104,25 +103,30 @@ function ProductCorrectionsPage() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
+
     const [
         exportModalOpen,
         setExportModalOpen
     ] = useState(false);
+
 
     const [
         exportBranches,
         setExportBranches
     ] = useState([]);
 
+
     const [
         exportBranch,
         setExportBranch
     ] = useState("");
 
+
     const [
         exportingCsv,
         setExportingCsv
     ] = useState(false);
+
 
     const [
         loadingExportBranches,
@@ -134,6 +138,7 @@ function ProductCorrectionsPage() {
         try {
             const result =
                 await getCorrectionFilterOptions();
+
 
             setFilterOptions({
                 branches: Array.isArray(
@@ -159,6 +164,7 @@ function ProductCorrectionsPage() {
             setLoading(true);
             setError("");
 
+
             const result = await listCorrections({
                 status,
                 branch,
@@ -166,12 +172,15 @@ function ProductCorrectionsPage() {
                 search
             });
 
+
             const nextCorrections =
                 Array.isArray(result)
                     ? result
                     : [];
 
+
             setCorrections(nextCorrections);
+
 
             setSelectedIds((currentIds) =>
                 currentIds.filter((id) =>
@@ -183,6 +192,7 @@ function ProductCorrectionsPage() {
             );
         } catch (loadError) {
             console.error(loadError);
+
 
             setError(
                 loadError.message ||
@@ -198,14 +208,18 @@ function ProductCorrectionsPage() {
         try {
             setLoadingExportBranches(true);
 
+
             const result =
                 await getCsvExportBranches();
+
 
             const nextBranches = Array.isArray(result)
                 ? result
                 : [];
 
+
             setExportBranches(nextBranches);
+
 
             setExportBranch((currentBranch) => {
                 if (
@@ -215,10 +229,12 @@ function ProductCorrectionsPage() {
                     return currentBranch;
                 }
 
+
                 return "";
             });
         } catch (branchesError) {
             console.error(branchesError);
+
 
             setError(
                 branchesError.message ||
@@ -388,11 +404,13 @@ function ProductCorrectionsPage() {
                     correction.id
             );
 
+
         const allSelected =
             selectableIds.length > 0 &&
             selectableIds.every((id) =>
                 selectedIds.includes(id)
             );
+
 
         if (allSelected) {
             setSelectedIds((currentIds) =>
@@ -402,8 +420,10 @@ function ProductCorrectionsPage() {
                 )
             );
 
+
             return;
         }
+
 
         setSelectedIds((currentIds) => [
             ...new Set([
@@ -425,21 +445,26 @@ function ProductCorrectionsPage() {
                 "Selecione ao menos uma correção pendente."
             );
 
+
             return;
         }
+
 
         const confirmed = window.confirm(
             `Marcar ${selectedPendingCorrections.length} correção(ões) como feito/atualizado no sistema interno?`
         );
 
+
         if (!confirmed) {
             return;
         }
+
 
         try {
             setMarkingSent(true);
             setError("");
             setSuccess("");
+
 
             const result =
                 await markCorrectionsAsSent(
@@ -449,15 +474,19 @@ function ProductCorrectionsPage() {
                     )
                 );
 
+
             setSuccess(
                 `${result.updated} correção(ões) marcada(s) como feito/atualizado.`
             );
 
+
             clearSelection();
+
 
             await loadCorrections();
         } catch (markError) {
             console.error(markError);
+
 
             setError(
                 markError.message ||
@@ -475,21 +504,26 @@ function ProductCorrectionsPage() {
                 "Selecione ao menos uma correção feita para reverter."
             );
 
+
             return;
         }
+
 
         const confirmed = window.confirm(
             `Reverter ${selectedDoneCorrections.length} correção(ões) para o valor anterior? Elas voltarão para Pendente e poderão ser excluídas depois.`
         );
 
+
         if (!confirmed) {
             return;
         }
+
 
         try {
             setDeleting(true);
             setError("");
             setSuccess("");
+
 
             const result = await revertCorrections(
                 selectedDoneCorrections.map(
@@ -497,15 +531,19 @@ function ProductCorrectionsPage() {
                 )
             );
 
+
             setSuccess(
                 `${result.updated} correção(ões) revertida(s) para o valor anterior.`
             );
 
+
             clearSelection();
+
 
             await loadCorrections();
         } catch (revertError) {
             console.error(revertError);
+
 
             setError(
                 revertError.message ||
@@ -522,35 +560,44 @@ function ProductCorrectionsPage() {
             FIELD_LABELS[correction.field_name] ||
             correction.field_name;
 
+
         const previousValue =
             correction.old_value || "-";
+
 
         const confirmed = window.confirm(
             `Reverter a correção de ${fieldLabel} do produto ${correction.code} para o valor anterior "${previousValue}"?`
         );
 
+
         if (!confirmed) {
             return;
         }
+
 
         try {
             setDeleting(true);
             setError("");
             setSuccess("");
 
+
             const result = await revertCorrection(
                 correction.id
             );
+
 
             setSuccess(
                 `Correção revertida para "${result.restoredValue || "-"}". Agora ela está pendente e pode ser excluída.`
             );
 
+
             clearSelection();
+
 
             await loadCorrections();
         } catch (revertError) {
             console.error(revertError);
+
 
             setError(
                 revertError.message ||
@@ -568,8 +615,10 @@ function ProductCorrectionsPage() {
                 "Selecione ao menos uma correção para excluir."
             );
 
+
             return;
         }
+
 
         const deletableCorrections =
             selectedCorrections.filter(
@@ -577,26 +626,32 @@ function ProductCorrectionsPage() {
                     correction.status === "pending_excel"
             );
 
+
         if (!deletableCorrections.length) {
             setError(
                 "Somente correções pendentes podem ser excluídas. Correções feitas devem ser revertidas antes."
             );
 
+
             return;
         }
+
 
         const confirmed = window.confirm(
             `Excluir ${deletableCorrections.length} correção(ões) selecionada(s)?`
         );
 
+
         if (!confirmed) {
             return;
         }
+
 
         try {
             setDeleting(true);
             setError("");
             setSuccess("");
+
 
             const result =
                 await cancelCorrections(
@@ -606,15 +661,19 @@ function ProductCorrectionsPage() {
                     )
                 );
 
+
             setSuccess(
                 `${result.deleted} correção(ões) excluída(s) definitivamente.`
             );
 
+
             clearSelection();
+
 
             await loadCorrections();
         } catch (deleteError) {
             console.error(deleteError);
+
 
             setError(
                 deleteError.message ||
@@ -626,64 +685,37 @@ function ProductCorrectionsPage() {
     }
 
 
-    async function handleCancel(correction) {
-        const confirmed = window.confirm(
-            "Excluir a correção de " +
-            correction.field_name +
-            " para o produto " +
-            correction.code +
-            "?"
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            setError("");
-            setSuccess("");
-
-            await cancelCorrection(
-                correction.id
-            );
-
-            await loadCorrections();
-        } catch (cancelError) {
-            console.error(cancelError);
-
-            setError(
-                cancelError.message ||
-                "Não foi possível excluir a correção."
-            );
-        }
-    }
-
-
     async function handleExportCsv() {
         if (!exportBranch) {
             setError(
                 "Selecione uma filial ou Todas as filiais para exportar."
             );
 
+
             return;
         }
+
 
         try {
             setExportingCsv(true);
             setError("");
             setSuccess("");
 
+
             const result = exportBranch === "all"
                 ? await exportAllCorrectionsCsv()
                 : await exportCorrectionsCsv(exportBranch);
+
 
             if (result?.cancelled) {
                 return;
             }
 
+
             const files = Array.isArray(result?.files)
                 ? result.files
                 : [];
+
 
             setSuccess(
                 files.length === 1
@@ -691,9 +723,11 @@ function ProductCorrectionsPage() {
                     : `${files.length} CSV(s) gerados com ${result.totalProducts || 0} produto(s) no total.`
             );
 
+
             setExportModalOpen(false);
         } catch (exportError) {
             console.error(exportError);
+
 
             setError(
                 exportError.message ||
@@ -721,6 +755,7 @@ function ProductCorrectionsPage() {
                     <h1>Correções de Produtos</h1>
                 </div>
 
+
                 <div className="corrections-header-actions">
                     <button
                         type="button"
@@ -738,10 +773,12 @@ function ProductCorrectionsPage() {
                 </div>
             </header>
 
+
             {filtersPanelOpen && (
                 <section className="corrections-floating-panel">
                     <div className="corrections-floating-panel-header">
-                        <strong>Filtros e Ações</strong>
+                        <strong>Filtros e ações</strong>
+
 
                         <button
                             type="button"
@@ -755,6 +792,7 @@ function ProductCorrectionsPage() {
                         </button>
                     </div>
 
+
                     <div className="corrections-panel-actions-bar">
                         <button
                             type="button"
@@ -766,6 +804,7 @@ function ProductCorrectionsPage() {
                         >
                             Exportar CSV
                         </button>
+
 
                         <button
                             type="button"
@@ -781,6 +820,7 @@ function ProductCorrectionsPage() {
                                 : "Marcar como Feito"}
                         </button>
 
+
                         <button
                             type="button"
                             className="corrections-panel-action-button"
@@ -794,6 +834,7 @@ function ProductCorrectionsPage() {
                                 ? "Processando..."
                                 : "Reverter Selecionados"}
                         </button>
+
 
                         <button
                             type="button"
@@ -810,21 +851,25 @@ function ProductCorrectionsPage() {
                         </button>
                     </div>
 
+
                     <section className="corrections-summary-inline">
                         <div className="corrections-summary-card">
                             <small>Total visível</small>
                             <strong>{summary.total}</strong>
                         </div>
 
+
                         <div className="corrections-summary-card pending">
                             <small>Pendentes</small>
                             <strong>{summary.pending}</strong>
                         </div>
 
+
                         <div className="corrections-summary-card sent">
                             <small>Feito / Atualizado</small>
                             <strong>{summary.sent}</strong>
                         </div>
+
 
                         <div className="corrections-summary-card confirmed">
                             <small>Confirmadas no Excel</small>
@@ -832,11 +877,13 @@ function ProductCorrectionsPage() {
                         </div>
                     </section>
 
+
                     <section className="corrections-filters">
                         <div className="corrections-search">
                             <label htmlFor="corrections-search">
                                 Buscar produto
                             </label>
+
 
                             <input
                                 id="corrections-search"
@@ -851,10 +898,12 @@ function ProductCorrectionsPage() {
                             />
                         </div>
 
+
                         <div className="corrections-filter-field">
                             <label htmlFor="corrections-status">
                                 Status
                             </label>
+
 
                             <select
                                 id="corrections-status"
@@ -883,10 +932,12 @@ function ProductCorrectionsPage() {
                             </select>
                         </div>
 
+
                         <div className="corrections-filter-field">
                             <label htmlFor="corrections-branch">
                                 Filial
                             </label>
+
 
                             <select
                                 id="corrections-branch"
@@ -901,6 +952,7 @@ function ProductCorrectionsPage() {
                                     Todas as filiais
                                 </option>
 
+
                                 {filterOptions.branches.map(
                                     (item) => (
                                         <option
@@ -914,10 +966,12 @@ function ProductCorrectionsPage() {
                             </select>
                         </div>
 
+
                         <div className="corrections-filter-field">
                             <label htmlFor="corrections-field">
                                 Campo corrigido
                             </label>
+
 
                             <select
                                 id="corrections-field"
@@ -931,6 +985,7 @@ function ProductCorrectionsPage() {
                                 <option value="">
                                     Todos os campos
                                 </option>
+
 
                                 {filterOptions.fields.map(
                                     (item) => (
@@ -946,6 +1001,7 @@ function ProductCorrectionsPage() {
                             </select>
                         </div>
 
+
                         <button
                             type="button"
                             className="corrections-clear-filters-button"
@@ -957,11 +1013,13 @@ function ProductCorrectionsPage() {
                 </section>
             )}
 
+
             {error && (
                 <div className="corrections-error">
                     <strong>Erro:</strong> {error}
                 </div>
             )}
+
 
             {success && (
                 <div className="corrections-success">
@@ -969,16 +1027,19 @@ function ProductCorrectionsPage() {
                 </div>
             )}
 
+
             <section className="corrections-card">
                 <div className="corrections-card-header">
                     <strong>
                         Histórico de alterações
                     </strong>
 
+
                     <span>
                         {corrections.length} registros
                     </span>
                 </div>
+
 
                 {loading ? (
                     <div className="corrections-loading">
@@ -993,6 +1054,7 @@ function ProductCorrectionsPage() {
                     />
                 )}
             </section>
+
 
             {exportModalOpen && (
                 <div
@@ -1015,15 +1077,18 @@ function ProductCorrectionsPage() {
                                     Exportação padrão
                                 </span>
 
+
                                 <h2>
                                     Exportar CSV de Correções
                                 </h2>
+
 
                                 <p>
                                     Serão exportados somente produtos
                                     com correções Feito / Atualizado.
                                 </p>
                             </div>
+
 
                             <button
                                 type="button"
@@ -1036,11 +1101,13 @@ function ProductCorrectionsPage() {
                             </button>
                         </header>
 
+
                         <div className="corrections-export-modal-body">
                             <div className="corrections-export-info">
                                 <strong>
                                     Padrão de arquivos
                                 </strong>
+
 
                                 <span>
                                     Os CSVs terão colunas fixas e os
@@ -1048,11 +1115,13 @@ function ProductCorrectionsPage() {
                                 </span>
                             </div>
 
+
                             <label
                                 className="corrections-export-field"
                                 htmlFor="corrections-export-branch"
                             >
                                 <span>Filial para exportar</span>
+
 
                                 <select
                                     id="corrections-export-branch"
@@ -1071,9 +1140,11 @@ function ProductCorrectionsPage() {
                                         Selecione uma filial
                                     </option>
 
+
                                     <option value="all">
                                         Todas as filiais disponíveis
                                     </option>
+
 
                                     {exportBranches.map(
                                         (item) => (
@@ -1089,6 +1160,7 @@ function ProductCorrectionsPage() {
                                 </select>
                             </label>
 
+
                             {loadingExportBranches ? (
                                 <div className="corrections-export-loading">
                                     Carregando filiais disponíveis...
@@ -1102,6 +1174,7 @@ function ProductCorrectionsPage() {
                             )}
                         </div>
 
+
                         <footer className="corrections-export-modal-actions">
                             <button
                                 type="button"
@@ -1113,6 +1186,7 @@ function ProductCorrectionsPage() {
                             >
                                 Cancelar
                             </button>
+
 
                             <button
                                 type="button"

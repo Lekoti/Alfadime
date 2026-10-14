@@ -1,199 +1,128 @@
-import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState
-} from "react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
 import NotificationsFilters from "../components/NotificationsFilters";
 import NotificationsTable from "../components/NotificationsTable";
-import {
-    INDUSTRY_CONTACT_BRANCHES
-} from "../../industry-contacts/constants/industry-contacts.constants";
-import {
-    NOTIFICATION_FILTER_DEFAULTS
-} from "../constants/notifications.constants";
-import {
-    listNotifications
-} from "../services/notifications.service";
+import { INDUSTRY_CONTACT_BRANCHES } from "../../industry-contacts/constants/industry-contacts.constants";
+import { NOTIFICATION_FILTER_DEFAULTS } from "../constants/notifications.constants";
+import { listNotifications } from "../services/notifications.service";
+import { useModuleState } from "../../../hooks/useModuleState";
 import "../styles/notifications.css";
 
-const NOTIFICATIONS_REFRESH_INTERVAL =
-    15000;
 
-function NotificationsPage() {
+const MODULE_ID = "notifications";
+
+
+const INITIAL_STATE = {
+    filters: NOTIFICATION_FILTER_DEFAULTS
+};
+
+
+export default function NotificationsPage() {
     const [
-        filters,
-        setFilters
-    ] = useState(
-        NOTIFICATION_FILTER_DEFAULTS
-    );
+        moduleState,
+        setModuleField
+    ] = useModuleState(MODULE_ID, INITIAL_STATE);
 
-    const [
-        notifications,
-        setNotifications
-    ] = useState([]);
 
-    const [
-        loading,
-        setLoading
-    ] = useState(false);
+    const filters = moduleState.filters || NOTIFICATION_FILTER_DEFAULTS;
 
-    const [
-        error,
-        setError
-    ] = useState("");
 
-    const filtersRef =
-        useRef(
-            NOTIFICATION_FILTER_DEFAULTS
-        );
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const loadingRef =
-        useRef(false);
+    const filtersRef = useRef(filters);
+    const loadingRef = useRef(false);
 
-    const loadNotifications =
-        useCallback(
-            async (
-                currentFilters =
-                    filtersRef.current,
-                showLoading = true
-            ) => {
-                if (
-                    loadingRef.current
-                ) {
-                    return;
-                }
 
-                loadingRef.current =
-                    true;
+    const loadNotifications = useCallback(async (
+        currentFilters = filtersRef.current,
+        showLoading = true
+    ) => {
+        if (loadingRef.current) {
+            return;
+        }
 
-                if (
-                    showLoading
-                ) {
-                    setLoading(true);
-                }
 
-                setError("");
+        loadingRef.current = true;
 
-                try {
-                    const result =
-                        await listNotifications(
-                            currentFilters
-                        );
+        if (showLoading) {
+            setLoading(true);
+        }
 
-                    setNotifications(
-                        Array.isArray(
-                            result
-                        )
-                            ? result
-                            : result?.data ||
-                                  []
-                    );
-                } catch (
-                    requestError
-                ) {
-                    setError(
-                        requestError?.message ||
-                            "Não foi possível carregar as notificações."
-                    );
-                } finally {
-                    loadingRef.current =
-                        false;
 
-                    if (
-                        showLoading
-                    ) {
-                        setLoading(false);
-                    }
-                }
-            },
-            []
-        );
+        setError("");
+
+        try {
+            const result = await listNotifications(currentFilters);
+
+            setNotifications(
+                Array.isArray(result)
+                    ? result
+                    : result?.data || []
+            );
+        } catch (requestError) {
+            setError(
+                requestError?.message ||
+                "Não foi possível carregar as notificações."
+            );
+        } finally {
+            loadingRef.current = false;
+
+            if (showLoading) {
+                setLoading(false);
+            }
+        }
+    }, []);
+
 
     useEffect(() => {
-        filtersRef.current =
-            filters;
+        filtersRef.current = filters;
     }, [filters]);
+
 
     useEffect(() => {
         loadNotifications();
+    }, [loadNotifications]);
 
-        const refreshTimer =
-            window.setInterval(
-                () => {
-                    loadNotifications(
-                        filtersRef.current,
-                        false
-                    );
-                },
-                NOTIFICATIONS_REFRESH_INTERVAL
-            );
 
-        return () => {
-            window.clearInterval(
-                refreshTimer
-            );
+    function updateFilters(nextFilters) {
+        const newFilters = {
+            ...filters,
+            ...nextFilters
         };
-    }, [
-        loadNotifications
-    ]);
 
-    function handleFiltersChange(
-        nextFilters
-    ) {
-        filtersRef.current =
-            nextFilters;
-
-        setFilters(
-            nextFilters
-        );
-
-        loadNotifications(
-            nextFilters
-        );
+        filtersRef.current = newFilters;
+        setModuleField("filters", newFilters);
+        loadNotifications(newFilters);
     }
 
-    function handleClearFilters() {
-        filtersRef.current =
-            NOTIFICATION_FILTER_DEFAULTS;
 
-        setFilters(
-            NOTIFICATION_FILTER_DEFAULTS
-        );
-
-        loadNotifications(
-            NOTIFICATION_FILTER_DEFAULTS
-        );
+    function clearFilters() {
+        filtersRef.current = NOTIFICATION_FILTER_DEFAULTS;
+        setModuleField("filters", NOTIFICATION_FILTER_DEFAULTS);
+        loadNotifications(NOTIFICATION_FILTER_DEFAULTS);
     }
+
 
     return (
         <main className="notifications-page">
-            <header className="notifications-header">
-                <h1>
-                    Notificações
-                </h1>
-            </header>
+            <div className="notifications-title-bar">
+                <h1>Notificações</h1>
+            </div>
+
 
             <NotificationsFilters
                 filters={filters}
-                onChange={
-                    handleFiltersChange
-                }
-                onClear={
-                    handleClearFilters
-                }
-                branches={
-                    INDUSTRY_CONTACT_BRANCHES
-                }
+                onChange={updateFilters}
+                onClear={clearFilters}
+                branches={INDUSTRY_CONTACT_BRANCHES}
             />
 
-            <section className="notifications-list-panel">
-                <div className="notifications-list-header">
+
+            <section className="notifications-card">
+                <div className="notifications-card-header">
                     <div>
-                        <h2>
-                            Todas as notificações
-                        </h2>
+                        <strong>Notificações</strong>
 
                         <span>
                             {loading
@@ -203,32 +132,24 @@ function NotificationsPage() {
                     </div>
                 </div>
 
-                {error ? (
-                    <div className="notifications-feedback notifications-feedback-error">
-                        {error}
-                    </div>
-                ) : null}
 
-                {!loading &&
-                !error &&
-                notifications.length === 0 ? (
-                    <div className="notifications-feedback">
-                        Nenhuma notificação encontrada.
+                {error && (
+                    <div className="notifications-error">
+                        <strong>Erro:</strong> {error}
                     </div>
-                ) : null}
+                )}
 
-                {!loading &&
-                !error &&
-                notifications.length > 0 ? (
+
+                {loading ? (
+                    <div className="notifications-loading">
+                        Carregando notificações...
+                    </div>
+                ) : (
                     <NotificationsTable
-                        notifications={
-                            notifications
-                        }
+                        notifications={notifications}
                     />
-                ) : null}
+                )}
             </section>
         </main>
     );
 }
-
-export default NotificationsPage;

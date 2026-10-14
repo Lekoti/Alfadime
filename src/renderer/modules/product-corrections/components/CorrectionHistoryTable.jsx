@@ -1,23 +1,24 @@
 const FIELD_LABELS = {
-    sirius_code: "Cod Sirius",
-    sap_code: "Codigo SAP",
+    sirius_code: "Cód. Sirius",
+    sap_code: "Código SAP",
     group_code: "Grupo",
-    active_ingredient: "Principio Ativo",
+    active_ingredient: "Princípio Ativo",
     commercial_name: "Nome Comercial",
-    manufacturer_code: "Codigo Fabricante",
-    brand: "Marca / Industria",
+    manufacturer_code: "Código Fabricante",
+    brand: "Marca / Indústria",
     unit: "Unidade",
-    standard_box: "Caixa Padrao",
+    standard_box: "Caixa Padrão",
     controls_lot: "Controla Lote",
     ms_registration: "Registro MS",
-    reference_code: "Codigo Referencia",
-    therapeutic_class_code: "Classe Terapeutica",
+    reference_code: "Código Referência",
+    therapeutic_class_code: "Classe Terapêutica",
     height: "Altura",
     width: "Largura",
     length: "Comprimento",
     category_code: "Categoria",
     active: "Ativo"
 };
+
 
 function getStatusLabel(status) {
     const labels = {
@@ -29,6 +30,7 @@ function getStatusLabel(status) {
 
     return labels[status] || status;
 }
+
 
 function formatValue(fieldName, value) {
     if (
@@ -53,6 +55,22 @@ function formatValue(fieldName, value) {
 
     return text;
 }
+
+
+function formatDate(value) {
+    if (!value) {
+        return "-";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    return date.toLocaleString("pt-BR");
+}
+
 
 function CorrectionHistoryTable({
     corrections,
@@ -94,7 +112,7 @@ function CorrectionHistoryTable({
                                 disabled={
                                     selectableCorrections.length === 0
                                 }
-                                title="Selecionar correcoes pendentes ou feitas"
+                                title="Selecionar correções pendentes ou feitas"
                             />
                         </th>
 
@@ -102,7 +120,7 @@ function CorrectionHistoryTable({
                         <th>Data</th>
                         <th>EAN</th>
                         <th>Filial</th>
-                        <th>Cod</th>
+                        <th>Código</th>
                         <th>Campo</th>
                         <th>Valor da planilha</th>
                         <th>Valor corrigido</th>
@@ -116,7 +134,7 @@ function CorrectionHistoryTable({
                                 colSpan="9"
                                 className="corrections-empty-row"
                             >
-                                Nenhuma correcao encontrada.
+                                Nenhuma correção encontrada.
                             </td>
                         </tr>
                     )}
@@ -173,10 +191,8 @@ function CorrectionHistoryTable({
                                 </td>
 
                                 <td>
-                                    {new Date(
+                                    {formatDate(
                                         correction.updated_at
-                                    ).toLocaleString(
-                                        "pt-BR"
                                     )}
                                 </td>
 
@@ -185,11 +201,11 @@ function CorrectionHistoryTable({
                                 </td>
 
                                 <td>
-                                    {correction.branch}
+                                    {correction.branch || "-"}
                                 </td>
 
                                 <td>
-                                    {correction.code}
+                                    {correction.code || "-"}
                                 </td>
 
                                 <td>
