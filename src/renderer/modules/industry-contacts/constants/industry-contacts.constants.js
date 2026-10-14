@@ -19,6 +19,8 @@ export const INDUSTRY_CONTACT_BRANCHES = [
 ];
 
 export const INDUSTRY_CONTACT_EXPORT_COLUMNS = [
+    { key: "last_prices_charge_at", label: "Últ. cobrança de preços", width: 24, defaultSelected: true },
+    { key: "last_pending_charge_at", label: "Últ. cobrança de pendências", width: 26, defaultSelected: true },
     {
         key: "industry_global_code",
         label: "Código Global",
@@ -94,6 +96,7 @@ export const INDUSTRY_CONTACT_EXPORT_COLUMNS = [
 ];
 
 export const EMPTY_INDUSTRY_CONTACT_FILTERS = {
+    charge_update: "",
     search: "",
     status: "all",
     branch: "",

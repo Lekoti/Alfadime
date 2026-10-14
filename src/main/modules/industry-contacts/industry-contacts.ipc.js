@@ -30,7 +30,7 @@ function registerIndustryContactsIpc() {
     ipcMain.handle(
         "industry-contacts:list",
         () => {
-            return service.listLaboratories();
+            return require("./industry-contacts-charge-view.service").listLaboratories();
         }
     );
 

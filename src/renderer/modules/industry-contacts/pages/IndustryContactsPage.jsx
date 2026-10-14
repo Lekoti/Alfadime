@@ -49,6 +49,8 @@ import usePermissions from "../../auth/hooks/usePermissions";
 import { useModuleState } from "../../../hooks/useModuleState";
 
 
+import IndustryContactsChargePreview from "../components/IndustryContactsChargePreview";
+import { matchesChargeUpdate, formatChargeDate } from "../utils/industry-contacts-charge.utils";
 import "../styles/industry-contacts.css";
 
 
@@ -440,7 +442,8 @@ function IndustryContactsPage() {
                     matchesSearch &&
                     matchesStatus &&
                     matchesBranch &&
-                    matchesCargo
+                    matchesCargo &&
+                    matchesChargeUpdate(row, filters.charge_update)
                 );
             }
         );
@@ -639,6 +642,8 @@ function IndustryContactsPage() {
             setFormOpen(false);
 
 
+            await loadData();
+
             setSuccess(
                 "Contato salvo com sucesso."
             );
@@ -776,37 +781,6 @@ function IndustryContactsPage() {
         ) {
             return (
                 "O contato não possui e-mail cadastrado."
-            );
-        }
-
-
-        const priceStatus =
-            String(
-                row.price_pending_status ||
-                    ""
-            );
-
-
-        if (
-            type ===
-                CHARGE_TYPES.PRICES &&
-            priceStatus ===
-                "Preços e pendências atualizados"
-        ) {
-            return (
-                "Os preços já estão atualizados."
-            );
-        }
-
-
-        if (
-            type ===
-                CHARGE_TYPES.PENDING &&
-            priceStatus ===
-                "Preços e pendências atualizados"
-        ) {
-            return (
-                "As pendências já estão atualizadas."
             );
         }
 
@@ -973,6 +947,7 @@ function IndustryContactsPage() {
         try {
             const result =
                 await sendIndustryContactCharge({
+                    preview_token: chargePreview.preview_token,
                     contact_id:
                         chargeRow.contact_id ||
                         chargeRow.id,
@@ -985,14 +960,19 @@ function IndustryContactsPage() {
                 });
 
 
-            setSuccess(
-                result?.recipient
-                    ? `Cobrança enviada para ${result.recipient}.`
-                    : "Cobrança enviada com sucesso."
-            );
-
-
             closeChargePreview();
+            await loadData();
+            const failures = (result.results || []).filter((item) => !item.success);
+            const warnings = (result.results || []).flatMap((item) =>
+                [item.historyWarning, item.sentCopyError].filter(Boolean)
+            );
+            setSuccess(`${result.sent} de ${result.expected} e-mail(s) enviado(s) para ${result.recipient}.`);
+            if (failures.length || warnings.length) {
+                setError([
+                    ...failures.map((item) => `${item.charge_type}: ${item.error}`),
+                    ...warnings
+                ].join(" | "));
+            }
         } catch (
             sendError
         ) {
@@ -1079,7 +1059,9 @@ function IndustryContactsPage() {
             const exportRows =
                 filteredRows.map(
                     (row) => ({
-                        ...row
+                        ...row,
+                        last_prices_charge_at: formatChargeDate(row.last_prices_charge_at),
+                        last_pending_charge_at: formatChargeDate(row.last_pending_charge_at)
                     })
                 );
 
@@ -1614,97 +1596,7 @@ function IndustryContactsPage() {
                             </div>
 
 
-                            <div
-                                className={
-                                    "industry-contacts-charge-preview"
-                                }
-                            >
-                                <label>
-                                    <span>
-                                        Para
-                                    </span>
-
-
-                                    <input
-                                        type="email"
-                                        value={
-                                            chargePreview.to ||
-                                            ""
-                                        }
-                                        readOnly
-                                    />
-                                </label>
-
-
-                                <label>
-                                    <span>
-                                        Assunto
-                                    </span>
-
-
-                                    <input
-                                        type="text"
-                                        value={
-                                            chargePreview.subject ||
-                                            ""
-                                        }
-                                        readOnly
-                                    />
-                                </label>
-
-
-                                <label>
-                                    <span>
-                                        Anexos
-                                    </span>
-
-
-                                    <textarea
-                                        value={
-                                            Array.isArray(
-                                                chargePreview.attachments
-                                            )
-                                                ? chargePreview.attachments
-                                                      .map(
-                                                          (
-                                                              attachment
-                                                          ) =>
-                                                              attachment.fileName ||
-                                                              attachment.filename ||
-                                                              attachment.path ||
-                                                              ""
-                                                      )
-                                                      .filter(
-                                                          Boolean
-                                                      )
-                                                      .join(
-                                                          "\n"
-                                                      )
-                                                : ""
-                                        }
-                                        readOnly
-                                        rows="3"
-                                    />
-                                </label>
-
-
-                                <label>
-                                    <span>
-                                        Mensagem
-                                    </span>
-
-
-                                    <textarea
-                                        value={
-                                            chargePreview.body ||
-                                            ""
-                                        }
-                                        readOnly
-                                        rows="12"
-                                    />
-                                </label>
-                            </div>
-
+                            <IndustryContactsChargePreview preview={chargePreview} />
 
                             <div
                                 className={
