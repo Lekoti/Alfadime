@@ -14,6 +14,7 @@ import usePricePendingRows from "../hooks/usePricePendingRows";
 
 
 import { PRICE_PENDING_EXPORT_COLUMNS } from "../constants/price-pending.constants";
+import { isUpdatedPeriod } from "../utils/price-pending.utils";
 
 
 import "../styles/price-pending.css";
@@ -33,22 +34,27 @@ function buildSummary(rows, visibleColumnsList) {
         (column) => column.group === "pendencias_ok"
     );
 
-    const countFilled = (columns) => {
-        let filled = 0;
+    const countUpdated = (columns) => {
+        let updated = 0;
 
         safeRows.forEach((row) => {
             columns.forEach((column) => {
-                if (String(row[column.key] ?? "").trim() !== "") {
-                    filled += 1;
+                const value = row[column.key];
+
+                if (
+                    String(value ?? "").trim() !== "" &&
+                    isUpdatedPeriod(value)
+                ) {
+                    updated += 1;
                 }
             });
         });
 
-        return filled;
+        return updated;
     };
 
-    const pricesUpdated = countFilled(priceColumns);
-    const pendingUpdated = countFilled(pendingColumns);
+    const pricesUpdated = countUpdated(priceColumns);
+    const pendingUpdated = countUpdated(pendingColumns);
     const pricesTotal = safeRows.length * priceColumns.length;
     const pendingTotal = safeRows.length * pendingColumns.length;
 

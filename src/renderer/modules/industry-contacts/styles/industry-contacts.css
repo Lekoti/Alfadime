@@ -851,3 +851,195 @@
         width: 100%;
     }
 }
+
+/* Ajustes de filtros e cobrança em lote */
+.industry-contacts-filter-fields {
+    grid-template-columns: minmax(220px, 1.4fr) 140px 160px 170px 220px;
+}
+
+.industry-contacts-filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid #e6ebf2;
+}
+
+.industry-contacts-bulk-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.industry-contacts-bulk-options label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.industry-contacts-bulk-options label > span {
+    color: #56616d;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.industry-contacts-bulk-options select {
+    width: 100%;
+    min-height: 34px;
+    box-sizing: border-box;
+    border: 1px solid #cdd6df;
+    border-radius: 5px;
+    padding: 0 8px;
+    background: #ffffff;
+    color: #263241;
+    font-family: inherit;
+    font-size: 11px;
+    outline: none;
+}
+
+.industry-contacts-bulk-options select:focus {
+    border-color: #3b5f86;
+    box-shadow: 0 0 0 2px rgb(59 95 134 / 10%);
+}
+
+.industry-contacts-bulk-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    border: 1px solid #b7dcc2;
+    border-radius: 6px;
+    padding: 9px 10px;
+    background: #f1fbf4;
+    color: #276b3a;
+    font-size: 11px;
+}
+
+.industry-contacts-bulk-preview strong {
+    font-size: 11px;
+}
+
+.industry-contacts-bulk-invalid {
+    color: #93631b;
+}
+
+.industry-contacts-charge-actions {
+    align-items: stretch;
+}
+
+.industry-contacts-charge-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+}
+
+@media (max-width: 1200px) {
+    .industry-contacts-filter-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .industry-contacts-bulk-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+/* Espaçamento dos botões dos filtros */
+.industry-contacts-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e6ebf2;
+}
+
+.industry-contacts-filter-actions .industry-contacts-action-button,
+.industry-contacts-filter-actions .industry-contacts-clear-button {
+    min-width: 150px;
+}
+
+.industry-contacts-filter-actions .industry-contacts-clear-button {
+    margin-left: 6px;
+}
+
+@media (max-width: 1200px) {
+    .industry-contacts-filter-actions {
+        justify-content: flex-start;
+    }
+
+    .industry-contacts-filter-actions .industry-contacts-action-button,
+    .industry-contacts-filter-actions .industry-contacts-clear-button {
+        flex: 1 1 180px;
+    }
+}
+
+
+
+/* Cobrança em lote: progresso e resultado */
+.industry-contacts-bulk-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    border: 1px solid #b9cbdc;
+    border-radius: 6px;
+    padding: 10px;
+    background: #f4f8fc;
+    color: #345d82;
+    font-size: 10px;
+}
+
+.industry-contacts-bulk-progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.industry-contacts-bulk-progress-bar {
+    width: 100%;
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #dbe5ee;
+}
+
+.industry-contacts-bulk-progress-bar div {
+    height: 100%;
+    border-radius: 999px;
+    background: #3b5f86;
+    transition: width 0.4s ease;
+}
+
+.industry-contacts-bulk-result {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    border: 1px solid #b7dcc2;
+    border-radius: 6px;
+    padding: 10px;
+    background: #f1fbf4;
+    color: #276b3a;
+    font-size: 10px;
+}
+
+.industry-contacts-bulk-errors {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    border-top: 1px solid #a7d7b9;
+    padding-top: 6px;
+    color: #9f414c;
+}
+

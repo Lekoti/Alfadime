@@ -8,24 +8,30 @@ function getApi() {
         );
     }
 
+
     return window.alfadime.industryContacts;
 }
+
 
 export async function listIndustryContacts() {
     return getApi().list();
 }
 
+
 export async function listLaboratoriesWithoutContact() {
     return getApi().listWithoutContact();
 }
+
 
 export async function saveIndustryContact(data) {
     return getApi().save(data);
 }
 
+
 export async function deleteIndustryContact(id) {
     return getApi().delete(id);
 }
+
 
 export async function prepareIndustryContactCharge(
     payload
@@ -35,10 +41,31 @@ export async function prepareIndustryContactCharge(
     );
 }
 
+
 export async function sendIndustryContactCharge(
     payload
 ) {
     return getApi().sendCharge(
+        payload
+    );
+}
+
+
+export async function prepareIndustryContactBulkCharge(
+    payload
+) {
+    return window.alfadime.ipc.invoke(
+        "industry-contacts:prepare-bulk-charge",
+        payload
+    );
+}
+
+
+export async function sendIndustryContactBulkCharge(
+    payload
+) {
+    return window.alfadime.ipc.invoke(
+        "industry-contacts:send-bulk-charge",
         payload
     );
 }

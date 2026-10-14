@@ -11,8 +11,10 @@ const {
     PRICES_ATTACHMENT_PATH, PENDING_ATTACHMENT_DIRECTORY
 } = require("./industry-contacts-charge.constants");
 
+
 const prepared = new Map();
 const PREVIEW_TTL = 30 * 60 * 1000;
+
 
 function normalizeChargeType(value) {
     const type = String(value ?? "").normalize("NFD")
@@ -22,6 +24,7 @@ function normalizeChargeType(value) {
     if (["both", "ambos", "precos e pendencias"].includes(type)) return CHARGE_TYPES.BOTH;
     throw new Error("Tipo de cobrança inválido.");
 }
+
 
 function getContact(payload) {
     const id = String(payload.contact_id || payload.contactId || payload.id || "").trim();
@@ -37,6 +40,7 @@ function getContact(payload) {
     return contact;
 }
 
+
 function getAttachmentPaths(type) {
     const normalized = normalizeChargeType(type);
     const files = normalized === CHARGE_TYPES.BOTH
@@ -51,23 +55,24 @@ function getAttachmentPaths(type) {
     });
 }
 
+
 function fingerprint(file) {
     const stat = fs.statSync(file);
     return `${stat.size}:${stat.mtimeMs}:${crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex")}`;
 }
 
-function prepareCharge(payload = {}) {
-    for (const [key, entry] of prepared) {
-        if (Date.now() > entry.expires && !entry.running) prepared.delete(key);
-    }
-    const contact = getContact(payload);
+
+function buildMessage(contact, type) {
     const email = String(contact.email || "").trim().toLowerCase();
-    if (!email || !isValidEmail(email)) throw new Error("O contato não possui e-mail válido cadastrado.");
-    const type = normalizeChargeType(payload.charge_type || payload.chargeType || payload.type);
+    if (!email || !isValidEmail(email)) {
+        throw new Error("O contato não possui e-mail válido cadastrado.");
+    }
+
     const subject = CHARGE_SUBJECTS[type];
     const body = CHARGE_EMAIL_BODIES[type];
     if (!subject || !body) throw new Error("Assunto ou mensagem de cobrança não configurado.");
-    const messages = [{
+
+    return {
         charge_type: type,
         charge_label: type === CHARGE_TYPES.BOTH ? "Cobrar preços e pendências" :
             type === CHARGE_TYPES.PRICES ? "Cobrar preços" : "Cobrar pendências",
@@ -85,7 +90,112 @@ function prepareCharge(payload = {}) {
             contact_name: contact.contact_name,
             email
         }
-    }];
+    };
+}
+
+
+function prepareCharge(payload = {}) {
+    for (const [key, entry] of prepared) {
+        if (Date.now() > entry.expires && !entry.running) prepared.delete(key);
+    }
+    const contact = getContact(payload);
+    const type = normalizeChargeType(payload.charge_type || payload.chargeType || payload.type);
+    const message = buildMessage(contact, type);
+    const token = crypto.randomUUID();
+    const fingerprints = new Map();
+    for (const attachment of message.attachments) {
+        fingerprints.set(attachment.path, fingerprint(attachment.path));
+    }
+    prepared.set(token, { messages: [message], fingerprints, expires: Date.now() + PREVIEW_TTL, running: null });
+    return {
+        ...message,
+        charge_type: type,
+        preview_token: token,
+        messages: [message],
+        message_count: 1
+    };
+}
+
+
+function resolveBulkChargeType(row, requestedType) {
+    const pricesUpdated = row.prices_updated === true;
+    const pendingUpdated = row.pending_updated === true;
+
+    if (requestedType === CHARGE_TYPES.PRICES) {
+        return pricesUpdated ? null : CHARGE_TYPES.PRICES;
+    }
+
+    if (requestedType === CHARGE_TYPES.PENDING) {
+        return pendingUpdated ? null : CHARGE_TYPES.PENDING;
+    }
+
+    if (pricesUpdated && pendingUpdated) return null;
+    if (!pricesUpdated && pendingUpdated) return CHARGE_TYPES.PRICES;
+    if (pricesUpdated && !pendingUpdated) return CHARGE_TYPES.PENDING;
+    return CHARGE_TYPES.BOTH;
+}
+
+
+function prepareBulkCharge(payload = {}) {
+    for (const [key, entry] of prepared) {
+        if (Date.now() > entry.expires && !entry.running) prepared.delete(key);
+    }
+
+    const contacts = Array.isArray(payload.contacts) ? payload.contacts : [];
+    if (!contacts.length) throw new Error("Selecione pelo menos um contato para a cobrança em lote.");
+
+    const requestedType = normalizeChargeType(payload.charge_type || payload.chargeType || payload.type);
+    const messagesByEmail = new Map();
+    const invalid = [];
+    const skipped = [];
+    const duplicates = [];
+
+    for (const item of contacts) {
+        try {
+            const contact = getContact(item);
+            const type = resolveBulkChargeType(item, requestedType);
+
+            if (!type) {
+                skipped.push({
+                    contact_id: contact.id,
+                    laboratory_name: contact.laboratory_name,
+                    branch: contact.branch,
+                    reason: "Preços e pendências já atualizados."
+                });
+                continue;
+            }
+
+            const email = String(contact.email || "").trim().toLowerCase();
+            const existing = messagesByEmail.get(email);
+
+            if (existing) {
+                duplicates.push({
+                    email,
+                    laboratory_name: contact.laboratory_name,
+                    branch: contact.branch,
+                    keptLaboratory: existing.contact.laboratory_name,
+                    keptBranch: existing.contact.branch
+                });
+                continue;
+            }
+
+            messagesByEmail.set(email, buildMessage(contact, type));
+        } catch (error) {
+            invalid.push({
+                contact_id: item.contact_id || item.contactId || item.id || null,
+                laboratory_name: item.laboratory_name || "Contato",
+                branch: item.branch || "",
+                reason: error.message
+            });
+        }
+    }
+
+    const messages = Array.from(messagesByEmail.values());
+
+    if (!messages.length) {
+        throw new Error("Nenhum contato selecionado precisa de cobrança ou possui e-mail válido.");
+    }
+
     const token = crypto.randomUUID();
     const fingerprints = new Map();
     for (const message of messages) {
@@ -93,15 +203,36 @@ function prepareCharge(payload = {}) {
             fingerprints.set(attachment.path, fingerprint(attachment.path));
         }
     }
-    prepared.set(token, { messages, fingerprints, expires: Date.now() + PREVIEW_TTL, running: null });
-    return {
-        ...messages[0],
-        charge_type: type,
-        preview_token: token,
+
+    prepared.set(token, {
         messages,
-        message_count: messages.length
+        fingerprints,
+        expires: Date.now() + PREVIEW_TTL,
+        running: null,
+        cancelRequested: false,
+        startedAt: null,
+        finishedAt: null,
+        current: 0,
+        currentLaboratory: ""
+    });
+
+    return {
+        success: true,
+        charge_type: requestedType,
+        preview_token: token,
+        selected: contacts.length,
+        valid: messages.length,
+        invalid,
+        skipped,
+        duplicates,
+        message_count: messages.length,
+        messages,
+        pricesOnly: messages.filter((message) => message.charge_type === CHARGE_TYPES.PRICES).length,
+        pendingOnly: messages.filter((message) => message.charge_type === CHARGE_TYPES.PENDING).length,
+        both: messages.filter((message) => message.charge_type === CHARGE_TYPES.BOTH).length
     };
 }
+
 
 function getEmailConfig() {
     const configs = emailRepository.listEmailConfigs();
@@ -112,6 +243,7 @@ function getEmailConfig() {
     if (!config) throw new Error("Nenhuma configuração SMTP válida foi encontrada.");
     return config;
 }
+
 
 function finishHistory(attempts, result) {
     const errors = [];
@@ -124,6 +256,7 @@ function finishHistory(attempts, result) {
     }
     return errors;
 }
+
 
 async function executePlan(plan, token) {
     const config = getEmailConfig();
@@ -144,7 +277,6 @@ async function executePlan(plan, token) {
             ? [CHARGE_TYPES.PRICES, CHARGE_TYPES.PENDING]
             : [message.charge_type];
         try {
-            // Uma mensagem conjunta possui duas categorias, mas apenas um envio SMTP.
             for (const type of historyTypes) {
                 attempts.push({ type, id: history.begin({ ...message, charge_type: type }, token) });
             }
@@ -196,6 +328,102 @@ async function executePlan(plan, token) {
     };
 }
 
+
+async function executeBulkPlan(plan, token) {
+    plan.startedAt = new Date().toISOString();
+    plan.cancelRequested = false;
+    const results = [];
+    let sent = 0;
+
+    for (let index = 0; index < plan.messages.length; index += 1) {
+        if (plan.cancelRequested) {
+            plan.finishedAt = new Date().toISOString();
+            plan.current = index;
+            plan.currentLaboratory = "";
+            break;
+        }
+
+        const message = plan.messages[index];
+        plan.current = index + 1;
+        plan.currentLaboratory = message.contact.laboratory_name;
+
+        try {
+            const singlePlan = {
+                messages: [message],
+                fingerprints: plan.fingerprints
+            };
+            const result = await executePlan(singlePlan, token);
+            results.push(...result.results);
+            sent += result.sent;
+        } catch (error) {
+            results.push({
+                success: false,
+                charge_type: message.charge_type,
+                recipient: message.to,
+                laboratory_name: message.contact.laboratory_name,
+                error: error.message
+            });
+        }
+    }
+
+    plan.finishedAt = new Date().toISOString();
+    plan.currentLaboratory = "";
+
+    return {
+        success: sent === plan.messages.length && !plan.cancelRequested,
+        cancelled: plan.cancelRequested,
+        recipient: "Cobrança em lote",
+        sent,
+        expected: plan.messages.length,
+        startedAt: plan.startedAt,
+        finishedAt: plan.finishedAt,
+        results
+    };
+}
+
+
+function getBulkStatus(payload = {}) {
+    const token = String(payload.preview_token || "").trim();
+    const plan = prepared.get(token);
+    if (!plan) throw new Error("Prévia ausente ou expirada.");
+
+    const total = plan.messages.length;
+    const current = plan.current || 0;
+    const elapsedMs = plan.startedAt ? Date.now() - new Date(plan.startedAt).getTime() : 0;
+    const averageMs = current > 0 ? elapsedMs / current : 0;
+    const remainingMs = plan.finishedAt ? 0 : Math.max(0, Math.round((total - current) * averageMs));
+
+    return {
+        total,
+        current,
+        remaining: Math.max(0, total - current),
+        running: Boolean(plan.running && !plan.finishedAt),
+        cancelRequested: Boolean(plan.cancelRequested),
+        startedAt: plan.startedAt,
+        finishedAt: plan.finishedAt,
+        elapsedMs,
+        remainingMs,
+        currentLaboratory: plan.currentLaboratory || "",
+        estimatedFinishAt: plan.finishedAt || (plan.startedAt && current > 0 ? new Date(Date.now() + remainingMs).toISOString() : null)
+    };
+}
+
+
+function cancelBulkCharge(payload = {}) {
+    const token = String(payload.preview_token || "").trim();
+    const plan = prepared.get(token);
+    if (!plan) throw new Error("Prévia ausente ou expirada.");
+
+    plan.cancelRequested = true;
+
+    return {
+        success: true,
+        cancelRequested: true,
+        message: "Cancelamento solicitado. Os e-mails já enviados permanecem registrados."
+    };
+}
+
+
 function sendCharge(payload = {}) {
     const token = String(payload.preview_token || "").trim();
     const plan = prepared.get(token);
@@ -206,4 +434,25 @@ function sendCharge(payload = {}) {
     return plan.running;
 }
 
-module.exports = { prepareCharge, sendCharge, normalizeChargeType, getAttachmentPaths };
+
+function sendBulkCharge(payload = {}) {
+    const token = String(payload.preview_token || "").trim();
+    const plan = prepared.get(token);
+    if (!plan) throw new Error("Prévia ausente ou expirada. Prepare a cobrança novamente.");
+    if (plan.running) return plan.running;
+    if (Date.now() > plan.expires) throw new Error("A prévia expirou. Prepare novamente.");
+    plan.running = executeBulkPlan(plan, token);
+    return plan.running;
+}
+
+
+module.exports = {
+    prepareCharge,
+    prepareBulkCharge,
+    sendCharge,
+    sendBulkCharge,
+    getBulkStatus,
+    cancelBulkCharge,
+    normalizeChargeType,
+    getAttachmentPaths
+};
