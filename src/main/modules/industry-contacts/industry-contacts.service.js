@@ -128,35 +128,8 @@ function syncIncompleteContactNotification(contact) {
 }
 
 function syncPricePendingNotification(contact) {
-    const sourceId = getContactNotificationSourceId(contact);
-    if (!sourceId) return null;
-    const status = normalizeText(contact.price_pending_status);
-    const existing = notificationsService.findBySource(
-        NOTIFICATION_SOURCE_MODULE, sourceId, PRICE_PENDING_NOTIFICATION_TYPE
-    );
-    if (!status.toLowerCase().includes("desatualizado")) {
-        return existing ? removePricePendingNotification(sourceId) : null;
-    }
-    const data = {
-        type: PRICE_PENDING_NOTIFICATION_TYPE,
-        title: "Preços e pendências desatualizados",
-        message: `${contact.laboratory_name} está com atualização pendente na filial ${contact.branch}.`,
-        source_module: NOTIFICATION_SOURCE_MODULE,
-        source_id: sourceId,
-        laboratory_name: contact.laboratory_name,
-        laboratory_key: contact.laboratory_key,
-        industry_global_code: contact.industry_global_code,
-        branch: contact.branch,
-        recipient_email: contact.email,
-        priority: "high",
-        metadata: {
-            contact_id: contact.id || contact.contact_id,
-            price_pending_status: status
-        }
-    };
-    return existing
-        ? notificationsService.update(existing.id, data)
-        : notificationsService.createNotification(data);
+    // A origem price-pending passou a ser responsável por estes avisos.
+    return null;
 }
 
 function buildPricePendingStatusMap() {

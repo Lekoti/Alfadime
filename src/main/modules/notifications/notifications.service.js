@@ -62,10 +62,44 @@ function reconcileContactNotifications() {
     return contactsService.reconcileIncompleteContactNotifications();
 }
 
+function reconcileNotifications() {
+    reconcileContactNotifications();
+    require("./price-pending-notifications.service").reconcilePricePendingNotifications();
+}
+
+function positiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER) {
+    const number = Number(value);
+    return Number.isFinite(number)
+        ? Math.min(Math.max(Math.floor(number), 1), maximum)
+        : fallback;
+}
+
 function listNotifications(filters = {}) {
     const normalizedFilters = normalizeFilters(filters);
-    reconcileContactNotifications();
-    return repository.listNotifications(normalizedFilters);
+    reconcileNotifications();
+    if (filters.paginate !== true) {
+        return repository.listNotifications(normalizedFilters);
+    }
+    const pageSize = positiveInteger(filters.pageSize ?? 50, 50, 200);
+    const requestedPage = positiveInteger(filters.page ?? 1, 1);
+    const { getDatabase } = require("../../database/connection");
+    return getDatabase().transaction(() => {
+        const total = repository.countNotifications(normalizedFilters);
+        const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+        const page = Math.min(requestedPage, totalPages);
+        const rows = repository.listNotifications({
+            ...normalizedFilters, paginate: true, page, pageSize
+        });
+        const offset = (page - 1) * pageSize;
+        return {
+            rows,
+            pagination: {
+                page, pageSize, total, totalPages, offset,
+                from: total === 0 ? 0 : offset + 1,
+                to: Math.min(offset + rows.length, total)
+            }
+        };
+    })();
 }
 
 function getNotificationById(id) {
@@ -147,7 +181,7 @@ function remove(id) {
 
 function getSummary(filters = {}) {
     const normalizedFilters = normalizeFilters(filters);
-    reconcileContactNotifications();
+    reconcileNotifications();
     const total = repository.countNotifications(normalizedFilters);
     const pending = repository.countNotifications({
         ...normalizedFilters, status: NOTIFICATION_STATUSES.PENDING

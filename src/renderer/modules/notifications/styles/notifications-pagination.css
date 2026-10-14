@@ -1,0 +1,41 @@
+.notifications-pagination {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+    min-height: 30px;
+    border-top: 1px solid #d5dbe3;
+    padding: 0 9px;
+    background: #ffffff;
+    color: #5e6b79;
+    font-size: 10px;
+}
+
+.notifications-pagination button,
+.notifications-retry-button {
+    min-width: 62px;
+    height: 23px;
+    border: 1px solid #c8d2dd;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #344f6c;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.notifications-pagination button:hover:not(:disabled),
+.notifications-retry-button:hover {
+    background: #edf4fa;
+}
+
+.notifications-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.notifications-retry-button {
+    margin-left: 8px;
+}
