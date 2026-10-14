@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 
 
+
 import useAuth from "../../auth/hooks/useAuth";
 import settingsUsersService from "../services/settingsUsersService";
+
 
 
 import {
@@ -11,7 +13,9 @@ import {
 } from "../../../shared/theme";
 
 
+
 import "../styles/settings.css";
+
 
 
 function SettingsGeneralPage() {
@@ -20,12 +24,14 @@ function SettingsGeneralPage() {
     } = useAuth();
 
 
+
     const [theme, setThemeState] = useState(getStoredTheme());
     const [version, setVersion] = useState("");
     const [openAtLogin, setOpenAtLogin] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [publishResult, setPublishResult] = useState("");
     const [publishError, setPublishError] = useState("");
+
 
 
     useEffect(() => {
@@ -40,13 +46,17 @@ function SettingsGeneralPage() {
     }, []);
 
 
+
     function handleThemeChange(nextTheme) {
         setThemeState(nextTheme);
         setTheme(nextTheme);
     }
 
 
+
     async function handleOpenAtLoginChange(checked) {
+        const previous = openAtLogin;
+
         setOpenAtLogin(checked);
 
 
@@ -54,8 +64,14 @@ function SettingsGeneralPage() {
             await window.alfadime?.app?.setOpenAtLogin?.(checked);
         } catch (error) {
             console.error(error);
+
+            setOpenAtLogin(previous);
+            setPublishError(
+                "Não foi possível alterar a inicialização com o Windows."
+            );
         }
     }
+
 
 
     async function handlePublishRelease() {
@@ -65,9 +81,11 @@ function SettingsGeneralPage() {
         );
 
 
+
         if (!confirmed) {
             return;
         }
+
 
 
         setPublishing(true);
@@ -75,9 +93,11 @@ function SettingsGeneralPage() {
         setPublishError("");
 
 
+
         try {
             const result =
                 await settingsUsersService.publishRelease();
+
 
 
             if (result?.success) {
@@ -86,11 +106,14 @@ function SettingsGeneralPage() {
                 );
 
 
+
                 setVersion(result.data.version || version);
+
 
 
                 return;
             }
+
 
 
             setPublishError(
@@ -104,6 +127,7 @@ function SettingsGeneralPage() {
             );
 
 
+
             setPublishError(
                 error?.message ||
                 "Não foi possível publicar a atualização."
@@ -114,30 +138,35 @@ function SettingsGeneralPage() {
     }
 
 
+
     return (
         <main className="settings-general-page">
             <header className="settings-general-header">
                 <div>
                     <span className="settings-general-eyebrow">
-                        Configuracoes
+                        Configurações
                     </span>
 
 
+
                     <h1>Geral</h1>
-                    <p>Preferencias de aparencia e comportamento do aplicativo.</p>
+                    <p>Preferências de aparência e comportamento do aplicativo.</p>
                 </div>
             </header>
 
 
+
             {isCreator && (
                 <section className="settings-general-card">
-                    <h2>Atualizacoes</h2>
+                    <h2>Atualizações</h2>
+
 
 
                     <p className="settings-general-description">
-                        Publique uma nova versao do Alfadime para que os demais usuarios
-                        recebam a atualizacao pelo GitHub.
+                        Publique uma nova versão do Alfadime para que os demais usuários
+                        recebam a atualização pelo GitHub.
                     </p>
+
 
 
                     {publishResult && (
@@ -147,11 +176,13 @@ function SettingsGeneralPage() {
                     )}
 
 
+
                     {publishError && (
                         <div className="settings-general-error">
                             {publishError}
                         </div>
                     )}
+
 
 
                     <button
@@ -162,18 +193,21 @@ function SettingsGeneralPage() {
                     >
                         {publishing
                             ? "Publicando..."
-                            : "Publicar atualizacao"}
+                            : "Publicar atualização"}
                     </button>
                 </section>
             )}
 
 
+
             <section className="settings-general-card">
-                <h2>Aparencia</h2>
+                <h2>Aparência</h2>
+
 
 
                 <div className="settings-general-field">
                     <label htmlFor="settings-theme">Tema</label>
+
 
 
                     <select
@@ -191,8 +225,10 @@ function SettingsGeneralPage() {
             </section>
 
 
+
             <section className="settings-general-card">
                 <h2>Sistema</h2>
+
 
 
                 <label className="settings-general-checkbox">
@@ -205,17 +241,20 @@ function SettingsGeneralPage() {
                     />
 
 
+
                     <span>Iniciar o Alfadime junto com o Windows</span>
                 </label>
 
 
+
                 <div className="settings-general-version">
-                    Versao do aplicativo: {version || "-"}
+                    Versão do aplicativo: {version || "-"}
                 </div>
             </section>
         </main>
     );
 }
+
 
 
 export default SettingsGeneralPage;

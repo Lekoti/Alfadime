@@ -9,15 +9,19 @@ function SettingsPricePendingPage() {
     const [dbPath, setDbPath] = useState("");
     const [defaultDbPath, setDefaultDbPath] = useState("");
     const [dbConfigLoading, setDbConfigLoading] = useState(true);
+    const [dbConfigError, setDbConfigError] = useState("");
     const [dbSaving, setDbSaving] = useState(false);
     const [dbSavedMessage, setDbSavedMessage] = useState("");
+    const [dbSavedError, setDbSavedError] = useState("");
     const [testingConnection, setTestingConnection] = useState(false);
     const [testResult, setTestResult] = useState(null);
     const [foldersPrices, setFoldersPrices] = useState("");
     const [foldersPending, setFoldersPending] = useState("");
     const [foldersLoading, setFoldersLoading] = useState(true);
+    const [foldersConfigError, setFoldersConfigError] = useState("");
     const [foldersSaving, setFoldersSaving] = useState(false);
     const [foldersSavedMessage, setFoldersSavedMessage] = useState("");
+    const [foldersSavedError, setFoldersSavedError] = useState("");
 
 
     useEffect(() => {
@@ -27,7 +31,12 @@ function SettingsPricePendingPage() {
                 setDbPath(config?.path || config?.defaultPath || "");
                 setDefaultDbPath(config?.defaultPath || "");
             })
-            .catch(() => {})
+            .catch((error) => {
+                console.error(error);
+                setDbConfigError(
+                    "Não foi possível carregar a configuração do banco."
+                );
+            })
             .finally(() => setDbConfigLoading(false));
 
 
@@ -36,14 +45,37 @@ function SettingsPricePendingPage() {
                 setFoldersPrices(config?.prices || "");
                 setFoldersPending(config?.pending || "");
             })
-            .catch(() => {})
+            .catch((error) => {
+                console.error(error);
+                setFoldersConfigError(
+                    "Não foi possível carregar a configuração das pastas."
+                );
+            })
             .finally(() => setFoldersLoading(false));
     }, []);
 
 
     function handleDbModeChange(nextMode) {
+        if (nextMode === dbMode) {
+            return;
+        }
+
+
+        const confirmed = window.confirm(
+            nextMode === "shared"
+                ? "Alterar para o banco compartilhado na rede?\n\nTodos os usuários passarão a utilizar os mesmos dados após reiniciar o aplicativo."
+                : "Alterar para o banco local deste computador?\n\nOs dados deixarão de ser compartilhados com os demais usuários após reiniciar o aplicativo."
+        );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
         setDbMode(nextMode);
         setDbSavedMessage("");
+        setDbSavedError("");
         setTestResult(null);
     }
 
@@ -51,30 +83,43 @@ function SettingsPricePendingPage() {
     function handleDbPathChange(nextPath) {
         setDbPath(nextPath);
         setDbSavedMessage("");
+        setDbSavedError("");
         setTestResult(null);
     }
 
 
     async function handleTestConnection() {
+        const path = dbMode === "shared"
+            ? String(dbPath || "").trim()
+            : defaultDbPath;
+
+
+        if (dbMode === "shared" && !path) {
+            setTestResult({
+                success: false,
+                message: "Informe o caminho do banco compartilhado antes de testar."
+            });
+            return;
+        }
+
+
         try {
             setTestingConnection(true);
             setTestResult(null);
 
 
-            const result = await window.alfadime?.pricePending?.testConnection?.(
-                dbPath || defaultDbPath
-            );
+            const result = await window.alfadime?.pricePending?.testConnection?.(path);
 
 
             setTestResult(result || {
                 success: false,
-                message: "Nao foi possivel testar a conexao."
+                message: "Não foi possível testar a conexão."
             });
         } catch (error) {
             console.error(error);
             setTestResult({
                 success: false,
-                message: error?.message || "Nao foi possivel testar a conexao."
+                message: error?.message || "Não foi possível testar a conexão."
             });
         } finally {
             setTestingConnection(false);
@@ -83,24 +128,36 @@ function SettingsPricePendingPage() {
 
 
     async function handleSaveDbConfig() {
+        const path = dbMode === "shared"
+            ? String(dbPath || "").trim()
+            : defaultDbPath;
+
+
+        if (dbMode === "shared" && !path) {
+            setDbSavedError("Informe o caminho do banco compartilhado.");
+            return;
+        }
+
+
+        setDbSaving(true);
+        setDbSavedMessage("");
+        setDbSavedError("");
+
+
         try {
-            setDbSaving(true);
-            setDbSavedMessage("");
-
-
             await window.alfadime?.pricePending?.saveDbConfig?.({
                 mode: dbMode,
-                path: dbPath || defaultDbPath
+                path
             });
 
 
             setDbSavedMessage(
-                "Configuracao salva. Reinicie o aplicativo para aplicar a mudanca."
+                "Configuração salva. Reinicie o aplicativo para aplicar a mudança."
             );
         } catch (error) {
             console.error(error);
-            setDbSavedMessage(
-                "Nao foi possivel salvar a configuracao."
+            setDbSavedError(
+                error?.message || "Não foi possível salvar a configuração."
             );
         } finally {
             setDbSaving(false);
@@ -109,24 +166,35 @@ function SettingsPricePendingPage() {
 
 
     async function handleSaveFoldersConfig() {
+        const prices = String(foldersPrices || "").trim();
+        const pending = String(foldersPending || "").trim();
+
+
+        if (!prices || !pending) {
+            setFoldersSavedError("Informe as pastas de preços e pendências.");
+            return;
+        }
+
+
+        setFoldersSaving(true);
+        setFoldersSavedMessage("");
+        setFoldersSavedError("");
+
+
         try {
-            setFoldersSaving(true);
-            setFoldersSavedMessage("");
-
-
             await window.alfadime?.pricePending?.saveFoldersConfig?.({
-                prices: foldersPrices,
-                pending: foldersPending
+                prices,
+                pending
             });
 
 
             setFoldersSavedMessage(
-                "Configuracao de pastas salva. Reinicie o aplicativo para aplicar a mudanca."
+                "Configuração de pastas salva. Reinicie o aplicativo para aplicar a mudança."
             );
         } catch (error) {
             console.error(error);
-            setFoldersSavedMessage(
-                "Nao foi possivel salvar a configuracao de pastas."
+            setFoldersSavedError(
+                error?.message || "Não foi possível salvar a configuração de pastas."
             );
         } finally {
             setFoldersSaving(false);
@@ -139,24 +207,31 @@ function SettingsPricePendingPage() {
             <header className="settings-general-header">
                 <div>
                     <span className="settings-general-eyebrow">
-                        Configuracoes
+                        Configurações
                     </span>
 
 
-                    <h1>Precos e Pendencias</h1>
-                    <p>Escolha onde os dados de precos e pendencias sao armazenados.</p>
+                    <h1>Preços e Pendências</h1>
+                    <p>Escolha onde os dados de preços e pendências são armazenados.</p>
                 </div>
             </header>
 
 
             <section className="settings-general-card">
-                <h2>Sincronizacao — Precos e Pendencias</h2>
+                <h2>Sincronização — Preços e Pendências</h2>
 
 
                 {dbConfigLoading ? (
-                    <p>Carregando configuracao...</p>
+                    <p>Carregando configuração...</p>
                 ) : (
                     <>
+                        {dbConfigError && (
+                            <p className="settings-db-message settings-db-message-error">
+                                {dbConfigError}
+                            </p>
+                        )}
+
+
                         <div className="settings-db-mode-options">
                             <label className="settings-general-checkbox">
                                 <input
@@ -206,7 +281,7 @@ function SettingsPricePendingPage() {
                                 disabled={testingConnection}
                                 onClick={handleTestConnection}
                             >
-                                {testingConnection ? "Testando..." : "Testar conexao"}
+                                {testingConnection ? "Testando..." : "Testar conexão"}
                             </button>
 
 
@@ -216,7 +291,7 @@ function SettingsPricePendingPage() {
                                 disabled={dbSaving}
                                 onClick={handleSaveDbConfig}
                             >
-                                {dbSaving ? "Salvando..." : "Salvar configuracao"}
+                                {dbSaving ? "Salvando..." : "Salvar configuração"}
                             </button>
                         </div>
 
@@ -235,8 +310,15 @@ function SettingsPricePendingPage() {
 
 
                         {dbSavedMessage ? (
-                            <p className="settings-db-message">
+                            <p className="settings-db-message settings-db-message-success">
                                 {dbSavedMessage}
+                            </p>
+                        ) : null}
+
+
+                        {dbSavedError ? (
+                            <p className="settings-db-message settings-db-message-error">
+                                {dbSavedError}
                             </p>
                         ) : null}
                     </>
@@ -249,9 +331,16 @@ function SettingsPricePendingPage() {
 
 
                 {foldersLoading ? (
-                    <p>Carregando configuracao...</p>
+                    <p>Carregando configuração...</p>
                 ) : (
                     <>
+                        {foldersConfigError && (
+                            <p className="settings-db-message settings-db-message-error">
+                                {foldersConfigError}
+                            </p>
+                        )}
+
+
                         <div className="settings-general-field">
                             <label htmlFor="settings-folders-prices">
                                 Pasta de preços (arquivos de preços)
@@ -293,14 +382,21 @@ function SettingsPricePendingPage() {
                                 disabled={foldersSaving}
                                 onClick={handleSaveFoldersConfig}
                             >
-                                {foldersSaving ? "Salvando..." : "Salvar configuracao de pastas"}
+                                {foldersSaving ? "Salvando..." : "Salvar configuração de pastas"}
                             </button>
                         </div>
 
 
                         {foldersSavedMessage ? (
-                            <p className="settings-db-message">
+                            <p className="settings-db-message settings-db-message-success">
                                 {foldersSavedMessage}
+                            </p>
+                        ) : null}
+
+
+                        {foldersSavedError ? (
+                            <p className="settings-db-message settings-db-message-error">
+                                {foldersSavedError}
                             </p>
                         ) : null}
                     </>

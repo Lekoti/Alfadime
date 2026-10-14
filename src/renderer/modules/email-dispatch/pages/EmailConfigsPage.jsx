@@ -10,6 +10,7 @@ import {
 import { EMAIL_SECURE_MODE_LABELS } from '../constants';
 import '../EmailDispatch.css';
 
+
 function createEmptyForm() {
     return {
         name: '',
@@ -17,22 +18,24 @@ function createEmptyForm() {
         smtp_port: 587,
         smtp_secure: 'starttls',
         smtp_user: '',
-        smtp_password_encrypted: '',
+        smtp_password: '',
         imap_host: '',
         imap_port: 993,
         imap_secure: 'tls',
         imap_user: '',
-        imap_password_encrypted: '',
+        imap_password: '',
         from_name: '',
         from_email: '',
         reply_to_email: ''
     };
 }
 
+
 function getConfigValue(config, key) {
     if (!config) {
         return '';
     }
+
 
     const aliases = {
         smtp_host: ['smtp_host', 'smtphost'],
@@ -48,7 +51,9 @@ function getConfigValue(config, key) {
         reply_to_email: ['reply_to_email', 'replytoemail']
     };
 
+
     const keys = aliases[key] || [key];
+
 
     for (const alias of keys) {
         if (
@@ -59,66 +64,98 @@ function getConfigValue(config, key) {
         }
     }
 
+
     return '';
 }
 
-function buildPayload(form) {
-    const smtpHost = String(form.smtp_host || '').trim();
-    const smtpPort = Number(form.smtp_port || 0);
-    const smtpSecure = form.smtp_secure || 'starttls';
-    const smtpUser = String(form.smtp_user || '').trim();
-    const smtpPassword = String(
-        form.smtp_password_encrypted || ''
+
+function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        String(value || '').trim()
     );
+}
 
-    const imapHost = String(form.imap_host || '').trim();
-    const imapPort = Number(form.imap_port || 0);
-    const imapSecure = form.imap_secure || 'tls';
-    const imapUser = String(form.imap_user || '').trim();
-    const imapPassword = String(
-        form.imap_password_encrypted || ''
-    );
 
-    const fromName = String(form.from_name || '').trim();
-    const fromEmail = String(form.from_email || '').trim();
-    const replyToEmail = String(form.reply_to_email || '').trim();
-
+function buildBasePayload(form) {
     return {
         name: String(form.name || '').trim(),
 
-        smtp_host: smtpHost,
-        smtp_port: smtpPort,
-        smtp_secure: smtpSecure,
-        smtp_user: smtpUser,
-        smtp_password_encrypted: smtpPassword,
+        smtp_host: String(form.smtp_host || '').trim(),
+        smtp_port: Number(form.smtp_port || 0),
+        smtp_secure: form.smtp_secure || 'starttls',
+        smtp_user: String(form.smtp_user || '').trim(),
+        smtp_password: String(form.smtp_password || ''),
 
-        imap_host: imapHost,
-        imap_port: imapPort,
-        imap_secure: imapSecure,
-        imap_user: imapUser,
-        imap_password_encrypted: imapPassword,
+        imap_host: String(form.imap_host || '').trim(),
+        imap_port: Number(form.imap_port || 0),
+        imap_secure: form.imap_secure || 'tls',
+        imap_user: String(form.imap_user || '').trim(),
+        imap_password: String(form.imap_password || ''),
 
-        from_name: fromName,
-        from_email: fromEmail,
-        reply_to_email: replyToEmail,
-
-        smtphost: smtpHost,
-        smtpport: smtpPort,
-        smtpsecure: smtpSecure,
-        smtpuser: smtpUser,
-        smtppasswordencrypted: smtpPassword,
-
-        imaphost: imapHost,
-        imapport: imapPort,
-        imapsecure: imapSecure,
-        imapuser: imapUser,
-        imappasswordencrypted: imapPassword,
-
-        fromname: fromName,
-        fromemail: fromEmail,
-        replytoemail: replyToEmail
+        from_name: String(form.from_name || '').trim(),
+        from_email: String(form.from_email || '').trim(),
+        reply_to_email: String(form.reply_to_email || '').trim()
     };
 }
+
+
+function buildSavePayload(form, isUpdate) {
+    const payload = buildBasePayload(form);
+
+
+    if (isUpdate && !payload.smtp_password) {
+        delete payload.smtp_password;
+    }
+
+
+    if (isUpdate && !payload.imap_password) {
+        delete payload.imap_password;
+    }
+
+
+    return payload;
+}
+
+
+function validateForm(form, isUpdate) {
+    if (!String(form.name || '').trim()) {
+        return 'Informe o nome da configuração.';
+    }
+
+
+    if (!isValidEmail(form.from_email)) {
+        return 'Informe um e-mail de envio válido.';
+    }
+
+
+    if (!String(form.smtp_host || '').trim()) {
+        return 'Informe o host SMTP.';
+    }
+
+
+    if (!Number(form.smtp_port)) {
+        return 'Informe uma porta SMTP válida.';
+    }
+
+
+    if (!String(form.smtp_user || '').trim()) {
+        return 'Informe o usuário SMTP.';
+    }
+
+
+    if (!isUpdate && !String(form.smtp_password || '').trim()) {
+        return 'Informe a senha SMTP.';
+    }
+
+
+    if (form.imap_host && !Number(form.imap_port)) {
+        return 'Informe uma porta IMAP válida.';
+    }
+
+
+    return '';
+}
+
 
 function SecureModeOptions() {
     return Object.entries(EMAIL_SECURE_MODE_LABELS).map(
@@ -130,6 +167,7 @@ function SecureModeOptions() {
     );
 }
 
+
 export default function EmailConfigsPage() {
     const [configs, setConfigs] = useState([]);
     const [selectedConfig, setSelectedConfig] = useState(null);
@@ -140,13 +178,16 @@ export default function EmailConfigsPage() {
     const [errorMessage, setErrorMessage] = useState('');
     const [testResult, setTestResult] = useState(null);
 
+
     useEffect(() => {
         loadConfigs();
     }, []);
 
+
     async function loadConfigs() {
         try {
             const list = await listEmailConfigs();
+
 
             setConfigs(Array.isArray(list) ? list : []);
         } catch (error) {
@@ -157,12 +198,14 @@ export default function EmailConfigsPage() {
         }
     }
 
+
     function updateForm(field, value) {
         setForm((current) => ({
             ...current,
             [field]: value
         }));
     }
+
 
     function handleNewConfig() {
         setSelectedConfig(null);
@@ -172,8 +215,10 @@ export default function EmailConfigsPage() {
         setErrorMessage('');
     }
 
+
     function handleSelectConfig(config) {
         setSelectedConfig(config);
+
 
         setForm({
             name: getConfigValue(config, 'name'),
@@ -184,7 +229,7 @@ export default function EmailConfigsPage() {
             smtp_secure:
                 getConfigValue(config, 'smtp_secure') || 'starttls',
             smtp_user: getConfigValue(config, 'smtp_user'),
-            smtp_password_encrypted: '',
+            smtp_password: '',
             imap_host: getConfigValue(config, 'imap_host'),
             imap_port: Number(
                 getConfigValue(config, 'imap_port') || 993
@@ -192,41 +237,60 @@ export default function EmailConfigsPage() {
             imap_secure:
                 getConfigValue(config, 'imap_secure') || 'tls',
             imap_user: getConfigValue(config, 'imap_user'),
-            imap_password_encrypted: '',
+            imap_password: '',
             from_name: getConfigValue(config, 'from_name'),
             from_email: getConfigValue(config, 'from_email'),
             reply_to_email: getConfigValue(config, 'reply_to_email')
         });
+
 
         setTestResult(null);
         setMessage('');
         setErrorMessage('');
     }
 
+
     async function handleSave() {
+        const isUpdate = Boolean(selectedConfig?.id);
+        const validationError = validateForm(form, isUpdate);
+
+
+        if (validationError) {
+            setErrorMessage(validationError);
+            return;
+        }
+
+
         setSaving(true);
         setMessage('');
         setErrorMessage('');
 
+
         try {
-            const payload = buildPayload(form);
+            const payload = buildSavePayload(form, isUpdate);
+
 
             let savedConfig;
 
-            if (selectedConfig?.id) {
+
+            if (isUpdate) {
                 savedConfig = await updateEmailConfig(
                     selectedConfig.id,
                     payload
                 );
 
+
                 setMessage('Configuração atualizada com sucesso.');
             } else {
                 savedConfig = await createEmailConfig(payload);
 
+
                 setMessage('Nova configuração criada com sucesso.');
             }
 
+
             await loadConfigs();
+
 
             if (savedConfig?.id) {
                 setSelectedConfig(savedConfig);
@@ -240,20 +304,25 @@ export default function EmailConfigsPage() {
         }
     }
 
+
     async function handleDelete() {
         if (!selectedConfig?.id) {
             return;
         }
 
+
         if (!confirm('Excluir esta configuração de e-mail?')) {
             return;
         }
 
+
         try {
             await deleteEmailConfig(selectedConfig.id);
 
+
             await loadConfigs();
             handleNewConfig();
+
 
             setMessage('Configuração excluída.');
         } catch (error) {
@@ -263,16 +332,19 @@ export default function EmailConfigsPage() {
         }
     }
 
+
     async function handleTestSmtp() {
         setTesting('smtp');
         setTestResult(null);
         setMessage('');
         setErrorMessage('');
 
+
         try {
             const result = await testSmtpConnection(
-                buildPayload(form)
+                buildBasePayload(form)
             );
+
 
             setTestResult({
                 type: 'SMTP',
@@ -289,16 +361,19 @@ export default function EmailConfigsPage() {
         }
     }
 
+
     async function handleTestImap() {
         setTesting('imap');
         setTestResult(null);
         setMessage('');
         setErrorMessage('');
 
+
         try {
             const result = await testImapConnection(
-                buildPayload(form)
+                buildBasePayload(form)
             );
+
 
             setTestResult({
                 type: 'IMAP',
@@ -315,10 +390,12 @@ export default function EmailConfigsPage() {
         }
     }
 
+
     const selectedSummary = useMemo(() => {
         if (!selectedConfig) {
             return null;
         }
+
 
         return {
             name: getConfigValue(selectedConfig, 'name') || '-',
@@ -335,6 +412,7 @@ export default function EmailConfigsPage() {
         };
     }, [selectedConfig]);
 
+
     return (
         <div className="email-page-container">
             <div className="email-page-header">
@@ -343,11 +421,13 @@ export default function EmailConfigsPage() {
                         Configurações de E-mail
                     </h1>
 
+
                     <p className="email-page-subtitle">
                         Gerencie as contas de e-mail para envio e recebimento.
                     </p>
                 </div>
             </div>
+
 
             <div className="email-page-content">
                 {message && (
@@ -356,11 +436,13 @@ export default function EmailConfigsPage() {
                     </div>
                 )}
 
+
                 {errorMessage && (
                     <div className="email-alert email-alert-error">
                         • {errorMessage}
                     </div>
                 )}
+
 
                 <div className="email-layout-top">
                     <section className="email-card">
@@ -378,6 +460,7 @@ export default function EmailConfigsPage() {
                                 Configurações salvas
                             </h2>
 
+
                             <button
                                 type="button"
                                 className="email-button email-button-primary"
@@ -387,11 +470,13 @@ export default function EmailConfigsPage() {
                             </button>
                         </div>
 
+
                         {!configs.length && (
                             <div className="email-empty-state">
                                 Nenhuma configuração cadastrada.
                             </div>
                         )}
+
 
                         {!!configs.length && (
                             <div className="email-campaign-list">
@@ -420,6 +505,7 @@ export default function EmailConfigsPage() {
                                                 ) || 'Sem nome'}
                                             </span>
 
+
                                             <small>
                                                 {getConfigValue(
                                                     config,
@@ -433,6 +519,7 @@ export default function EmailConfigsPage() {
                         )}
                     </section>
 
+
                     <section className="email-card">
                         <h2 className="email-card-title">
                             {selectedConfig
@@ -440,11 +527,13 @@ export default function EmailConfigsPage() {
                                 : 'Nova configuração'}
                         </h2>
 
+
                         <div className="email-form-grid">
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     Nome
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -460,10 +549,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     De (nome)
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -479,10 +570,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     De (e-mail)
                                 </label>
+
 
                                 <input
                                     type="email"
@@ -498,10 +591,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     E-mail de resposta
                                 </label>
+
 
                                 <input
                                     type="email"
@@ -518,15 +613,18 @@ export default function EmailConfigsPage() {
                             </div>
                         </div>
 
+
                         <h3 className="email-section-title">
                             SMTP — Envio
                         </h3>
+
 
                         <div className="email-form-grid">
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     SMTP Host
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -542,10 +640,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     SMTP Porta
                                 </label>
+
 
                                 <input
                                     type="number"
@@ -560,10 +660,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     SMTP Seguro
                                 </label>
+
 
                                 <select
                                     className="email-form-select"
@@ -579,10 +681,12 @@ export default function EmailConfigsPage() {
                                 </select>
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     SMTP Usuário
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -598,15 +702,17 @@ export default function EmailConfigsPage() {
                             </div>
                         </div>
 
+
                         <div className="email-form-group">
                             <label className="email-form-label">
                                 SMTP Senha
                             </label>
 
+
                             <input
                                 type="password"
                                 className="email-form-input"
-                                value={form.smtp_password_encrypted}
+                                value={form.smtp_password}
                                 placeholder={
                                     selectedConfig
                                         ? 'Deixe em branco para manter a senha atual'
@@ -614,22 +720,25 @@ export default function EmailConfigsPage() {
                                 }
                                 onChange={(event) => {
                                     updateForm(
-                                        'smtp_password_encrypted',
+                                        'smtp_password',
                                         event.target.value
                                     );
                                 }}
                             />
                         </div>
 
+
                         <h3 className="email-section-title">
                             IMAP — Recebimento
                         </h3>
+
 
                         <div className="email-form-grid">
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     IMAP Host
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -645,10 +754,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     IMAP Porta
                                 </label>
+
 
                                 <input
                                     type="number"
@@ -663,10 +774,12 @@ export default function EmailConfigsPage() {
                                 />
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     IMAP Seguro
                                 </label>
+
 
                                 <select
                                     className="email-form-select"
@@ -682,10 +795,12 @@ export default function EmailConfigsPage() {
                                 </select>
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     IMAP Usuário
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -701,15 +816,17 @@ export default function EmailConfigsPage() {
                             </div>
                         </div>
 
+
                         <div className="email-form-group">
                             <label className="email-form-label">
                                 IMAP Senha
                             </label>
 
+
                             <input
                                 type="password"
                                 className="email-form-input"
-                                value={form.imap_password_encrypted}
+                                value={form.imap_password}
                                 placeholder={
                                     selectedConfig
                                         ? 'Deixe em branco para manter a senha atual'
@@ -717,12 +834,13 @@ export default function EmailConfigsPage() {
                                 }
                                 onChange={(event) => {
                                     updateForm(
-                                        'imap_password_encrypted',
+                                        'imap_password',
                                         event.target.value
                                     );
                                 }}
                             />
                         </div>
+
 
                         <div
                             className="email-toolbar-actions"
@@ -740,6 +858,7 @@ export default function EmailConfigsPage() {
                                 Limpar formulário
                             </button>
 
+
                             <button
                                 type="button"
                                 className="email-button email-button-primary"
@@ -752,6 +871,7 @@ export default function EmailConfigsPage() {
                                         ? 'Salvar alterações'
                                         : 'Criar configuração'}
                             </button>
+
 
                             {selectedConfig && (
                                 <button
@@ -767,6 +887,7 @@ export default function EmailConfigsPage() {
                     </section>
                 </div>
 
+
                 <div className="email-layout-bottom">
                     <section className="email-card">
                         <div className="email-card-title-row">
@@ -778,17 +899,20 @@ export default function EmailConfigsPage() {
                                     Testar conexões
                                 </h2>
 
+
                                 <p className="email-form-help">
                                     Teste os dados preenchidos no formulário antes de salvar.
                                 </p>
                             </div>
                         </div>
 
+
                         <div className="email-form-grid">
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     SMTP
                                 </label>
+
 
                                 <button
                                     type="button"
@@ -803,10 +927,12 @@ export default function EmailConfigsPage() {
                                 </button>
                             </div>
 
+
                             <div className="email-form-group">
                                 <label className="email-form-label">
                                     IMAP
                                 </label>
+
 
                                 <button
                                     type="button"
@@ -821,6 +947,7 @@ export default function EmailConfigsPage() {
                                 </button>
                             </div>
                         </div>
+
 
                         {testResult && (
                             <div
@@ -840,6 +967,7 @@ export default function EmailConfigsPage() {
                                     }
                                 </div>
 
+
                                 <pre className="email-result-content">
                                     {testResult.message}
                                 </pre>
@@ -847,16 +975,19 @@ export default function EmailConfigsPage() {
                         )}
                     </section>
 
+
                     <section className="email-card">
                         <h2 className="email-card-title">
                             Resumo
                         </h2>
+
 
                         {!selectedSummary && (
                             <div className="email-empty-state">
                                 Selecione uma configuração salva para visualizar o resumo.
                             </div>
                         )}
+
 
                         {selectedSummary && (
                             <div
@@ -871,13 +1002,16 @@ export default function EmailConfigsPage() {
                                     <strong>Nome:</strong> {selectedSummary.name}
                                 </div>
 
+
                                 <div>
                                     <strong>De:</strong> {selectedSummary.fromName} &lt;{selectedSummary.fromEmail}&gt;
                                 </div>
 
+
                                 <div>
                                     <strong>SMTP:</strong> {selectedSummary.smtpHost}:{selectedSummary.smtpPort} ({selectedSummary.smtpSecure})
                                 </div>
+
 
                                 <div>
                                     <strong>IMAP:</strong> {selectedSummary.imapHost}:{selectedSummary.imapPort} ({selectedSummary.imapSecure})

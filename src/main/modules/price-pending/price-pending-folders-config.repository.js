@@ -1,20 +1,36 @@
-﻿const {
+const {
     getDatabase
 } = require("../../database/connection");
+
 
 
 const SETTING_KEY = "price_pending_folders_config";
 
 
+
 // Caminhos padrão (fallback)
 const DEFAULT_FOLDERS = {
     prices: "\\\\10.0.0.20\\Compras\\1.COMPRAS\\PRECOS SUBIDOS SIRIUS\\PRECOS ATUALIZADOS",
-    pending: "\\\\10.0.0.20\\Compras\\1.COMPRAS\\PRECOS\\PENDENCIAS"
+    pending: "\\\\10.0.0.20\\Compras\\1.COMPRAS\\PRECOS E PENDENCIAS\\PENDENCIAS"
 };
+
+
+
+// Caminho antigo migrado automaticamente para o novo diretório padrão.
+const LEGACY_PENDING_FOLDER =
+    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\PRECOS\\PENDENCIAS";
+
+
+
+function normalizePath(value) {
+    return String(value || "").trim().replace(/\/+$/, "");
+}
+
 
 
 function getFoldersConfig() {
     const database = getDatabase();
+
 
 
     const row = database
@@ -27,6 +43,7 @@ function getFoldersConfig() {
         .get(SETTING_KEY);
 
 
+
     if (!row || !row.setting_value) {
         return {
             prices: DEFAULT_FOLDERS.prices,
@@ -35,13 +52,32 @@ function getFoldersConfig() {
     }
 
 
+
     try {
         const parsed = JSON.parse(row.setting_value);
+        const pending = normalizePath(parsed.pending);
+
+
+
+        // Migra automaticamente configurações salvas com o diretório antigo.
+        if (pending === normalizePath(LEGACY_PENDING_FOLDER)) {
+            const migrated = {
+                prices: String(parsed.prices || DEFAULT_FOLDERS.prices).trim(),
+                pending: DEFAULT_FOLDERS.pending
+            };
+
+
+            saveFoldersConfig(migrated);
+
+
+            return migrated;
+        }
+
 
 
         return {
             prices: String(parsed.prices || DEFAULT_FOLDERS.prices).trim(),
-            pending: String(parsed.pending || DEFAULT_FOLDERS.pending).trim()
+            pending: pending || DEFAULT_FOLDERS.pending
         };
     } catch {
         return {
@@ -52,15 +88,18 @@ function getFoldersConfig() {
 }
 
 
+
 function saveFoldersConfig({ prices, pending }) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
 
     const value = JSON.stringify({
         prices: String(prices || DEFAULT_FOLDERS.prices).trim(),
         pending: String(pending || DEFAULT_FOLDERS.pending).trim()
     });
+
 
 
     const existing = database
@@ -71,6 +110,7 @@ function saveFoldersConfig({ prices, pending }) {
             LIMIT 1
         `)
         .get(SETTING_KEY);
+
 
 
     if (existing) {
@@ -103,8 +143,10 @@ function saveFoldersConfig({ prices, pending }) {
     }
 
 
+
     return getFoldersConfig();
 }
+
 
 
 module.exports = {

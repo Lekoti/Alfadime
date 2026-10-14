@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
+
 import "../styles/settings.css";
+
 
 
 
@@ -9,10 +11,13 @@ function SettingsContactsPage() {
     const [dbPath, setDbPath] = useState("");
     const [defaultDbPath, setDefaultDbPath] = useState("");
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
     const [savedMessage, setSavedMessage] = useState("");
+    const [savedError, setSavedError] = useState("");
     const [testResult, setTestResult] = useState(null);
+
 
 
 
@@ -26,18 +31,27 @@ function SettingsContactsPage() {
                         : "shared"
                 );
 
+
                 setDbPath(
                     config?.path ||
                     config?.defaultPath ||
                     ""
                 );
 
+
                 setDefaultDbPath(
                     config?.defaultPath ||
                     ""
                 );
             })
-            .catch(() => {})
+            .catch((error) => {
+                console.error(error);
+
+
+                setLoadError(
+                    "Não foi possível carregar a configuração dos contatos."
+                );
+            })
             .finally(() => {
                 setLoading(false);
             });
@@ -45,33 +59,69 @@ function SettingsContactsPage() {
 
 
 
+
     function handleModeChange(nextMode) {
+        if (nextMode === dbMode) {
+            return;
+        }
+
+
+        const confirmed = window.confirm(
+            nextMode === "shared"
+                ? "Alterar para o banco compartilhado na rede?\n\nTodos os usuários passarão a utilizar os mesmos contatos após reiniciar o aplicativo."
+                : "Alterar para o banco local deste computador?\n\nOs contatos deixarão de ser compartilhados com os demais usuários após reiniciar o aplicativo."
+        );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
         setDbMode(nextMode);
         setSavedMessage("");
+        setSavedError("");
         setTestResult(null);
     }
+
 
 
 
     function handlePathChange(nextPath) {
         setDbPath(nextPath);
         setSavedMessage("");
+        setSavedError("");
         setTestResult(null);
     }
 
 
 
+
     async function handleTestConnection() {
+        const path = dbMode === "shared"
+            ? String(dbPath || "").trim()
+            : defaultDbPath;
+
+
+        if (dbMode === "shared" && !path) {
+            setTestResult({
+                success: false,
+                message: "Informe o caminho do banco de contatos antes de testar."
+            });
+            return;
+        }
+
+
         try {
             setTesting(true);
             setTestResult(null);
 
+
             const result =
                 await window.alfadime
                     ?.industryContacts
-                    ?.testConnection?.(
-                        dbPath || defaultDbPath
-                    );
+                    ?.testConnection?.(path);
+
 
             setTestResult(
                 result || {
@@ -82,6 +132,7 @@ function SettingsContactsPage() {
             );
         } catch (error) {
             console.error(error);
+
 
             setTestResult({
                 success: false,
@@ -96,17 +147,32 @@ function SettingsContactsPage() {
 
 
 
-    async function handleSave() {
-        try {
-            setSaving(true);
-            setSavedMessage("");
 
+    async function handleSave() {
+        const path = dbMode === "shared"
+            ? String(dbPath || "").trim()
+            : defaultDbPath;
+
+
+        if (dbMode === "shared" && !path) {
+            setSavedError("Informe o caminho do banco de contatos.");
+            return;
+        }
+
+
+        setSaving(true);
+        setSavedMessage("");
+        setSavedError("");
+
+
+        try {
             await window.alfadime
                 ?.industryContacts
                 ?.saveDbConfig?.({
                     mode: dbMode,
-                    path: dbPath || defaultDbPath
+                    path
                 });
+
 
             setSavedMessage(
                 "Configuração de contatos salva. Reinicie o aplicativo para aplicar a mudança."
@@ -114,13 +180,16 @@ function SettingsContactsPage() {
         } catch (error) {
             console.error(error);
 
-            setSavedMessage(
+
+            setSavedError(
+                error?.message ||
                 "Não foi possível salvar a configuração."
             );
         } finally {
             setSaving(false);
         }
     }
+
 
 
 
@@ -132,7 +201,9 @@ function SettingsContactsPage() {
                         Configurações
                     </span>
 
+
                     <h1>Contatos</h1>
+
 
                     <p>
                         Escolha onde os contatos das indústrias
@@ -143,10 +214,12 @@ function SettingsContactsPage() {
 
 
 
+
             <section className="settings-general-card">
                 <h2>
                     Banco de dados — Contatos
                 </h2>
+
 
                 {loading ? (
                     <p>
@@ -154,6 +227,13 @@ function SettingsContactsPage() {
                     </p>
                 ) : (
                     <>
+                        {loadError && (
+                            <p className="settings-db-message settings-db-message-error">
+                                {loadError}
+                            </p>
+                        )}
+
+
                         <div className="settings-db-mode-options">
                             <label className="settings-general-checkbox">
                                 <input
@@ -169,10 +249,12 @@ function SettingsContactsPage() {
                                     }
                                 />
 
+
                                 <span>
                                     Banco local neste computador
                                 </span>
                             </label>
+
 
                             <label className="settings-general-checkbox">
                                 <input
@@ -188,6 +270,7 @@ function SettingsContactsPage() {
                                     }
                                 />
 
+
                                 <span>
                                     Banco compartilhado na rede
                                 </span>
@@ -196,10 +279,12 @@ function SettingsContactsPage() {
 
 
 
+
                         <div className="settings-general-field">
                             <label htmlFor="industry-contacts-db-path">
                                 Caminho do banco de contatos
                             </label>
+
 
                             <input
                                 id="industry-contacts-db-path"
@@ -218,6 +303,7 @@ function SettingsContactsPage() {
 
 
 
+
                         <div className="settings-db-actions">
                             <button
                                 type="button"
@@ -232,6 +318,7 @@ function SettingsContactsPage() {
                                     : "Testar conexão"}
                             </button>
 
+
                             <button
                                 type="button"
                                 className="settings-db-button settings-db-button-primary"
@@ -243,6 +330,7 @@ function SettingsContactsPage() {
                                     : "Salvar configuração"}
                             </button>
                         </div>
+
 
 
 
@@ -265,9 +353,17 @@ function SettingsContactsPage() {
 
 
 
+
                         {savedMessage ? (
-                            <p className="settings-db-message">
+                            <p className="settings-db-message settings-db-message-success">
                                 {savedMessage}
+                            </p>
+                        ) : null}
+
+
+                        {savedError ? (
+                            <p className="settings-db-message settings-db-message-error">
+                                {savedError}
                             </p>
                         ) : null}
                     </>
@@ -276,6 +372,7 @@ function SettingsContactsPage() {
         </main>
     );
 }
+
 
 
 
