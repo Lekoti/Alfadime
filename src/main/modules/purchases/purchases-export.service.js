@@ -2,10 +2,151 @@ const path = require("node:path");
 const ExcelJS = require("exceljs");
 const { dialog } = require("electron");
 const repository = require("./purchases.repository");
+const { calculatePurchaseSuggestion } = require("./purchases-calculation.service");
 const { toSafeNumber } = require("../../utils/validation.utils");
 
 
-async function exportStandardExcel(selectedIds) {
+
+
+const EXPORT_COLUMN_DEFINITIONS = {
+    company: { label: "Empresa", width: 25 },
+    productcode: { label: "Cód. Prod.", width: 15 },
+    barcode: { label: "Cód. Barras", width: 18 },
+    description: { label: "Descrição", width: 40 },
+    laboratoryname: { label: "Laboratório", width: 25 },
+    availablestock: { label: "Estoque + Bloqueado", width: 22 },
+    averagesale12m: { label: "Média Venda 12M", width: 18 },
+    averagesale6m: { label: "Média Venda 6M", width: 18 },
+    averagesale3m: { label: "Média Venda 3M", width: 18 },
+    averagesale: { label: "Média Venda Mês", width: 18 },
+    priceSource: { label: "Origem do Valor", width: 25 },
+    effectivecurve: { label: "Curva", width: 10 },
+    suggestedquantity: { label: "Sugestão Compra", width: 16 },
+    unitprice: { label: "Valor Unitário", width: 16, type: "currency" },
+    totalsuggestionvalue: { label: "Total Sugestão", width: 18, type: "currency" },
+    observation: { label: "Observação", width: 60 },
+    currentstock: { label: "Estoque", width: 14 },
+    blockedstock: { label: "Bloqueado", width: 14 },
+    lastPurchaseDPR: { label: "Últ. Compra DPR", width: 18, type: "currency" },
+    lastPurchaseAMS: { label: "Últ. Compra AMS", width: 18, type: "currency" },
+    lastPurchaseDMT: { label: "Últ. Compra DMT", width: 18, type: "currency" },
+    lastPurchaseDMS: { label: "Últ. Compra DMS", width: 18, type: "currency" },
+    lastPurchaseDSC: { label: "Últ. Compra DSC", width: 18, type: "currency" },
+    penultimatepurchaseprice: { label: "Penúlt. Compra", width: 18, type: "currency" },
+    antepenultimatepurchaseprice: { label: "Antepenúlt. Compra", width: 20, type: "currency" },
+    averagecost: { label: "Preço Médio", width: 16, type: "currency" },
+    coverageMonths: { label: "Cobertura (meses)", width: 18 },
+    targetMonths: { label: "Meta (meses de estoque)", width: 22 },
+    standardbox: { label: "Cx. Padrão", width: 14 },
+    curvevalue: { label: "Curva (R$)", width: 14 },
+    curveunit: { label: "Curva (Qtd)", width: 14 }
+};
+
+
+
+
+function formatCurrency(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "";
+    }
+
+    return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+    }).format(number);
+}
+
+
+
+
+function formatAvailableStock(row) {
+    const current = toSafeNumber(row.current_stock ?? row.currentstock, 0);
+    const blocked = toSafeNumber(row.blocked_stock ?? row.blockedstock, 0);
+    const total = current + Math.abs(blocked);
+    const blockedDisplay = blocked < 0 ? `(${Math.abs(blocked)})` : `+ ${blocked}`;
+
+    return `${current} ${blockedDisplay} = ${total}`;
+}
+
+
+
+
+function getCellValue(row, columnKey) {
+    if (columnKey === "availablestock") {
+        return formatAvailableStock(row);
+    }
+
+    if (columnKey === "averagesale") {
+        const value = row.averageSale;
+
+        return value === null || value === undefined || value === ""
+            ? ""
+            : Number(value).toFixed(1);
+    }
+
+    if (columnKey === "coverageMonths") {
+        const value = row.coverageMonths;
+
+        return value === null || value === undefined || value === ""
+            ? ""
+            : Number(value).toFixed(1);
+    }
+
+    if (columnKey === "targetMonths") {
+        const value = row.targetMonths;
+
+        return value === null || value === undefined || value === ""
+            ? ""
+            : Number(value).toFixed(1);
+    }
+
+    if (columnKey === "priceSource") {
+        return row.priceSource || "-";
+    }
+
+    const value = row[columnKey];
+
+    if (value === null || value === undefined || value === "") {
+        return "";
+    }
+
+    return value;
+}
+
+
+
+
+function buildExportColumns(visibleColumns = [], columnOrder = []) {
+    const safeVisible = Array.isArray(visibleColumns) && visibleColumns.length
+        ? visibleColumns
+        : Object.keys(EXPORT_COLUMN_DEFINITIONS);
+
+    const safeOrder = Array.isArray(columnOrder) && columnOrder.length
+        ? columnOrder
+        : safeVisible;
+
+    const orderedKeys = safeOrder
+        .filter((key) => safeVisible.includes(key))
+        .concat(
+            safeVisible.filter((key) => !safeOrder.includes(key))
+        );
+
+    return orderedKeys
+        .filter((key) => EXPORT_COLUMN_DEFINITIONS[key])
+        .map((key) => ({
+            key,
+            header: EXPORT_COLUMN_DEFINITIONS[key].label,
+            width: EXPORT_COLUMN_DEFINITIONS[key].width,
+            type: EXPORT_COLUMN_DEFINITIONS[key].type || "text"
+        }));
+}
+
+
+
+
+async function exportStandardExcel(selectedIds, options = {}) {
     if (!Array.isArray(selectedIds) || selectedIds.length === 0) {
         throw new Error("Nenhum produto selecionado para exportar.");
     }
@@ -19,30 +160,32 @@ async function exportStandardExcel(selectedIds) {
     }
 
 
+    const calculatedRows = rows.map((row) =>
+        calculatePurchaseSuggestion(
+            row,
+            {
+                quantityoverride: row.quantity_override
+            },
+            options.curveDays || {}
+        )
+    );
+
+
+    const exportColumns = buildExportColumns(
+        options.visibleColumns,
+        options.columnOrder
+    );
+
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Sugestões de Compras");
 
 
-    const columns = [
-        { header: "Empresa", key: "company", width: 25 },
-        { header: "Cód Prod", key: "code", width: 15 },
-        { header: "Cód Barras", key: "ean", width: 18 },
-        { header: "Descrição", key: "description", width: 40 },
-        { header: "Laboratório", key: "laboratoryname", width: 25 },
-        { header: "Curva", key: "effectivecurve", width: 10 },
-        { header: "Estoque Atual", key: "currentstock", width: 15 },
-        { header: "Bloqueado", key: "blockedstock", width: 12 },
-        { header: "Média Venda 12M", key: "averagesale12m", width: 18 },
-        { header: "Média Venda 6M", key: "averagesale6m", width: 18 },
-        { header: "Média Venda 3M", key: "averagesale3m", width: 18 },
-        { header: "Cobertura (dias)", key: "coverageDays", width: 16 },
-        { header: "Sugestão Qtde.", key: "suggestedquantity", width: 15 },
-        { header: "Valor Unitário", key: "unitprice", width: 15 },
-        { header: "Total Sugestão", key: "totalsuggestionvalue", width: 18 }
-    ];
-
-
-    worksheet.columns = columns;
+    worksheet.columns = exportColumns.map((column) => ({
+        header: column.header,
+        key: column.key,
+        width: column.width
+    }));
 
 
     worksheet.getRow(1).font = { bold: true };
@@ -56,24 +199,18 @@ async function exportStandardExcel(selectedIds) {
     };
 
 
-    rows.forEach((row) => {
-        worksheet.addRow({
-            company: row.company || "",
-            code: row.product_code || row.code || "",
-            ean: row.barcode || row.ean || "",
-            description: row.description || "",
-            laboratoryname: row.laboratory_name || row.laboratoryname || "",
-            effectivecurve: row.effective_curve || row.effectivecurve || "",
-            currentstock: toSafeNumber(row.current_stock || row.currentstock, 0),
-            blockedstock: toSafeNumber(row.blocked_stock || row.blockedstock, 0),
-            averagesale12m: toSafeNumber(row.average_sale_12m || row.averagesale12m, 0),
-            averagesale6m: toSafeNumber(row.average_sale_6m || row.averagesale6m, 0),
-            averagesale3m: toSafeNumber(row.average_sale_3m || row.averagesale3m, 0),
-            coverageDays: (row.coverage_days ?? row.coverageDays) !== null ? toSafeNumber(row.coverage_days || row.coverageDays, 0) : "",
-            suggestedquantity: toSafeNumber(row.suggested_quantity || row.suggestedquantity, 0),
-            unitprice: toSafeNumber(row.unit_price || row.unitprice, 0),
-            totalsuggestionvalue: toSafeNumber(row.total_suggestion_value || row.totalsuggestionvalue, 0)
+    calculatedRows.forEach((row) => {
+        const exportRow = {};
+
+        exportColumns.forEach((column) => {
+            const value = getCellValue(row, column.key);
+
+            exportRow[column.key] = column.type === "currency"
+                ? formatCurrency(value)
+                : value;
         });
+
+        worksheet.addRow(exportRow);
     });
 
 
@@ -108,9 +245,11 @@ async function exportStandardExcel(selectedIds) {
     return {
         cancelled: false,
         filePath,
-        totalProducts: rows.length
+        totalProducts: calculatedRows.length
     };
 }
+
+
 
 
 module.exports = {

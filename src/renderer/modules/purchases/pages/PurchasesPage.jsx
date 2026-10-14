@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import PurchaseFilters from "../components/PurchaseFilters";
 import PurchaseTable from "../components/PurchaseTable";
 import PurchaseCurveTargets from "../components/PurchaseCurveTargets";
@@ -12,6 +12,11 @@ import {
 import { usePurchases } from "../hooks/usePurchases";
 import { useModuleArrayState } from "../../../hooks/useModuleArrayState";
 import { useModuleState } from "../../../hooks/useModuleState";
+import {
+    setPurchaseQuantityOverride,
+    getPurchaseQuantityOverridesCount,
+    clearPurchaseQuantityOverrides
+} from "../services/purchases.service";
 import "../styles/purchases.css";
 
 
@@ -126,7 +131,8 @@ export default function PurchasesPage() {
         loading,
         error,
         syncing,
-        synchronize
+        synchronize,
+        loadSuggestions
     } = usePurchases({
         ...filters,
         pageSize: currentPageSize
@@ -185,8 +191,37 @@ export default function PurchasesPage() {
 
         try {
             await synchronize();
+
+            const manualCount = await getPurchaseQuantityOverridesCount();
+
+            if (manualCount > 0) {
+                const removeManual = window.confirm(
+                    `A curva foi atualizada. Existem ${manualCount} quantidade(s) de compra informadas manualmente.\n\n` +
+                    "Deseja remover os valores manuais e voltar a usar a sugestao calculada pela curva?\n\n" +
+                    "Clique em OK para REMOVER ou em Cancelar para MANTER os valores manuais."
+                );
+
+                if (removeManual) {
+                    await clearPurchaseQuantityOverrides();
+                    await loadSuggestions();
+                }
+            }
         } catch (syncError) {
             console.error(syncError);
+        }
+    }
+
+
+    async function handleQuantityChange(product, quantity) {
+        try {
+            await setPurchaseQuantityOverride(product.id, quantity);
+            await loadSuggestions();
+        } catch (quantityError) {
+            console.error(quantityError);
+            window.alert(
+                quantityError.message ||
+                "Nao foi possivel salvar a quantidade manual."
+            );
         }
     }
 
@@ -394,7 +429,7 @@ export default function PurchasesPage() {
 
                         <span>
                             Exibindo {rows.length} de {pagination.total} produtos.
-                            Quantidade e valor unitário podem ser alterados manualmente.
+                            A quantidade sugerida pode ser alterada manualmente.
                         </span>
                     </div>
 
@@ -420,6 +455,7 @@ export default function PurchasesPage() {
                         selectAllFiltered={selectAllFiltered}
                         onToggleSelection={toggleSelected}
                         onToggleAll={toggleSelectAll}
+                        onQuantityChange={handleQuantityChange}
                     />
                 )}
 

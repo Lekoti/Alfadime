@@ -23,3 +23,15 @@ export function syncPurchasesCurveExcel() {
 export function subscribePurchasesChanged(callback) {
     return getPurchasesApi().onChanged(callback);
 }
+
+export function setPurchaseQuantityOverride(id, quantity) {
+    return getPurchasesApi().setQuantityOverride(id, quantity);
+}
+
+export function getPurchaseQuantityOverridesCount() {
+    return getPurchasesApi().getQuantityOverridesCount();
+}
+
+export function clearPurchaseQuantityOverrides() {
+    return getPurchasesApi().clearQuantityOverrides();
+}

@@ -2,33 +2,35 @@
     display: flex;
     height: 100%;
     min-height: 0;
+    box-sizing: border-box;
     flex-direction: column;
     overflow: hidden;
-    padding: 18px 22px;
+    padding: 10px 12px;
     background: #eef1f5;
     color: #263241;
 }
 
 .price-pending-toolbar {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 14px;
+    gap: 10px;
+    margin-bottom: 6px;
 }
 
 .price-pending-title h1 {
     margin: 0;
-    font-size: 22px;
-    line-height: 1.2;
     color: #263241;
+    font-size: 17px;
+    font-weight: 700;
 }
 
 .price-pending-title span {
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     color: #3b5f86;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -37,19 +39,20 @@
 .price-pending-toolbar-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .price-pending-filters-toggle,
 .price-pending-refresh-button,
 .price-pending-ignored-button {
-    min-height: 32px;
-    border-radius: 5px;
-    padding: 0 14px;
+    height: 26px;
+    min-height: 26px;
+    border-radius: 4px;
+    padding: 0 10px;
     cursor: pointer;
     font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .price-pending-filters-toggle {
@@ -59,8 +62,8 @@
 }
 
 .price-pending-filters-toggle:hover {
-    background: #f0f4f8;
     border-color: #3b5f86;
+    background: #f0f4f8;
 }
 
 .price-pending-refresh-button {
@@ -89,76 +92,46 @@
     opacity: 0.55;
 }
 
-.price-pending-add-form-inline {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.price-pending-add-form-inline input {
-    min-width: 200px;
-    min-height: 32px;
-    border: 1px solid #cdd6df;
-    border-radius: 5px;
-    padding: 0 10px;
-    background: #ffffff;
-    color: #263241;
-    font-family: inherit;
-    font-size: 14px;
-}
-
-.price-pending-add-form-inline button,
-.price-pending-button {
-    min-height: 32px;
-    border: 0;
-    border-radius: 5px;
-    padding: 0 14px;
-    background: #3b5f86;
-    color: #ffffff;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.price-pending-add-form-inline button:hover:not(:disabled),
-.price-pending-button:hover:not(:disabled) {
-    background: #304e6e;
-}
-
 .price-pending-floating-panel {
-    margin: 8px 0 14px;
-    border: 1px solid #d5dbe3;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: 0 2px 8px rgba(20, 30, 40, 0.06);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    margin-bottom: 6px;
+    border: 1px solid #b9cbdc;
+    border-radius: 5px;
+    background: #f8fafc;
+    box-shadow: 0 3px 10px rgb(31 41 55 / 8%);
 }
 
 .price-pending-floating-panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    min-height: 22px;
+    padding: 4px 8px;
     border-bottom: 1px solid #e6ebf2;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    background: #f8fafc;
     color: #344b65;
-    font-size: 12px;
+    font-size: 10px;
 }
 
 .price-pending-floating-panel-header button {
-    border: none;
-    padding: 0 4px;
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border: 0;
+    border-radius: 4px;
     background: transparent;
     color: #6b7785;
     cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
+    font-size: 16px;
+    line-height: 16px;
 }
 
 .price-pending-floating-panel-header button:hover {
-    color: #263241;
+    background: #e4ebf2;
+    color: #344b65;
 }
 
 .price-pending-panel-content {
@@ -170,10 +143,10 @@
 .price-pending-panel-left,
 .price-pending-panel-right {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
-    gap: 10px 16px;
-    padding: 10px 14px;
+    gap: 6px 10px;
+    padding: 6px 8px;
 }
 
 .price-pending-panel-left {
@@ -183,71 +156,121 @@
 .price-pending-filters-section {
     display: flex;
     flex-direction: column;
-    padding: 2px 0;
+    gap: 3px;
 }
 
 .price-pending-filters-section h3 {
-    margin: 0 0 6px;
+    margin: 0;
     color: #344b65;
-    font-size: 14px;
+    font-size: 9px;
     font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .price-pending-column-toggles,
 .price-pending-filter-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 12px;
+    gap: 4px 8px;
 }
 
 .price-pending-column-toggles label,
 .price-pending-filter-options label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     color: #45515e;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 10px;
 }
 
 .price-pending-column-toggles input[type="checkbox"],
 .price-pending-filter-options input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
+    width: 13px;
+    height: 13px;
     accent-color: #3b5f86;
 }
 
 .price-pending-filters-section select,
 .price-pending-filters-section input[type="text"] {
-    width: 100%;
-    min-height: 32px;
     box-sizing: border-box;
+    width: 100%;
+    height: 25px;
+    min-height: 25px;
     border: 1px solid #cdd6df;
-    border-radius: 5px;
-    padding: 0 8px;
+    border-radius: 4px;
+    padding: 0 6px;
     background: #ffffff;
     color: #263241;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 10px;
 }
 
 .price-pending-filters-section select:focus,
 .price-pending-filters-section input[type="text"]:focus,
 .price-pending-add-form-inline input:focus {
-    outline: none;
     border-color: #3b5f86;
-    box-shadow: 0 0 0 2px rgba(59, 95, 134, 0.12);
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(59 95 134 / 10%);
 }
 
-.price-pending-export-hint {
-    margin: 8px 0 0;
-    color: #6b7785;
-    font-size: 14px;
-    line-height: 1.4;
+.price-pending-add-form-inline {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.price-pending-add-form-inline input {
+    min-width: 0;
+    height: 25px;
+    min-height: 25px;
+    border: 1px solid #cdd6df;
+    border-radius: 4px;
+    padding: 0 6px;
+    background: #ffffff;
+    color: #263241;
+    font-family: inherit;
+    font-size: 10px;
+}
+
+.price-pending-add-form-inline button,
+.price-pending-button,
+.price-pending-clear-button {
+    height: 25px;
+    min-height: 25px;
+    border: 0;
+    border-radius: 4px;
+    padding: 0 9px;
+    background: #3b5f86;
+    color: #ffffff;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.price-pending-add-form-inline button:hover:not(:disabled),
+.price-pending-button:hover:not(:disabled) {
+    background: #304e6e;
+}
+
+.price-pending-clear-button {
+    background: #6b7785;
+}
+
+.price-pending-clear-button:hover:not(:disabled) {
+    background: #56616d;
+}
+
+.price-pending-clear-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .price-pending-error {
-    margin-bottom: 8px;
+    flex-shrink: 0;
+    margin-bottom: 6px;
     border: 1px solid #e2b8bd;
     border-radius: 4px;
     padding: 5px 8px;
@@ -256,30 +279,45 @@
     font-size: 10px;
 }
 
+.price-pending-success {
+    flex-shrink: 0;
+    margin-bottom: 6px;
+    border: 1px solid #a7d7b9;
+    border-radius: 4px;
+    padding: 5px 8px;
+    background: #f0fdf4;
+    color: #176b2c;
+    font-size: 10px;
+}
+
 .price-pending-read-only-actions {
     display: flex;
+    flex-shrink: 0;
     justify-content: flex-end;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .price-pending-card {
+    position: relative;
+    z-index: 1;
     display: flex;
     min-height: 0;
     flex: 1;
+    box-sizing: border-box;
     flex-direction: column;
-    width: 100%;
     overflow: hidden;
     border: 1px solid #d5dbe3;
     border-radius: 5px;
     background: #ffffff;
-    box-shadow: 0 2px 6px rgb(31 41 55 / 5%);
+    box-shadow: 0 1px 4px rgb(31 41 55 / 5%);
 }
 
 .price-pending-card-header {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
-    min-height: 30px;
+    min-height: 28px;
     border-bottom: 1px solid #d5dbe3;
     padding: 0 9px;
 }
@@ -291,8 +329,7 @@
 }
 
 .price-pending-card-header strong {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 11px;
 }
 
 .price-pending-card-header span {
@@ -309,9 +346,7 @@
     min-height: 0;
     flex: 1;
     width: 100%;
-    max-height: none;
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow: auto;
     overscroll-behavior: contain;
 }
 
@@ -320,8 +355,8 @@
     min-width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    table-layout: fixed;
     font-size: 9px;
+    table-layout: fixed;
 }
 
 .price-pending-table th,
@@ -335,21 +370,21 @@
 .price-pending-table thead th {
     position: sticky;
     z-index: 4;
-    text-align: center;
     font-weight: 600;
-    white-space: normal;
     line-height: 1.15;
+    text-align: center;
+    white-space: normal;
 }
 
 .price-pending-table thead tr:first-child th {
     top: 0;
-    height: 22px;
+    height: 20px;
     font-size: 9px;
 }
 
 .price-pending-table thead tr:nth-child(2) th {
-    top: 22px;
-    height: 20px;
+    top: 20px;
+    height: 18px;
     font-size: 9px;
 }
 
@@ -408,19 +443,19 @@
     width: 74px;
     min-width: 74px;
     max-width: 74px;
-    padding-right: 3px;
     padding-left: 3px;
+    padding-right: 3px;
     text-align: center;
     white-space: nowrap;
 }
 
-.price-pending-table tbody tr {
-    height: 24px;
+.price-pending-table tbody tr,
+.price-pending-table tbody td {
+    height: 23px;
 }
 
 .price-pending-table tbody td {
-    height: 24px;
-    padding: 3px 4px;
+    padding: 2px 4px;
     font-size: 9px;
     white-space: nowrap;
 }
@@ -434,8 +469,8 @@
 
 .price-pending-table tbody td.industry-global-code-cell {
     left: 0;
-    text-align: center;
     font-weight: 600;
+    text-align: center;
 }
 
 .price-pending-table tbody td.laboratory-cell {
@@ -443,10 +478,10 @@
 }
 
 .price-pending-table td input {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    height: 23px;
-    box-sizing: border-box;
+    height: 21px;
     border: 0;
     outline: none;
     padding: 0 4px;
@@ -459,7 +494,6 @@
 
 .price-pending-table .laboratory-cell input {
     width: 188px;
-    min-width: 0;
     padding: 0 6px;
     font-weight: 600;
     text-align: left;
@@ -467,7 +501,6 @@
 
 .price-pending-table .observation-cell input {
     width: 208px;
-    min-width: 0;
     padding: 0 6px;
     text-align: left;
 }
@@ -511,7 +544,8 @@
     background: #f1f5f9;
 }
 
-.price-pending-table td.updated-current-month {
+.price-pending-table td.updated-current-month,
+.price-pending-table td.updated-future-month {
     background-color: #d9f2df !important;
     color: #176b2c !important;
     font-weight: 700;
@@ -523,12 +557,6 @@
     font-weight: 700;
 }
 
-.price-pending-table td.updated-future-month {
-    background-color: #d9f2df !important;
-    color: #176b2c !important;
-    font-weight: 700;
-}
-
 .price-pending-table td.external-update-pending {
     background-color: #fff1cf !important;
     color: #765b20 !important;
@@ -537,14 +565,14 @@
 
 .price-pending-table thead th.group-header {
     background-color: #d9eaf7 !important;
-    color: #1f2937 !important;
     border-color: #9bbbd3 !important;
+    color: #1f2937 !important;
 }
 
 .price-pending-table thead th.branch-header {
     background-color: #edf5fb !important;
-    color: #1f2937 !important;
     border-color: #b8cfdf !important;
+    color: #1f2937 !important;
 }
 
 .price-pending-table thead th.laboratory-header,
@@ -552,8 +580,8 @@
 .price-pending-table thead th.observation-header,
 .price-pending-table thead th.actions-header {
     background-color: #e5e7eb !important;
-    color: #1f2937 !important;
     border-color: #b7bdc5 !important;
+    color: #1f2937 !important;
 }
 
 .actions-cell {
@@ -565,7 +593,7 @@
 .remove-button {
     border: 0;
     border-radius: 3px;
-    padding: 3px 5px;
+    padding: 2px 5px;
     background: #a85b63;
     color: #ffffff;
     cursor: pointer;
@@ -583,11 +611,11 @@
 }
 
 .empty-row {
-    height: 35px;
-    padding: 8px !important;
+    height: 30px;
+    padding: 6px !important;
     color: #6b7785;
-    text-align: center;
     font-size: 10px;
+    text-align: center;
 }
 
 .price-pending-loading {
@@ -596,7 +624,7 @@
     place-items: center;
     background: #eef1f5;
     color: #6b7785;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .price-pending-page input:disabled {
@@ -632,29 +660,28 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border-bottom: 1px solid #d5dbe3;
 }
 
 .modal-header h2 {
     margin: 0;
     color: #263241;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
 }
 
 .modal-close {
     display: flex;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     align-items: center;
     justify-content: center;
-    border: none;
-    padding: 0;
+    border: 0;
     background: none;
     color: #6b7785;
     cursor: pointer;
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .modal-close:hover {
@@ -664,24 +691,24 @@
 .modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 10px 12px;
+    padding: 8px 10px;
 }
 
 .modal-footer {
     display: flex;
     justify-content: flex-end;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border-top: 1px solid #d5dbe3;
 }
 
 .modal-button {
-    border: none;
+    border: 0;
     border-radius: 4px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     background: #3b5f86;
     color: #ffffff;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -698,7 +725,7 @@
 .ignored-files-table th,
 .ignored-files-table td {
     border: 1px solid #d5dbe3;
-    padding: 6px;
+    padding: 4px 6px;
     text-align: left;
 }
 
@@ -722,8 +749,8 @@
     }
 
     .price-pending-panel-left {
-        border-right: none;
         border-bottom: 1px solid #e6ebf2;
+        border-right: 0;
     }
 }
 

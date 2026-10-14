@@ -1,4 +1,4 @@
-﻿export const BRANCHES = [
+export const BRANCHES = [
     "DPR",
     "AMS",
     "DMT",
@@ -46,7 +46,6 @@ export const PRICE_PENDING_COLUMNS = [
         group: null,
         editable: true
     },
-
     {
         key: "env_precos_dpr",
         label: "DPR",
@@ -72,7 +71,6 @@ export const PRICE_PENDING_COLUMNS = [
         label: "DSC",
         group: "env_precos"
     },
-
     {
         key: "env_pend_dpr",
         label: "DPR",
@@ -98,7 +96,6 @@ export const PRICE_PENDING_COLUMNS = [
         label: "DSC",
         group: "env_pend"
     },
-
     {
         key: "precos_ok_dpr",
         label: "DPR",
@@ -124,7 +121,6 @@ export const PRICE_PENDING_COLUMNS = [
         label: "DSC",
         group: "precos_ok"
     },
-
     {
         key: "pendencias_ok_dpr",
         label: "DPR",
@@ -157,25 +153,21 @@ export const EMPTY_PRICE_PENDING_ROW = {
     industry_global_code: "",
     laboratory: "",
     observation: "",
-
     env_precos_dpr: "",
     env_precos_ams: "",
     env_precos_dmt: "",
     env_precos_dms: "",
     env_precos_dsc: "",
-
     env_pend_dpr: "",
     env_pend_ams: "",
     env_pend_dmt: "",
     env_pend_dms: "",
     env_pend_dsc: "",
-
     precos_ok_dpr: "",
     precos_ok_ams: "",
     precos_ok_dmt: "",
     precos_ok_dms: "",
     precos_ok_dsc: "",
-
     pendencias_ok_dpr: "",
     pendencias_ok_ams: "",
     pendencias_ok_dmt: "",
@@ -197,25 +189,21 @@ export const PRICE_PENDING_EXPORT_COLUMNS = [
         key: "observation",
         label: "Observação"
     },
-
     { key: "env_precos_dpr", label: "Preços DPR" },
     { key: "env_precos_ams", label: "Preços AMS" },
     { key: "env_precos_dmt", label: "Preços DMT" },
     { key: "env_precos_dms", label: "Preços DMS" },
     { key: "env_precos_dsc", label: "Preços DSC" },
-
     { key: "env_pend_dpr", label: "Pendências DPR" },
     { key: "env_pend_ams", label: "Pendências AMS" },
     { key: "env_pend_dmt", label: "Pendências DMT" },
     { key: "env_pend_dms", label: "Pendências DMS" },
     { key: "env_pend_dsc", label: "Pendências DSC" },
-
     { key: "precos_ok_dpr", label: "OK Preços DPR" },
     { key: "precos_ok_ams", label: "OK Preços AMS" },
     { key: "precos_ok_dmt", label: "OK Preços DMT" },
     { key: "precos_ok_dms", label: "OK Preços DMS" },
     { key: "precos_ok_dsc", label: "OK Preços DSC" },
-
     { key: "pendencias_ok_dpr", label: "OK Pendências DPR" },
     { key: "pendencias_ok_ams", label: "OK Pendências AMS" },
     { key: "pendencias_ok_dmt", label: "OK Pendências DMT" },

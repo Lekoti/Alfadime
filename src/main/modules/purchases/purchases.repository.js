@@ -25,6 +25,25 @@ const RELATED_CHUNK_SIZE = 500;
 
 
 
+function ensureQuantityOverrideColumn(database) {
+    const columns = database
+        .prepare("PRAGMA table_info(purchase_curve_products)")
+        .all();
+
+    const exists = columns.some(
+        (column) => column.name === "quantity_override"
+    );
+
+    if (!exists) {
+        database.exec(
+            "ALTER TABLE purchase_curve_products ADD COLUMN quantity_override REAL"
+        );
+    }
+}
+
+
+
+
 function getValue(object, ...keys) {
     for (const key of keys) {
         if (
@@ -419,6 +438,8 @@ function decorateCurveRow(
 function listCurveProducts(filters = {}) {
     const database = getDatabase();
 
+    ensureQuantityOverrideColumn(database);
+
 
 
 
@@ -577,6 +598,8 @@ function listCurveProducts(filters = {}) {
 function listAllCurveProducts(filters = {}) {
     const database = getDatabase();
 
+    ensureQuantityOverrideColumn(database);
+
 
 
 
@@ -708,6 +731,8 @@ function upsertCurveProducts(products, source = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
+    ensureQuantityOverrideColumn(database);
+
 
 
 
@@ -804,7 +829,8 @@ function upsertCurveProducts(products, source = {}) {
                 "id",
                 "company",
                 "product_code",
-                "created_at"
+                "created_at",
+                "quantity_override"
             ].includes(column)
     );
 
@@ -1155,6 +1181,8 @@ function finishImportHistory(id, data = {}) {
 function getPurchaseSuggestionsByIds(selectedIds) {
     const database = getDatabase();
 
+    ensureQuantityOverrideColumn(database);
+
 
 
 
@@ -1235,6 +1263,74 @@ function getPurchaseSuggestionsByIds(selectedIds) {
 
 
 
+function setQuantityOverride(id, quantity) {
+    const database = getDatabase();
+
+    ensureQuantityOverrideColumn(database);
+
+    const value =
+        quantity === null ||
+        quantity === undefined ||
+        quantity === ""
+            ? null
+            : Number(quantity);
+
+    database
+        .prepare(`
+            UPDATE purchase_curve_products
+            SET quantity_override = ?
+            WHERE id = ?
+        `)
+        .run(value, id);
+
+    return {
+        id,
+        quantity: value
+    };
+}
+
+
+
+
+function getQuantityOverridesCount() {
+    const database = getDatabase();
+
+    ensureQuantityOverrideColumn(database);
+
+    return database
+        .prepare(`
+            SELECT COUNT(*) AS total
+            FROM purchase_curve_products
+            WHERE quantity_override IS NOT NULL
+        `)
+        .get()
+        .total;
+}
+
+
+
+
+function clearQuantityOverrides() {
+    const database = getDatabase();
+
+    ensureQuantityOverrideColumn(database);
+
+    const result = database
+        .prepare(`
+            UPDATE purchase_curve_products
+            SET quantity_override = NULL
+            WHERE quantity_override IS NOT NULL
+        `)
+        .run();
+
+    return {
+        removed: result.changes
+    };
+}
+
+
+
+
 module.exports = {
     BRANCHES,
     listCurveProducts,
@@ -1243,5 +1339,8 @@ module.exports = {
     upsertCurveProducts,
     createImportHistory,
     finishImportHistory,
-    getPurchaseSuggestionsByIds
+    getPurchaseSuggestionsByIds,
+    setQuantityOverride,
+    getQuantityOverridesCount,
+    clearQuantityOverrides
 };
