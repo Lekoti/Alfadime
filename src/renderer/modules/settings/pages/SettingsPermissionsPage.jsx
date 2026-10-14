@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useAuth from "../../auth/hooks/useAuth";
 import "../styles/settings.css";
+
 
 
 
@@ -34,6 +36,7 @@ const MODULE_COLUMNS = [
 
 
 
+
 const FUNCTION_COLUMNS = [
     {
         key: "can_view",
@@ -48,6 +51,7 @@ const FUNCTION_COLUMNS = [
         label: "Executar"
     }
 ];
+
 
 
 
@@ -73,6 +77,13 @@ const ROLES = [
 
 
 
+
+const PROTECTED_CREATOR_USERNAME = "sLekoti";
+
+
+
+
+
 function buildInitialState() {
     return {
         target_type: "role",
@@ -85,9 +96,17 @@ function buildInitialState() {
 
 
 
+
 export default function SettingsPermissionsPage() {
     const navigate =
         useNavigate();
+
+
+    const {
+        isCreator,
+        isAdmin
+    } = useAuth();
+
 
 
 
@@ -98,6 +117,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const [
         modules,
         setModules
@@ -105,10 +125,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const [
         functions,
         setFunctions
     ] = useState([]);
+
 
 
 
@@ -121,10 +143,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const [
         selectedModule,
         setSelectedModule
     ] = useState("");
+
 
 
 
@@ -135,10 +159,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const [
         isSaving,
         setIsSaving
     ] = useState(false);
+
 
 
 
@@ -149,10 +175,18 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const [
         error,
         setError
     ] = useState("");
+
+
+
+
+    const canManagePermissions =
+        isCreator || isAdmin;
+
 
 
 
@@ -172,6 +206,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const selectedUserRoleLabel =
         ROLES.find(
             (role) =>
@@ -183,12 +218,19 @@ export default function SettingsPermissionsPage() {
 
 
 
+
+    const isProtectedCreator =
+        selectedUser?.username ===
+        PROTECTED_CREATOR_USERNAME;
+
+
+
+
     const loadUsers =
         useCallback(
             async () => {
                 const response =
                     await window.alfadime.users.list();
-
 
 
                 if (
@@ -205,12 +247,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const loadModules =
         useCallback(
             async () => {
                 const response =
                     await window.alfadime.permissions.listModules();
-
 
 
                 if (
@@ -224,6 +266,7 @@ export default function SettingsPermissionsPage() {
             },
             []
         );
+
 
 
 
@@ -244,8 +287,10 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                     return;
                 }
+
 
 
 
@@ -255,7 +300,9 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                 setError("");
+
 
 
 
@@ -268,6 +315,7 @@ export default function SettingsPermissionsPage() {
                         : await window.alfadime.permissions.getForRole(
                             targetValue
                         );
+
 
 
 
@@ -293,6 +341,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                 setIsLoading(
                     false
                 );
@@ -302,8 +351,15 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     useEffect(
         () => {
+            if (!canManagePermissions) {
+                setIsLoading(false);
+                return;
+            }
+
+
             const initialize =
                 async () => {
                     await Promise.all(
@@ -315,6 +371,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                     await loadPermissions(
                         "role",
                         "creator"
@@ -323,14 +380,17 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             initialize();
         },
         [
+            canManagePermissions,
             loadUsers,
             loadModules,
             loadPermissions
         ]
     );
+
 
 
 
@@ -350,6 +410,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const handleTargetTypeChange =
         (value) => {
             const nextValue =
@@ -357,6 +418,7 @@ export default function SettingsPermissionsPage() {
                 "role"
                     ? "creator"
                     : "";
+
 
 
 
@@ -369,11 +431,13 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             loadPermissions(
                 value,
                 nextValue
             );
         };
+
 
 
 
@@ -385,11 +449,13 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             loadPermissions(
                 permissions.target_type,
                 value
             );
         };
+
 
 
 
@@ -401,6 +467,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             if (
                 !moduleKey
             ) {
@@ -409,10 +476,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             const response =
                 await window.alfadime.permissions.listFunctions(
                     moduleKey
                 );
+
 
 
 
@@ -425,6 +494,7 @@ export default function SettingsPermissionsPage() {
                 );
             }
         };
+
 
 
 
@@ -441,13 +511,28 @@ export default function SettingsPermissionsPage() {
                                     ? {
                                         ...item,
                                         [action]:
-                                            value
+                                            value,
+                                        ...(action === "can_view" && !value
+                                            ? {
+                                                can_edit: false,
+                                                can_delete: false,
+                                                can_approve: false,
+                                                can_export: false,
+                                                can_sync: false
+                                            }
+                                            : {}),
+                                        ...(action !== "can_view" && value
+                                            ? {
+                                                can_view: true
+                                            }
+                                            : {})
                                     }
                                     : item
                         )
                 })
             );
         };
+
 
 
 
@@ -466,7 +551,18 @@ export default function SettingsPermissionsPage() {
                                     ? {
                                         ...item,
                                         [action]:
-                                            value
+                                            value,
+                                        ...(action === "can_view" && !value
+                                            ? {
+                                                can_edit: false,
+                                                can_execute: false
+                                            }
+                                            : {}),
+                                        ...(action !== "can_view" && value
+                                            ? {
+                                                can_view: true
+                                            }
+                                            : {})
                                     }
                                     : item
                         )
@@ -476,11 +572,21 @@ export default function SettingsPermissionsPage() {
 
 
 
+
     const handleSave =
         async () => {
+            if (isProtectedCreator) {
+                setError(
+                    "As permissões do usuário Staff sLekoti não podem ser alteradas."
+                );
+                return;
+            }
+
+
             setIsSaving(
                 true
             );
+
 
 
 
@@ -488,7 +594,9 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             setError("");
+
 
 
 
@@ -496,6 +604,7 @@ export default function SettingsPermissionsPage() {
                 await window.alfadime.permissions.save(
                     permissions
                 );
+
 
 
 
@@ -508,6 +617,7 @@ export default function SettingsPermissionsPage() {
                         ? "Permissões individuais salvas com sucesso."
                         : "Permissões do perfil salvas com sucesso."
                 );
+
 
 
 
@@ -524,10 +634,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             setIsSaving(
                 false
             );
         };
+
 
 
 
@@ -541,10 +653,30 @@ export default function SettingsPermissionsPage() {
             }
 
 
+            if (isProtectedCreator) {
+                setError(
+                    "Não é possível remover overrides do usuário Staff sLekoti."
+                );
+                return;
+            }
+
+
+            const confirmed = window.confirm(
+                "Remover as permissões individuais deste usuário?\n\nEle voltará a seguir as permissões do perfil."
+            );
+
+
+            if (!confirmed) {
+                return;
+            }
+
+
+
 
             setIsSaving(
                 true
             );
+
 
 
 
@@ -555,12 +687,14 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             if (
                 response?.success
             ) {
                 setMessage(
                     "Overrides removidos. O usuário voltou a seguir as permissões do perfil."
                 );
+
 
 
 
@@ -577,10 +711,39 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             setIsSaving(
                 false
             );
         };
+
+
+
+
+    if (!canManagePermissions) {
+        return (
+            <section className="settings-general-page">
+                <header className="settings-general-header">
+                    <div>
+                        <span className="settings-general-eyebrow">
+                            Controle de acesso
+                        </span>
+
+
+                        <h1>
+                            Permissões granulares
+                        </h1>
+
+
+                        <p>
+                            Você não tem permissão para acessar esta área.
+                        </p>
+                    </div>
+                </header>
+            </section>
+        );
+    }
+
 
 
 
@@ -594,9 +757,11 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                     <h1>
                         Permissões granulares
                     </h1>
+
 
 
 
@@ -608,11 +773,13 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             {error && (
                 <div className="settings-db-message settings-db-message-error">
                     {error}
                 </div>
             )}
+
 
 
 
@@ -624,10 +791,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Destino das permissões
                 </h2>
+
 
 
 
@@ -636,6 +805,7 @@ export default function SettingsPermissionsPage() {
                         <label>
                             Configurar por
                         </label>
+
 
 
 
@@ -657,11 +827,13 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                             <option value="user">
                                 Usuário
                             </option>
                         </select>
                     </div>
+
 
 
 
@@ -671,6 +843,7 @@ export default function SettingsPermissionsPage() {
                             <label>
                                 Perfil
                             </label>
+
 
 
 
@@ -714,6 +887,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                             <select
                                 value={
                                     permissions.target_value
@@ -729,6 +903,7 @@ export default function SettingsPermissionsPage() {
                                 <option value="">
                                     Selecione
                                 </option>
+
 
 
 
@@ -757,6 +932,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                     <div className="settings-permissions-actions">
                         <button
                             type="button"
@@ -764,6 +940,7 @@ export default function SettingsPermissionsPage() {
                             disabled={
                                 isSaving ||
                                 isLoading ||
+                                isProtectedCreator ||
                                 (
                                     permissions.target_type ===
                                     "user" &&
@@ -781,6 +958,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                         {permissions.target_type ===
                             "user" && (
                             <button
@@ -789,6 +967,7 @@ export default function SettingsPermissionsPage() {
                                 disabled={
                                     isSaving ||
                                     isLoading ||
+                                    isProtectedCreator ||
                                     !permissions.target_value
                                 }
                                 onClick={
@@ -798,6 +977,7 @@ export default function SettingsPermissionsPage() {
                                 Remover overrides
                             </button>
                         )}
+
 
 
 
@@ -814,6 +994,7 @@ export default function SettingsPermissionsPage() {
                         </button>
                     </div>
                 </div>
+
 
 
 
@@ -834,6 +1015,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                             <p>
                                 As permissões salvas serão aplicadas individualmente a este usuário e terão prioridade sobre o perfil.
                             </p>
@@ -843,10 +1025,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Permissões por módulo
                 </h2>
+
 
 
 
@@ -862,6 +1046,7 @@ export default function SettingsPermissionsPage() {
                                     <th>
                                         Módulo
                                     </th>
+
 
 
 
@@ -885,6 +1070,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                             <tbody>
                                 {permissions.module_permissions.map(
                                     (
@@ -900,6 +1086,7 @@ export default function SettingsPermissionsPage() {
                                                     permission.module_label
                                                 }
                                             </td>
+
 
 
 
@@ -921,6 +1108,9 @@ export default function SettingsPermissionsPage() {
                                                                             .key
                                                                     ]
                                                                 )
+                                                            }
+                                                            disabled={
+                                                                isProtectedCreator
                                                             }
                                                             onChange={(
                                                                 event
@@ -948,10 +1138,12 @@ export default function SettingsPermissionsPage() {
 
 
 
+
             <div className="settings-general-card">
                 <h2>
                     Colunas e ações
                 </h2>
+
 
 
 
@@ -960,6 +1152,7 @@ export default function SettingsPermissionsPage() {
                         <label>
                             Módulo
                         </label>
+
 
 
 
@@ -978,6 +1171,7 @@ export default function SettingsPermissionsPage() {
                             <option value="">
                                 Selecione
                             </option>
+
 
 
 
@@ -1005,6 +1199,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                 {selectedModule &&
                     moduleFunctions.length >
                         0 && (
@@ -1015,6 +1210,7 @@ export default function SettingsPermissionsPage() {
                                         <th>
                                             Item
                                         </th>
+
 
 
 
@@ -1038,6 +1234,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                                 <tbody>
                                     {moduleFunctions.map(
                                         (
@@ -1054,6 +1251,7 @@ export default function SettingsPermissionsPage() {
 
 
 
+
                                             return (
                                                 <tr
                                                     key={
@@ -1065,6 +1263,7 @@ export default function SettingsPermissionsPage() {
                                                             permissionFunction.function_label
                                                         }
                                                     </td>
+
 
 
 
@@ -1085,6 +1284,9 @@ export default function SettingsPermissionsPage() {
                                                                                 column.key
                                                                             ]
                                                                         )
+                                                                    }
+                                                                    disabled={
+                                                                        isProtectedCreator
                                                                     }
                                                                     onChange={(
                                                                         event
@@ -1110,6 +1312,7 @@ export default function SettingsPermissionsPage() {
                             </table>
                         </div>
                     )}
+
 
 
 
