@@ -15,6 +15,7 @@ import {
 const INITIAL_FILTERS = {
     search: "",
     branch: "",
+    laboratory: "",
     brand: "",
     group_code: "",
     category_code: "",
@@ -42,6 +43,7 @@ export function useProducts(filters = INITIAL_FILTERS) {
     const [pagination, setPagination] = useState(EMPTY_PAGINATION);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [syncError, setSyncError] = useState("");
     const [syncing, setSyncing] = useState(false);
     const [lastSync, setLastSync] = useState(null);
 
@@ -106,7 +108,7 @@ export function useProducts(filters = INITIAL_FILTERS) {
 
 
             setError(
-                loadError.message || "Nao foi possivel carregar os produtos."
+                loadError.message || "Não foi possível carregar os produtos."
             );
         } finally {
             if (requestId === requestIdRef.current) {
@@ -190,6 +192,7 @@ export function useProducts(filters = INITIAL_FILTERS) {
 
     async function synchronize() {
         setSyncing(true);
+        setSyncError("");
 
 
         try {
@@ -200,6 +203,14 @@ export function useProducts(filters = INITIAL_FILTERS) {
 
 
             await loadProducts(filtersRef.current);
+        } catch (syncError) {
+            console.error("Erro ao sincronizar produtos:", syncError);
+
+
+            setSyncError(
+                syncError?.message ||
+                "Não foi possível atualizar os produtos."
+            );
         } finally {
             setSyncing(false);
         }
@@ -211,6 +222,7 @@ export function useProducts(filters = INITIAL_FILTERS) {
         pagination,
         loading,
         error,
+        syncError,
         filters,
         synchronize,
         syncing,

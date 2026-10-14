@@ -1,13 +1,15 @@
-﻿function formatValue(product, column) {
+function formatValue(product, column) {
     const value = product[column.key];
+
 
     if (
         column.type === "boolean"
     ) {
         return Number(value) === 1
             ? "Sim"
-            : "Nao";
+            : "Não";
     }
+
 
     if (
         value === null ||
@@ -17,12 +19,13 @@
         return "-";
     }
 
+
     return String(value);
 }
 
+
 function ProductTable({
     products,
-    pageSize,
     columns,
     visibleColumns,
     columnOrder
@@ -33,14 +36,12 @@ function ProductTable({
             .filter(Boolean)
         : columns;
 
+
     const activeColumns = orderedColumns.filter(
         (column) =>
             visibleColumns.includes(column.key)
     );
-    const visibleProducts = products.slice(
-        0,
-        pageSize
-    );
+
 
     return (
         <div className="products-table-wrapper">
@@ -55,8 +56,9 @@ function ProductTable({
                     </tr>
                 </thead>
 
+
                 <tbody>
-                    {visibleProducts.length === 0 && (
+                    {products.length === 0 && (
                         <tr>
                             <td
                                 colSpan={
@@ -69,7 +71,8 @@ function ProductTable({
                         </tr>
                     )}
 
-                    {visibleProducts.map((product) => (
+
+                    {products.map((product) => (
                         <tr key={product.id}>
                             {activeColumns.map((column) => (
                                 <td key={column.key}>
@@ -86,5 +89,6 @@ function ProductTable({
         </div>
     );
 }
+
 
 export default ProductTable;

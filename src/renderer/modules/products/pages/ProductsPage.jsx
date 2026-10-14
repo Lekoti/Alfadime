@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
     useState
 } from "react";
 
@@ -46,13 +46,14 @@ import { useModuleState } from "../../../hooks/useModuleState";
 import "../styles/products.css";
 
 
-const MODULE_ID = 'products';
+const MODULE_ID = "products";
 
 
 const INITIAL_STATE = {
     filters: {
         search: "",
         branch: "",
+        laboratory: "",
         brand: "",
         group_code: "",
         category_code: "",
@@ -100,13 +101,14 @@ function ProductsPage() {
         loading,
         syncing,
         error,
+        syncError,
         lastSync,
         synchronize
     } = useProducts(filters);
 
 
     function updateFilters(nextFilters) {
-        setField('filters', {
+        setField("filters", {
             ...nextFilters,
             page: 1,
             pageSize: 50
@@ -115,7 +117,7 @@ function ProductsPage() {
 
 
     function changePage(page) {
-        setField('filters', {
+        setField("filters", {
             ...filters,
             page,
             pageSize: 50
@@ -124,39 +126,56 @@ function ProductsPage() {
 
 
     function setFiltersPanelOpen(next) {
-        setField('filtersPanelOpen', typeof next === 'function' ? next(filtersPanelOpen) : next);
+        setField(
+            "filtersPanelOpen",
+            typeof next === "function"
+                ? next(filtersPanelOpen)
+                : next
+        );
     }
 
 
     function setVisibleColumns(next) {
-        setField('visibleColumns', typeof next === 'function' ? next(visibleColumns) : next);
+        setField(
+            "visibleColumns",
+            typeof next === "function"
+                ? next(visibleColumns)
+                : next
+        );
     }
 
 
     function setColumnOrder(next) {
-        setField('columnOrder', typeof next === 'function' ? next(columnOrder) : next);
+        setField(
+            "columnOrder",
+            typeof next === "function"
+                ? next(columnOrder)
+                : next
+        );
     }
 
 
     async function handleSync() {
-    const confirmed = window.confirm(
-        "Atualizar Produtos com base na planilha agora?\n\n" +
-        "Cadastros novos serão incluídos e cadastros existentes serão " +
-        "atualizados conforme os dados disponíveis na planilha.\n\n" +
-        "Registros que não estiverem na planilha não serão apagados " +
-        "automaticamente."
-    );
+        const confirmed = window.confirm(
+            "Atualizar Produtos com base na planilha agora?\n\n" +
+            "Cadastros novos serão incluídos e cadastros existentes serão " +
+            "atualizados conforme os dados disponíveis na planilha.\n\n" +
+            "Registros que não estiverem na planilha não serão apagados " +
+            "automaticamente."
+        );
 
-    if (!confirmed) {
-        return;
-    }
 
-    try {
-        await synchronize();
-    } catch (syncError) {
-        console.error(syncError);
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+            await synchronize();
+        } catch (syncError) {
+            console.error(syncError);
+        }
     }
-}
 
 
     async function handleExport(exportData) {
@@ -167,12 +186,14 @@ function ProductsPage() {
             );
         }
 
+
         if (exportData?.type === "export") {
             return window.alfadime.export.productsAdvanced(
                 exportData.filters,
                 exportData.columns
             );
         }
+
 
         return window.alfadime.export.products(
             filters,
@@ -195,6 +216,7 @@ function ProductsPage() {
                 window.alfadime.products.getFilterOptions?.("brand") || []
             ]);
 
+
             setFilterOptions({
                 branch: branchOptions,
                 category_code: categoryOptions,
@@ -202,7 +224,7 @@ function ProductsPage() {
                 brand: brandOptions
             });
         } catch (optionsError) {
-            console.warn("Erro ao carregar opcoes de filtro", optionsError);
+            console.warn("Erro ao carregar opções de filtro", optionsError);
         }
     }
 
@@ -243,7 +265,7 @@ function ProductsPage() {
             {filtersPanelOpen && (
                 <section className="products-floating-panel">
                     <div className="products-floating-panel-header">
-                        <strong>Filtros e Ações</strong>
+                        <strong>Filtros e ações</strong>
 
 
                         <button
@@ -290,8 +312,8 @@ function ProductsPage() {
                             disabled={syncing}
                         >
                             {syncing
-                                ? "Sincronizando..."
-                                : "Atualizar banco de dados"}
+                                ? "Atualizando..."
+                                : "Atualizar"}
                         </button>
                     </div>
 
@@ -307,6 +329,13 @@ function ProductsPage() {
             {error && (
                 <div className="products-error">
                     <strong>Erro:</strong> {error}
+                </div>
+            )}
+
+
+            {syncError && (
+                <div className="products-error">
+                    <strong>Erro na atualização:</strong> {syncError}
                 </div>
             )}
 
@@ -327,7 +356,8 @@ function ProductsPage() {
 
                     {lastSync && (
                         <span className="products-sync-info">
-                            Ultima sincronizacao concluida.
+                            Última sincronização:{" "}
+                            {new Date(lastSync).toLocaleString("pt-BR")}
                         </span>
                     )}
                 </div>

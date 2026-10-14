@@ -1,13 +1,15 @@
-﻿import {
+import {
     useCallback,
     useEffect,
     useState
 } from "react";
 
+
 import {
     listAuditIssues,
     subscribeProductsChanged
 } from "../services/product-audit.service";
+
 
 const EMPTY_PAGINATION = {
     page: 1,
@@ -17,28 +19,34 @@ const EMPTY_PAGINATION = {
     offset: 0
 };
 
+
 const EMPTY_SUMMARY = {
     total: 0,
     errors: 0,
     warnings: 0
 };
 
+
 function hasActiveFilters(filters = {}) {
     if (String(filters.search || "").trim()) {
         return true;
     }
 
+
     if (String(filters.controlsLot || "").trim()) {
         return true;
     }
+
 
     if (String(filters.productActive || "").trim()) {
         return true;
     }
 
+
     if (String(filters.minBranches || "").trim()) {
         return true;
     }
+
 
     const arrayFilterKeys = [
         "types",
@@ -54,11 +62,13 @@ function hasActiveFilters(filters = {}) {
         "missingFields"
     ];
 
+
     return arrayFilterKeys.some((key) =>
         Array.isArray(filters[key]) &&
         filters[key].length > 0
     );
 }
+
 
 export function useProductAudit(filters) {
     const [issues, setIssues] = useState([]);
@@ -71,8 +81,10 @@ export function useProductAudit(filters) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+
     const filtersApplied =
         hasActiveFilters(filters);
+
 
     const loadAudit = useCallback(
         async () => {
@@ -83,16 +95,20 @@ export function useProductAudit(filters) {
                 setError("");
                 setLoading(false);
 
+
                 return;
             }
+
 
             try {
                 setLoading(true);
                 setError("");
 
+
                 const result = await listAuditIssues(
                     filters
                 );
+
 
                 setIssues(
                     Array.isArray(result?.rows)
@@ -100,10 +116,12 @@ export function useProductAudit(filters) {
                         : []
                 );
 
+
                 setSummary(
                     result?.summary ||
                     EMPTY_SUMMARY
                 );
+
 
                 setPagination(
                     result?.pagination ||
@@ -115,13 +133,15 @@ export function useProductAudit(filters) {
                     loadError
                 );
 
+
                 setIssues([]);
                 setSummary(EMPTY_SUMMARY);
                 setPagination(EMPTY_PAGINATION);
 
+
                 setError(
                     loadError.message ||
-                    "Nao foi possivel carregar a auditoria."
+                    "Não foi possível carregar a auditoria."
                 );
             } finally {
                 setLoading(false);
@@ -149,9 +169,11 @@ export function useProductAudit(filters) {
         ]
     );
 
+
     useEffect(() => {
         loadAudit();
     }, [loadAudit]);
+
 
     useEffect(() => {
         const unsubscribe =
@@ -160,6 +182,7 @@ export function useProductAudit(filters) {
                     loadAudit();
                 }
             });
+
 
         return () => {
             if (typeof unsubscribe === "function") {
@@ -170,6 +193,7 @@ export function useProductAudit(filters) {
         filtersApplied,
         loadAudit
     ]);
+
 
     return {
         issues,

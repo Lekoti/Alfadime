@@ -1,36 +1,24 @@
 import { useNavigate } from "react-router-dom";
 
 
-
-
-
 import {
     Home,
-    DollarSign,
     Package,
+    ClipboardCheck,
+    FilePen,
+    ListChecks,
     ShoppingCart,
-    FileEdit,
-    History,
+    Phone,
+    Bell,
     Mail,
-    Factory,
-    Settings,
-    Bell
+    Settings
 } from "lucide-react";
-
-
-
 
 
 import usePermissions from "../../auth/hooks/usePermissions";
 
 
-
-
-
 import "../styles/home.css";
-
-
-
 
 
 
@@ -45,18 +33,32 @@ const MODULES = [
         exact: true
     },
     {
-        path: "/price-pending",
-        moduleKey: "price-pending",
-        icon: DollarSign,
-        title: "Preços e Pendências",
-        description: "Controle de recebimento de preços e pendências por filial."
-    },
-    {
         path: "/products",
         moduleKey: "products",
         icon: Package,
         title: "Produtos",
         description: "Cadastro e gerenciamento de produtos do Sirius."
+    },
+    {
+        path: "/product-audit",
+        moduleKey: "product-audit",
+        icon: ClipboardCheck,
+        title: "Auditoria de Produtos",
+        description: "Histórico de alterações nos produtos."
+    },
+    {
+        path: "/product-corrections",
+        moduleKey: "product-corrections",
+        icon: FilePen,
+        title: "Correções de Produtos",
+        description: "Solicitar e acompanhar correções de cadastro."
+    },
+    {
+        path: "/price-pending",
+        moduleKey: "price-pending",
+        icon: ListChecks,
+        title: "Preços e Pendências",
+        description: "Controle de recebimento de preços e pendências por filial."
     },
     {
         path: "/purchases",
@@ -68,23 +70,9 @@ const MODULES = [
     {
         path: "/industry-contacts",
         moduleKey: "industry-contacts",
-        icon: Factory,
-        title: "Cadastros",
+        icon: Phone,
+        title: "Contatos",
         description: "Cadastro e consulta dos contatos dos laboratórios."
-    },
-    {
-        path: "/product-corrections",
-        moduleKey: "product-corrections",
-        icon: FileEdit,
-        title: "Correções",
-        description: "Solicitar e acompanhar correções de cadastro."
-    },
-    {
-        path: "/product-audit",
-        moduleKey: "product-audit",
-        icon: History,
-        title: "Auditoria",
-        description: "Histórico de alterações nos produtos."
     },
     {
         path: "/notifications",
@@ -108,9 +96,6 @@ const MODULES = [
         description: "Preferências e configurações do aplicativo."
     }
 ];
-
-
-
 
 
 
@@ -140,9 +125,6 @@ function HomePage() {
 
 
 
-
-
-
     return (
         <div className="home-page">
             <div className="home-grid">
@@ -155,7 +137,6 @@ function HomePage() {
                         visibleModules.map((module) => {
                             const Icon =
                                 module.icon;
-
 
 
 
@@ -179,11 +160,9 @@ function HomePage() {
 
 
 
-
                                     <span className="home-card-title">
                                         {module.title}
                                     </span>
-
 
 
 
@@ -200,9 +179,6 @@ function HomePage() {
         </div>
     );
 }
-
-
-
 
 
 

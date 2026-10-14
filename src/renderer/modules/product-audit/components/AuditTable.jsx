@@ -1,18 +1,22 @@
-﻿function getTypeLabel(type) {
+function getTypeLabel(type) {
     const labels = {
         ean_audit:
             "Divergências entre filiais",
 
+
         invalid_ean:
             "EAN ausente ou inválido",
+
 
         duplicate_ean_branch:
             "EAN repetido na mesma filial"
     };
 
 
+
     return labels[type] || type;
 }
+
 
 
 function getFieldsLabel(fields = []) {
@@ -21,10 +25,12 @@ function getFieldsLabel(fields = []) {
     }
 
 
+
     return fields
         .map((field) => field.label)
         .join(", ");
 }
+
 
 
 function AuditTable({
@@ -44,6 +50,7 @@ function AuditTable({
                     <col className="audit-col-action" />
                 </colgroup>
 
+
                 <thead>
                     <tr>
                         <th>Prioridade</th>
@@ -56,6 +63,7 @@ function AuditTable({
                     </tr>
                 </thead>
 
+
                 <tbody>
                     {issues.length === 0 && (
                         <tr>
@@ -67,6 +75,7 @@ function AuditTable({
                             </td>
                         </tr>
                     )}
+
 
                     {issues.map((issue) => (
                         <tr key={issue.id}>
@@ -84,29 +93,35 @@ function AuditTable({
                                 </span>
                             </td>
 
+
                             <td className="audit-ean-cell">
                                 {issue.ean || "-"}
                             </td>
+
 
                             <td>
                                 {getTypeLabel(issue.type)}
                             </td>
 
+
                             <td>
-                                {issue.branches.join(", ")}
+                                {(issue.branches || []).join(", ")}
                             </td>
+
 
                             <td>
                                 {getFieldsLabel(
-                                    issue.divergentFields
+                                    issue.divergentFields || []
                                 )}
                             </td>
 
+
                             <td>
                                 {getFieldsLabel(
-                                    issue.missingFields
+                                    issue.missingFields || []
                                 )}
                             </td>
+
 
                             <td className="audit-action-cell">
                                 <button

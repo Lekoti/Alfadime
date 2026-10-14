@@ -1,4 +1,4 @@
-﻿export const PRODUCT_COLUMNS = [
+export const PRODUCT_COLUMNS = [
     {
         key: "branch",
         label: "Filial",
@@ -6,12 +6,12 @@
     },
     {
         key: "code",
-        label: "Cod",
+        label: "Código",
         defaultVisible: true
     },
     {
         key: "sirius_code",
-        label: "Cod Sirius",
+        label: "Código Sirius",
         defaultVisible: true
     },
     {
@@ -21,7 +21,7 @@
     },
     {
         key: "sap_code",
-        label: "Codigo SAP",
+        label: "Código SAP",
         defaultVisible: true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
         key: "active_ingredient",
-        label: "Principio Ativo",
+        label: "Princípio Ativo",
         defaultVisible: true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
         key: "manufacturer_code",
-        label: "Codigo Fabricante",
+        label: "Código Fabricante",
         defaultVisible: false
     },
     {
@@ -56,7 +56,7 @@
     },
     {
         key: "standard_box",
-        label: "Caixa Padrao",
+        label: "Caixa Padrão",
         defaultVisible: false
     },
     {
@@ -72,12 +72,12 @@
     },
     {
         key: "reference_code",
-        label: "Codigo Referencia",
+        label: "Código Referência",
         defaultVisible: false
     },
     {
         key: "therapeutic_class_code",
-        label: "Classe Terapeutica",
+        label: "Classe Terapêutica",
         defaultVisible: false
     },
     {
@@ -109,20 +109,27 @@
 ];
 
 
+
 export const DEFAULT_VISIBLE_PRODUCT_COLUMNS =
     PRODUCT_COLUMNS
         .filter((column) => column.defaultVisible)
         .map((column) => column.key);
 
 
+
 export const DEFAULT_PRODUCT_COLUMN_ORDER =
     PRODUCT_COLUMNS.map((column) => column.key);
+
 
 
 export const FILTER_FIELDS = [
     {
         key: "branch",
         label: "Filial"
+    },
+    {
+        key: "laboratory",
+        label: "Laboratório"
     },
     {
         key: "brand",

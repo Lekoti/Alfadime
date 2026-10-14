@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getFilterOptions } from "../services/products.service";
+
 
 
 function ProductFilters({ filters, onFiltersChange }) {
@@ -11,8 +12,10 @@ function ProductFilters({ filters, onFiltersChange }) {
     });
 
 
+
     useEffect(() => {
         let active = true;
+
 
 
         async function loadOptions() {
@@ -25,9 +28,11 @@ function ProductFilters({ filters, onFiltersChange }) {
                 ];
 
 
+
                 const entries = await Promise.all(
                     fields.map(async (field) => {
                         const values = await getFilterOptions(field);
+
 
 
                         return [
@@ -36,6 +41,7 @@ function ProductFilters({ filters, onFiltersChange }) {
                         ];
                     })
                 );
+
 
 
                 if (active) {
@@ -50,13 +56,16 @@ function ProductFilters({ filters, onFiltersChange }) {
         }
 
 
+
         loadOptions();
+
 
 
         return () => {
             active = false;
         };
     }, []);
+
 
 
     function update(key, value) {
@@ -67,10 +76,12 @@ function ProductFilters({ filters, onFiltersChange }) {
     }
 
 
+
     function clearFilters() {
         onFiltersChange({
             search: "",
             branch: "",
+            laboratory: "",
             brand: "",
             group_code: "",
             category_code: "",
@@ -80,6 +91,7 @@ function ProductFilters({ filters, onFiltersChange }) {
             pageSize: 50
         });
     }
+
 
 
     return (
@@ -95,6 +107,7 @@ function ProductFilters({ filters, onFiltersChange }) {
                     }
                 />
             </div>
+
 
 
             <div className="products-filter-field">
@@ -115,6 +128,7 @@ function ProductFilters({ filters, onFiltersChange }) {
             </div>
 
 
+
             <div className="products-filter-field">
                 <label>Laboratório</label>
                 <select
@@ -123,7 +137,7 @@ function ProductFilters({ filters, onFiltersChange }) {
                         update("laboratory", event.target.value)
                     }
                 >
-                    <option value="">Todas</option>
+                    <option value="">Todos</option>
                     {options.laboratory.map((item) => (
                         <option key={item.code} value={item.code}>
                             {item.name}
@@ -131,6 +145,7 @@ function ProductFilters({ filters, onFiltersChange }) {
                     ))}
                 </select>
             </div>
+
 
 
             <div className="products-filter-field">
@@ -151,6 +166,7 @@ function ProductFilters({ filters, onFiltersChange }) {
             </div>
 
 
+
             <div className="products-filter-field">
                 <label>Categoria</label>
                 <select
@@ -169,6 +185,7 @@ function ProductFilters({ filters, onFiltersChange }) {
             </div>
 
 
+
             <div className="products-filter-field">
                 <label>Controla lote</label>
                 <select
@@ -182,6 +199,7 @@ function ProductFilters({ filters, onFiltersChange }) {
                     <option value="0">Não</option>
                 </select>
             </div>
+
 
 
             <div className="products-filter-field">
@@ -199,6 +217,7 @@ function ProductFilters({ filters, onFiltersChange }) {
             </div>
 
 
+
             <button
                 type="button"
                 className="products-clear-filters"
@@ -209,6 +228,7 @@ function ProductFilters({ filters, onFiltersChange }) {
         </section>
     );
 }
+
 
 
 export default ProductFilters;

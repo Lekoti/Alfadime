@@ -1,4 +1,4 @@
-﻿function ProductPagination({
+function ProductPagination({
     pagination,
     onPageChange
 }) {
@@ -10,14 +10,17 @@
         offset
     } = pagination;
 
+
     const firstItem = total === 0
         ? 0
         : offset + 1;
+
 
     const lastItem = Math.min(
         offset + pageSize,
         total
     );
+
 
     function getPageNumbers() {
         const pages = [];
@@ -30,6 +33,7 @@
             page + 2
         );
 
+
         for (
             let currentPage = start;
             currentPage <= end;
@@ -38,14 +42,17 @@
             pages.push(currentPage);
         }
 
+
         return pages;
     }
+
 
     return (
         <footer className="products-pagination">
             <span className="products-pagination-info">
                 Exibindo {firstItem}-{lastItem} de {total} produtos
             </span>
+
 
             <div className="products-pagination-actions">
                 <button
@@ -58,6 +65,7 @@
                     Primeira
                 </button>
 
+
                 <button
                     type="button"
                     onClick={() =>
@@ -67,6 +75,7 @@
                 >
                     Anterior
                 </button>
+
 
                 {getPageNumbers().map(
                     (pageNumber) => (
@@ -89,6 +98,7 @@
                     )
                 )}
 
+
                 <button
                     type="button"
                     onClick={() =>
@@ -98,8 +108,9 @@
                         page >= totalPages
                     }
                 >
-                    Proxima
+                    Próxima
                 </button>
+
 
                 <button
                     type="button"
@@ -110,11 +121,12 @@
                         page >= totalPages
                     }
                 >
-                    Ultima
+                    Última
                 </button>
             </div>
         </footer>
     );
 }
+
 
 export default ProductPagination;

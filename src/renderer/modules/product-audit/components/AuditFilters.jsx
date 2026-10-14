@@ -1,11 +1,13 @@
-﻿import {
+import {
     useEffect,
     useState
 } from "react";
 
 
+
 import AuditCheckboxGroup from
     "./AuditCheckboxGroup";
+
 
 
 import {
@@ -13,198 +15,138 @@ import {
 } from "../services/product-audit.service";
 
 
+
 const ISSUE_TYPES = [
     {
         value: "ean_audit",
-        label: "Divergencias entre filiais"
+        label: "Divergências entre filiais"
     },
-
-
     {
         value: "divergent_commercial_name",
         label: "Nome comercial diferente entre filiais"
     },
-
-
     {
         value: "divergent_active_ingredient",
-        label: "Principio ativo diferente entre filiais"
+        label: "Princípio ativo diferente entre filiais"
     },
-
-
     {
         value: "divergent_brand",
-        label: "Marca / industria diferente entre filiais"
+        label: "Marca / indústria diferente entre filiais"
     },
-
-
     {
         value: "divergent_sirius_code",
-        label: "Codigo Sirius diferente entre filiais"
+        label: "Código Sirius diferente entre filiais"
     },
-
-
     {
         value: "divergent_sap_code",
-        label: "Codigo SAP diferente entre filiais"
+        label: "Código SAP diferente entre filiais"
     },
-
-
     {
         value: "divergent_group_code",
         label: "Grupo diferente entre filiais"
     },
-
-
     {
         value: "divergent_category_code",
         label: "Categoria diferente entre filiais"
     },
-
-
     {
         value: "divergent_unit",
         label: "Unidade diferente entre filiais"
     },
-
-
     {
         value: "divergent_standard_box",
-        label: "Caixa padrao diferente entre filiais"
+        label: "Caixa padrão diferente entre filiais"
     },
-
-
     {
         value: "divergent_controls_lot",
         label: "Controle de lote diferente entre filiais"
     },
-
-
     {
         value: "divergent_ms_registration",
         label: "Registro MS diferente entre filiais"
     },
-
-
     {
         value: "divergent_reference_code",
-        label: "Codigo de referencia diferente entre filiais"
+        label: "Código de referência diferente entre filiais"
     },
-
-
     {
         value: "divergent_therapeutic_class",
-        label: "Classe terapeutica diferente entre filiais"
+        label: "Classe terapêutica diferente entre filiais"
     },
-
-
     {
         value: "divergent_height",
         label: "Altura diferente entre filiais"
     },
-
-
     {
         value: "divergent_width",
         label: "Largura diferente entre filiais"
     },
-
-
     {
         value: "divergent_length",
         label: "Comprimento diferente entre filiais"
     },
-
-
     {
         value: "divergent_active",
         label: "Status ativo diferente entre filiais"
     },
-
-
     {
         value: "missing_commercial_name",
         label: "Nome comercial ausente"
     },
-
-
     {
         value: "missing_active_ingredient",
-        label: "Principio ativo ausente"
+        label: "Princípio ativo ausente"
     },
-
-
     {
         value: "missing_brand",
-        label: "Marca / industria ausente"
+        label: "Marca / indústria ausente"
     },
-
-
     {
         value: "missing_sirius_code",
-        label: "Codigo Sirius ausente"
+        label: "Código Sirius ausente"
     },
-
-
     {
         value: "missing_sap_code",
-        label: "Codigo SAP ausente"
+        label: "Código SAP ausente"
     },
-
-
     {
         value: "missing_group_code",
         label: "Grupo ausente"
     },
-
-
     {
         value: "missing_category_code",
         label: "Categoria ausente"
     },
-
-
     {
         value: "missing_unit",
         label: "Unidade ausente"
     },
-
-
     {
         value: "missing_ms_registration",
         label: "Registro MS ausente"
     },
-
-
     {
         value: "missing_reference_code",
-        label: "Codigo de referencia ausente"
+        label: "Código de referência ausente"
     },
-
-
     {
         value: "missing_therapeutic_class",
-        label: "Classe terapeutica ausente"
+        label: "Classe terapêutica ausente"
     },
-
-
     {
         value: "missing_dimensions",
-        label: "Dimensoes ausentes"
+        label: "Dimensões ausentes"
     },
-
-
     {
         value: "invalid_ean",
-        label: "EAN ausente ou invalido"
+        label: "EAN ausente ou inválido"
     },
-
-
     {
         value: "duplicate_ean_branch",
         label: "EAN repetido na mesma filial"
     }
 ];
+
 
 
 const SEVERITIES = [
@@ -219,14 +161,15 @@ const SEVERITIES = [
 ];
 
 
+
 const AUDIT_FIELDS = [
     {
         key: "sirius_code",
-        label: "Cod Sirius"
+        label: "Código Sirius"
     },
     {
         key: "sap_code",
-        label: "Codigo SAP"
+        label: "Código SAP"
     },
     {
         key: "group_code",
@@ -234,7 +177,7 @@ const AUDIT_FIELDS = [
     },
     {
         key: "active_ingredient",
-        label: "Principio Ativo"
+        label: "Princípio Ativo"
     },
     {
         key: "commercial_name",
@@ -242,11 +185,11 @@ const AUDIT_FIELDS = [
     },
     {
         key: "manufacturer_code",
-        label: "Codigo Fabricante"
+        label: "Código Fabricante"
     },
     {
         key: "brand",
-        label: "Industria / Marca"
+        label: "Indústria / Marca"
     },
     {
         key: "unit",
@@ -254,7 +197,7 @@ const AUDIT_FIELDS = [
     },
     {
         key: "standard_box",
-        label: "Caixa Padrao"
+        label: "Caixa Padrão"
     },
     {
         key: "controls_lot",
@@ -266,11 +209,11 @@ const AUDIT_FIELDS = [
     },
     {
         key: "reference_code",
-        label: "Codigo Referencia"
+        label: "Código Referência"
     },
     {
         key: "therapeutic_class_code",
-        label: "Classe Terapeutica"
+        label: "Classe Terapêutica"
     },
     {
         key: "height",
@@ -295,6 +238,7 @@ const AUDIT_FIELDS = [
 ];
 
 
+
 const FILTER_CONFIG = [
     {
         key: "branch",
@@ -304,12 +248,12 @@ const FILTER_CONFIG = [
     {
         key: "brand",
         stateKey: "brands",
-        label: "Industria / Marca"
+        label: "Indústria / Marca"
     },
     {
         key: "manufacturer_code",
         stateKey: "manufacturerCodes",
-        label: "Codigo Fabricante"
+        label: "Código Fabricante"
     },
     {
         key: "group_code",
@@ -329,9 +273,10 @@ const FILTER_CONFIG = [
     {
         key: "therapeutic_class_code",
         stateKey: "therapeuticClasses",
-        label: "Classes Terapeuticas"
+        label: "Classes Terapêuticas"
     }
 ];
+
 
 
 function AuditFilters({
@@ -343,8 +288,10 @@ function AuditFilters({
         useState(false);
 
 
+
     useEffect(() => {
         let mounted = true;
+
 
 
         async function loadOptions() {
@@ -358,6 +305,7 @@ function AuditFilters({
                                 );
 
 
+
                             return [
                                 config.key,
                                 Array.isArray(values)
@@ -367,6 +315,7 @@ function AuditFilters({
                         }
                     )
                 );
+
 
 
                 if (mounted) {
@@ -383,7 +332,9 @@ function AuditFilters({
         }
 
 
+
         loadOptions();
+
 
 
         return () => {
@@ -392,12 +343,14 @@ function AuditFilters({
     }, []);
 
 
+
     function updateFilter(key, value) {
         onFiltersChange({
             ...filters,
             [key]: value
         });
     }
+
 
 
     function clearFilters() {
@@ -423,11 +376,13 @@ function AuditFilters({
     }
 
 
+
     function getSelectedValue(values) {
         return values && values.length === 1
             ? values[0]
             : "";
     }
+
 
 
     function selectSingleOrClear(
@@ -441,6 +396,7 @@ function AuditFilters({
     }
 
 
+
     return (
         <section className="audit-filters products-style-filters">
             <div className="audit-search-field">
@@ -449,11 +405,12 @@ function AuditFilters({
                 </label>
 
 
+
                 <input
                     id="audit-search"
                     type="search"
                     value={filters.search || ""}
-                    placeholder="EAN, filial, codigo, nome, industria ou valor"
+                    placeholder="EAN, filial, código, nome, indústria ou valor"
                     onChange={(event) =>
                         updateFilter(
                             "search",
@@ -464,10 +421,12 @@ function AuditFilters({
             </div>
 
 
+
             <div className="audit-filter-field audit-type-filter-field">
                 <label htmlFor="audit-type">
-                    Tipo de pendencia
+                    Tipo de pendência
                 </label>
+
 
 
                 <select
@@ -487,7 +446,8 @@ function AuditFilters({
                     </option>
 
 
-                    <optgroup label="Divergencias entre filiais">
+
+                    <optgroup label="Divergências entre filiais">
                         {ISSUE_TYPES
                             .filter((item) =>
                                 item.value.startsWith(
@@ -506,7 +466,8 @@ function AuditFilters({
                     </optgroup>
 
 
-                    <optgroup label="Informacoes ausentes">
+
+                    <optgroup label="Informações ausentes">
                         {ISSUE_TYPES
                             .filter((item) =>
                                 item.value.startsWith(
@@ -524,7 +485,8 @@ function AuditFilters({
                     </optgroup>
 
 
-                    <optgroup label="Problemas de identificacao">
+
+                    <optgroup label="Problemas de identificação">
                         {ISSUE_TYPES
                             .filter((item) =>
                                 item.value === "invalid_ean" ||
@@ -543,10 +505,12 @@ function AuditFilters({
             </div>
 
 
+
             <div className="audit-filter-field">
                 <label htmlFor="audit-severity">
                     Prioridade
                 </label>
+
 
 
                 <select
@@ -566,6 +530,7 @@ function AuditFilters({
                     </option>
 
 
+
                     {SEVERITIES.map((item) => (
                         <option
                             key={item.value}
@@ -578,10 +543,12 @@ function AuditFilters({
             </div>
 
 
+
             <div className="audit-filter-field">
                 <label htmlFor="audit-controls-lot">
                     Controla lote
                 </label>
+
 
 
                 <select
@@ -596,15 +563,17 @@ function AuditFilters({
                 >
                     <option value="">Todos</option>
                     <option value="1">Sim</option>
-                    <option value="0">Nao</option>
+                    <option value="0">Não</option>
                 </select>
             </div>
+
 
 
             <div className="audit-filter-field">
                 <label htmlFor="audit-product-active">
                     Produto ativo
                 </label>
+
 
 
                 <select
@@ -624,10 +593,12 @@ function AuditFilters({
             </div>
 
 
+
             <div className="audit-filter-field">
                 <label htmlFor="audit-min-branches">
-                    Minimo de filiais
+                    Mínimo de filiais
                 </label>
+
 
 
                 <select
@@ -649,6 +620,7 @@ function AuditFilters({
             </div>
 
 
+
             <button
                 type="button"
                 className="audit-advanced-button"
@@ -659,9 +631,10 @@ function AuditFilters({
                 }
             >
                 {showAdvanced
-                    ? "Ocultar filtros avancados"
+                    ? "Ocultar filtros avançados"
                     : "Mais filtros"}
             </button>
+
 
 
             <button
@@ -673,10 +646,11 @@ function AuditFilters({
             </button>
 
 
+
             {showAdvanced && (
                 <div className="audit-advanced-filters">
                     <AuditCheckboxGroup
-                        title="Tipos de pendencia"
+                        title="Tipos de pendência"
                         options={ISSUE_TYPES.map(
                             (item) => ({
                                 value: item.value,
@@ -693,6 +667,7 @@ function AuditFilters({
                             )
                         }
                     />
+
 
 
                     <AuditCheckboxGroup
@@ -715,6 +690,7 @@ function AuditFilters({
                     />
 
 
+
                     <AuditCheckboxGroup
                         title="Campos ausentes"
                         options={AUDIT_FIELDS.map(
@@ -733,6 +709,7 @@ function AuditFilters({
                             )
                         }
                     />
+
 
 
                     {FILTER_CONFIG.map((config) => (
@@ -763,6 +740,7 @@ function AuditFilters({
         </section>
     );
 }
+
 
 
 export default AuditFilters;

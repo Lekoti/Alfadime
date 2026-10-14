@@ -1,4 +1,4 @@
-﻿import {
+import {
     useState
 } from "react";
 
@@ -21,10 +21,6 @@ import AuditPagination from
 
 import AuditTable from
     "../components/AuditTable";
-
-
-import CorrectionFormModal from
-    "../components/CorrectionFormModal";
 
 
 import {
@@ -90,12 +86,6 @@ function ProductAuditPage() {
 
 
     const [
-        correctionTarget,
-        setCorrectionTarget
-    ] = useState(null);
-
-
-    const [
         exportModalOpen,
         setExportModalOpen
     ] = useState(false);
@@ -118,6 +108,7 @@ function ProductAuditPage() {
             page: 1,
             pageSize: 50
         });
+
 
         setSelectedIssue(null);
     }
@@ -162,6 +153,7 @@ function ProductAuditPage() {
                     <h1>Auditoria de Produtos</h1>
                 </div>
 
+
                 <div className="audit-header-actions">
                     <button
                         type="button"
@@ -179,10 +171,12 @@ function ProductAuditPage() {
                 </div>
             </header>
 
+
             {filtersPanelOpen && (
                 <section className="audit-floating-panel">
                     <div className="audit-floating-panel-header">
                         <strong>Filtros e ações</strong>
+
 
                         <button
                             type="button"
@@ -195,6 +189,7 @@ function ProductAuditPage() {
                             ×
                         </button>
                     </div>
+
 
                     <div className="audit-panel-actions-bar">
                         <button
@@ -209,6 +204,7 @@ function ProductAuditPage() {
                         </button>
                     </div>
 
+
                     {filtersApplied && (
                         <section className="audit-summary-inline">
                             <div className="audit-summary-card">
@@ -216,25 +212,30 @@ function ProductAuditPage() {
                                     Pendências encontradas
                                 </small>
 
+
                                 <strong>
                                     {summary.total}
                                 </strong>
                             </div>
+
 
                             <div className="audit-summary-card error">
                                 <small>
                                     Alta prioridade
                                 </small>
 
+
                                 <strong>
                                     {summary.errors}
                                 </strong>
                             </div>
 
+
                             <div className="audit-summary-card warning">
                                 <small>
                                     Pendências para conferir
                                 </small>
+
 
                                 <strong>
                                     {summary.warnings}
@@ -243,6 +244,7 @@ function ProductAuditPage() {
                         </section>
                     )}
 
+
                     <AuditFilters
                         filters={filters}
                         onFiltersChange={updateFilters}
@@ -250,19 +252,23 @@ function ProductAuditPage() {
                 </section>
             )}
 
+
             {error && (
                 <div className="audit-error">
                     <strong>Erro:</strong> {error}
                 </div>
             )}
 
+
             {!filtersApplied && (
                 <section className="audit-empty-state">
                     <div className="audit-empty-state-icon">!</div>
 
+
                     <h2>
                         Selecione um filtro para iniciar a auditoria
                     </h2>
+
 
                     <p>
                         Escolha um tipo de pendência, filial, indústria,
@@ -270,6 +276,7 @@ function ProductAuditPage() {
                         busca geral para localizar somente os produtos
                         que deseja conferir.
                     </p>
+
 
                     <div className="audit-empty-state-examples">
                         <span>Exemplos:</span>
@@ -281,6 +288,7 @@ function ProductAuditPage() {
                 </section>
             )}
 
+
             {filtersApplied && (
                 <section className="audit-card">
                     <div className="audit-card-header">
@@ -289,6 +297,7 @@ function ProductAuditPage() {
                                 Divergências encontradas
                             </strong>
 
+
                             <span>
                                 Valores exibidos seguem a planilha.
                                 Correções locais ficam registradas
@@ -296,6 +305,7 @@ function ProductAuditPage() {
                             </span>
                         </div>
                     </div>
+
 
                     {loading ? (
                         <div className="audit-loading">
@@ -310,6 +320,7 @@ function ProductAuditPage() {
                                 }
                             />
 
+
                             <AuditPagination
                                 pagination={pagination}
                                 onPageChange={changePage}
@@ -318,6 +329,7 @@ function ProductAuditPage() {
                     )}
                 </section>
             )}
+
 
             <AuditDetailsModal
                 issue={selectedIssue}
@@ -329,18 +341,6 @@ function ProductAuditPage() {
                 }
             />
 
-            <CorrectionFormModal
-                product={
-                    correctionTarget?.product
-                }
-                preselectedField={
-                    correctionTarget?.fieldName
-                }
-                onClose={() =>
-                    setCorrectionTarget(null)
-                }
-                onSaved={handleCorrectionSaved}
-            />
 
             <ExportExcelModal
                 open={exportModalOpen}
