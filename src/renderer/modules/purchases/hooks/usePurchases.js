@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     listPurchaseSuggestions,
     getPurchaseFilterOptions,
     syncPurchasesCurveExcel,
     subscribePurchasesChanged
 } from "../services/purchases.service";
+
+
 
 
 const EMPTY_PAGINATION = {
@@ -16,12 +18,21 @@ const EMPTY_PAGINATION = {
 };
 
 
+
+
 const EMPTY_SUMMARY = {
     products: 0,
     suggestedQuantity: 0,
     suggestedValue: 0,
     criticalProducts: 0
 };
+
+
+
+
+const SEARCH_DELAY_MS = 300;
+
+
 
 
 export function usePurchases(filters = {}) {
@@ -38,34 +49,80 @@ export function usePurchases(filters = {}) {
     const [syncing, setSyncing] = useState(false);
     const [lastSync, setLastSync] = useState(null);
 
-    const loadSuggestions = useCallback(async () => {
+
+
+    const filtersRef = useRef(filters);
+    const requestIdRef = useRef(0);
+    const searchTimerRef = useRef(null);
+    const previousFiltersRef = useRef(null);
+    const mountedRef = useRef(true);
+
+
+
+    filtersRef.current = filters;
+
+
+
+    const loadSuggestions = useCallback(async (filtersToLoad = filtersRef.current) => {
+        const requestId = requestIdRef.current + 1;
+
+
+
+        requestIdRef.current = requestId;
+
+
+
         setLoading(true);
         setError(null);
 
+
+
         try {
-            const result = await listPurchaseSuggestions(filters);
+            const result = await listPurchaseSuggestions(filtersToLoad);
+
+
+
+            if (
+                !mountedRef.current ||
+                requestId !== requestIdRef.current
+            ) {
+                return;
+            }
+
+
 
             setRows(Array.isArray(result?.rows) ? result.rows : []);
             setSummary(result?.summary || EMPTY_SUMMARY);
             setPagination(result?.pagination || EMPTY_PAGINATION);
         } catch (loadError) {
             console.error("Erro ao carregar sugestoes de compras:", loadError);
+
+
+
+            if (
+                !mountedRef.current ||
+                requestId !== requestIdRef.current
+            ) {
+                return;
+            }
+
+
+
             setRows([]);
             setSummary(EMPTY_SUMMARY);
             setPagination(EMPTY_PAGINATION);
             setError(loadError.message || "Nao foi possivel carregar as sugestoes.");
         } finally {
-            setLoading(false);
+            if (
+                mountedRef.current &&
+                requestId === requestIdRef.current
+            ) {
+                setLoading(false);
+            }
         }
-    }, [
-        filters.search,
-        filters.company,
-        filters.laboratoryname,
-        filters.effectivecurve,
-        filters.status,
-        filters.page,
-        filters.pageSize
-    ]);
+    }, []);
+
+
 
     const loadFilterOptions = useCallback(async () => {
         try {
@@ -75,6 +132,14 @@ export function usePurchases(filters = {}) {
                     getPurchaseFilterOptions("laboratoryname"),
                     getPurchaseFilterOptions("effectivecurve")
                 ]);
+
+
+
+            if (!mountedRef.current) {
+                return;
+            }
+
+
 
             setFilterOptions({
                 company: Array.isArray(company) ? company : [],
@@ -93,14 +158,18 @@ export function usePurchases(filters = {}) {
         }
     }, []);
 
+
+
     const synchronize = useCallback(async () => {
         setSyncing(true);
         setError(null);
 
+
+
         try {
             const result = await syncPurchasesCurveExcel();
             setLastSync(new Date().toISOString());
-            await loadSuggestions();
+            await loadSuggestions(filtersRef.current);
             return result;
         } catch (syncError) {
             console.error("Erro ao sincronizar Curva Compras:", syncError);
@@ -113,16 +182,102 @@ export function usePurchases(filters = {}) {
         }
     }, [loadSuggestions]);
 
+
+
     useEffect(() => {
-        loadSuggestions();
-    }, [loadSuggestions]);
+        const previousFilters = previousFiltersRef.current;
+
+
+
+        if (!previousFilters) {
+            previousFiltersRef.current = filters;
+
+
+
+            loadSuggestions(filters);
+
+
+
+            return undefined;
+        }
+
+
+
+        const filtersChanged =
+            JSON.stringify(previousFilters) !==
+            JSON.stringify(filters);
+
+
+
+        if (!filtersChanged) {
+            return undefined;
+        }
+
+
+
+        previousFiltersRef.current = filters;
+
+
+
+        const searchChanged =
+            previousFilters.search !== filters.search;
+
+
+
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+            searchTimerRef.current = null;
+        }
+
+
+
+        if (searchChanged) {
+            const scheduledSearch = filters.search;
+
+
+
+            searchTimerRef.current = setTimeout(() => {
+                searchTimerRef.current = null;
+
+
+
+                if (
+                    !mountedRef.current ||
+                    filtersRef.current.search !== scheduledSearch
+                ) {
+                    return;
+                }
+
+
+
+                loadSuggestions(filtersRef.current);
+            }, SEARCH_DELAY_MS);
+        } else {
+            loadSuggestions(filters);
+        }
+
+
+
+        return undefined;
+    }, [
+        filters,
+        loadSuggestions
+    ]);
+
+
 
     useEffect(() => {
         loadFilterOptions();
     }, [loadFilterOptions]);
 
+
+
     useEffect(() => {
-        const unsubscribe = subscribePurchasesChanged(loadSuggestions);
+        const unsubscribe = subscribePurchasesChanged(() => {
+            loadSuggestions(filtersRef.current);
+        });
+
+
 
         return () => {
             if (typeof unsubscribe === "function") {
@@ -130,6 +285,27 @@ export function usePurchases(filters = {}) {
             }
         };
     }, [loadSuggestions]);
+
+
+
+    useEffect(() => {
+        mountedRef.current = true;
+
+
+
+        return () => {
+            mountedRef.current = false;
+
+
+
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+                searchTimerRef.current = null;
+            }
+        };
+    }, []);
+
+
 
     return {
         rows,

@@ -1,8 +1,9 @@
-﻿const {
+const {
     getPricePendingDatabase
 } = require(
     "./price-pending.database"
 );
+
 
 const {
     getDatabase: getLocalDatabase
@@ -10,15 +11,18 @@ const {
     "../../database/connection"
 );
 
+
 const crypto = require(
     "node:crypto"
 );
+
 
 const {
     toSafeNumber
 } = require(
     "../../utils/validation.utils"
 );
+
 
 const EDITABLE_COLUMNS = [
     "laboratory",
@@ -45,12 +49,14 @@ const EDITABLE_COLUMNS = [
     "pendencias_ok_dsc"
 ];
 
+
 const EXTERNAL_COLUMNS =
     EDITABLE_COLUMNS.filter(
         (column) =>
             column !== "laboratory" &&
             column !== "observation"
     );
+
 
 const VALID_BRANCHES = [
     "DPR",
@@ -60,8 +66,10 @@ const VALID_BRANCHES = [
     "DSC"
 ];
 
+
 let industryGlobalCodeMapCache =
     null;
+
 
 function parseJsonObject(
     value
@@ -72,6 +80,7 @@ function parseJsonObject(
         return {};
     }
 
+
     try {
         const parsed =
             JSON.parse(
@@ -79,6 +88,7 @@ function parseJsonObject(
                     value
                 )
             );
+
 
         return parsed &&
             typeof parsed ===
@@ -92,6 +102,7 @@ function parseJsonObject(
         return {};
     }
 }
+
 
 function stringifyJsonObject(
     value
@@ -107,6 +118,7 @@ function stringifyJsonObject(
             : {}
     );
 }
+
 
 function normalizeLaboratoryName(
     value
@@ -129,6 +141,7 @@ function normalizeLaboratoryName(
         .toUpperCase();
 }
 
+
 function normalizeDatabaseText(
     value
 ) {
@@ -145,6 +158,7 @@ function normalizeDatabaseText(
         )
         .trim();
 }
+
 
 function normalizeGlobalLaboratoryName(
     value
@@ -171,6 +185,7 @@ function normalizeGlobalLaboratoryName(
         .toUpperCase();
 }
 
+
 function normalizeBranch(
     value
 ) {
@@ -181,12 +196,14 @@ function normalizeBranch(
             .trim()
             .toUpperCase();
 
+
     return VALID_BRANCHES.includes(
         branch
     )
         ? branch
         : "";
 }
+
 
 function hasTable(
     database,
@@ -205,10 +222,12 @@ function hasTable(
                 tableName
             );
 
+
     return Boolean(
         result
     );
 }
+
 
 function getIndustryGlobalCodeMap(
     options = {}
@@ -217,6 +236,7 @@ function getIndustryGlobalCodeMap(
         options.forceRefresh ===
         true;
 
+
     if (
         industryGlobalCodeMapCache &&
         !forceRefresh
@@ -224,11 +244,14 @@ function getIndustryGlobalCodeMap(
         return industryGlobalCodeMapCache;
     }
 
+
     const codes =
         new Map();
 
+
     const database =
         getLocalDatabase();
+
 
     if (
         !hasTable(
@@ -239,8 +262,10 @@ function getIndustryGlobalCodeMap(
         industryGlobalCodeMapCache =
             codes;
 
+
         return codes;
     }
+
 
     const columns =
         database
@@ -258,20 +283,24 @@ function getIndustryGlobalCodeMap(
                     ).toLowerCase()
             );
 
+
     const hasLab =
         columns.includes(
             "lab"
         );
+
 
     const hasLaboratoryName =
         columns.includes(
             "laboratory_name"
         );
 
+
     const hasGlobalCode =
         columns.includes(
             "cod_fabr_global"
         );
+
 
     if (
         !hasGlobalCode ||
@@ -283,8 +312,10 @@ function getIndustryGlobalCodeMap(
         industryGlobalCodeMapCache =
             codes;
 
+
         return codes;
     }
+
 
     const nameColumns = [
         hasLab
@@ -297,12 +328,14 @@ function getIndustryGlobalCodeMap(
         Boolean
     );
 
+
     const selectColumns = [
         "cod_fabr_global",
         ...nameColumns
     ].join(
         ", "
     );
+
 
     const rows =
         database
@@ -319,6 +352,7 @@ function getIndustryGlobalCodeMap(
             `)
             .all();
 
+
     for (
         const item of rows
     ) {
@@ -328,11 +362,13 @@ function getIndustryGlobalCodeMap(
                     ""
             ).trim();
 
+
         if (
             !code
         ) {
             continue;
         }
+
 
         for (
             const column of nameColumns
@@ -341,6 +377,7 @@ function getIndustryGlobalCodeMap(
                 normalizeGlobalLaboratoryName(
                     item[column]
                 );
+
 
             if (
                 key &&
@@ -356,11 +393,14 @@ function getIndustryGlobalCodeMap(
         }
     }
 
+
     industryGlobalCodeMapCache =
         codes;
 
+
     return codes;
 }
+
 
 function getIndustryGlobalCode(
     database,
@@ -373,16 +413,19 @@ function getIndustryGlobalCode(
             laboratory
         );
 
+
     if (
         !normalizedLaboratory
     ) {
         return "";
     }
 
+
     return codeMap.get(
         normalizedLaboratory
     ) || "";
 }
+
 
 function getIndustryGlobalCodeByLaboratory(
     laboratory
@@ -390,15 +433,18 @@ function getIndustryGlobalCodeByLaboratory(
     const codeMap =
         getIndustryGlobalCodeMap();
 
+
     const key =
         normalizeGlobalLaboratoryName(
             laboratory
         );
 
+
     return codeMap.get(
         key
     ) || "";
 }
+
 
 function decorateRow(
     database,
@@ -411,6 +457,7 @@ function decorateRow(
         return row;
     }
 
+
     return {
         ...row,
         industry_global_code:
@@ -422,6 +469,7 @@ function decorateRow(
     };
 }
 
+
 function getBranchColumn(
     prefix,
     branch
@@ -431,6 +479,7 @@ function getBranchColumn(
             branch
         );
 
+
     if (
         !normalizedBranch
     ) {
@@ -439,8 +488,10 @@ function getBranchColumn(
         );
     }
 
+
     return `${prefix}_${normalizedBranch.toLowerCase()}`;
 }
+
 
 function getPricePendingValues(
     laboratory,
@@ -449,15 +500,18 @@ function getPricePendingValues(
     const database =
         getPricePendingDatabase();
 
+
     const normalizedLaboratory =
         normalizeLaboratoryName(
             laboratory
         );
 
+
     const normalizedBranch =
         normalizeBranch(
             branch
         );
+
 
     if (
         !normalizedLaboratory ||
@@ -472,17 +526,20 @@ function getPricePendingValues(
         };
     }
 
+
     const priceColumn =
         getBranchColumn(
             "precos_ok",
             normalizedBranch
         );
 
+
     const pendingColumn =
         getBranchColumn(
             "pendencias_ok",
             normalizedBranch
         );
+
 
     const row =
         database
@@ -504,6 +561,7 @@ function getPricePendingValues(
                 normalizedLaboratory
             );
 
+
     return {
         laboratory,
         branch:
@@ -517,6 +575,7 @@ function getPricePendingValues(
     };
 }
 
+
 function getPricePendingStatus(
     laboratory,
     branch
@@ -527,17 +586,20 @@ function getPricePendingStatus(
             branch
         );
 
+
     const hasPrices =
         String(
             values.pricesValue ||
                 ""
         ).trim() !== "";
 
+
     const hasPending =
         String(
             values.pendingValue ||
                 ""
         ).trim() !== "";
+
 
     if (
         hasPrices &&
@@ -546,12 +608,14 @@ function getPricePendingStatus(
         return "Preços e pendências atualizados";
     }
 
+
     if (
         !hasPrices &&
         hasPending
     ) {
         return "Precisa atualizar preços";
     }
+
 
     if (
         hasPrices &&
@@ -560,12 +624,15 @@ function getPricePendingStatus(
         return "Precisa atualizar pendências";
     }
 
+
     return "Precisa atualizar preços e pendências";
 }
+
 
 function getPricePendingStatusMap() {
     const database =
         getPricePendingDatabase();
+
 
     const rows =
         database
@@ -587,8 +654,10 @@ function getPricePendingStatusMap() {
             `)
             .all();
 
+
     const statusMap =
         new Map();
+
 
     rows.forEach(
         (row) => {
@@ -597,16 +666,19 @@ function getPricePendingStatusMap() {
                     row.laboratory
                 );
 
+
             if (
                 !laboratory
             ) {
                 return;
             }
 
+
             VALID_BRANCHES.forEach(
                 (branch) => {
                     const suffix =
                         branch.toLowerCase();
+
 
                     const hasPrices =
                         String(
@@ -615,6 +687,7 @@ function getPricePendingStatusMap() {
                             ] || ""
                         ).trim() !== "";
 
+
                     const hasPending =
                         String(
                             row[
@@ -622,8 +695,10 @@ function getPricePendingStatusMap() {
                             ] || ""
                         ).trim() !== "";
 
+
                     let status =
                         "Precisa atualizar preços e pendências";
+
 
                     if (
                         hasPrices &&
@@ -645,6 +720,7 @@ function getPricePendingStatusMap() {
                             "Precisa atualizar pendências";
                     }
 
+
                     statusMap.set(
                         `${laboratory}:${branch}`,
                         status
@@ -654,12 +730,15 @@ function getPricePendingStatusMap() {
         }
     );
 
+
     return statusMap;
 }
+
 
 function listRows() {
     const database =
         getPricePendingDatabase();
+
 
     const rows =
         database
@@ -673,8 +752,10 @@ function listRows() {
             `)
             .all();
 
+
     const codeMap =
         getIndustryGlobalCodeMap();
+
 
     return rows.map(
         (row) =>
@@ -686,11 +767,13 @@ function listRows() {
     );
 }
 
+
 function getRowById(
     id
 ) {
     const database =
         getPricePendingDatabase();
+
 
     const row =
         database
@@ -704,6 +787,7 @@ function getRowById(
                 id
             );
 
+
     return decorateRow(
         database,
         row,
@@ -711,14 +795,17 @@ function getRowById(
     );
 }
 
+
 function createRow(
     data = {}
 ) {
     const database =
         getPricePendingDatabase();
 
+
     const now =
         new Date().toISOString();
+
 
     const row = {
         id:
@@ -750,6 +837,7 @@ function createRow(
             now
     };
 
+
     for (
         const column of EXTERNAL_COLUMNS
     ) {
@@ -759,6 +847,7 @@ function createRow(
                     ""
             );
     }
+
 
     database.prepare(`
         INSERT INTO price_pending_rows (
@@ -790,10 +879,12 @@ function createRow(
         row
     );
 
+
     return getRowById(
         row.id
     );
 }
+
 
 function updateCell(
     id,
@@ -810,16 +901,20 @@ function updateCell(
         );
     }
 
+
     const database =
         getPricePendingDatabase();
 
+
     const now =
         new Date().toISOString();
+
 
     const normalizedValue =
         String(
             value ?? ""
         );
+
 
     const currentRow =
         database
@@ -837,6 +932,7 @@ function updateCell(
                 id
             );
 
+
     if (
         !currentRow
     ) {
@@ -845,18 +941,22 @@ function updateCell(
         );
     }
 
+
     const manualCells =
         parseJsonObject(
             currentRow.manual_cells
         );
+
 
     const pendingUpdates =
         parseJsonObject(
             currentRow.pending_external_updates
         );
 
+
     manualCells[column] =
         true;
+
 
     if (
         normalizedValue.trim() ===
@@ -868,13 +968,16 @@ function updateCell(
                 .value ??
             "";
 
+
         delete pendingUpdates[
             column
         ];
 
+
         delete manualCells[
             column
         ];
+
 
         const result =
             database
@@ -903,6 +1006,7 @@ function updateCell(
                     id
                 );
 
+
         if (
             result.changes ===
             0
@@ -912,10 +1016,12 @@ function updateCell(
             );
         }
 
+
         return getRowById(
             id
         );
     }
+
 
     const result =
         database
@@ -936,6 +1042,7 @@ function updateCell(
                 id
             );
 
+
     if (
         result.changes ===
         0
@@ -945,10 +1052,12 @@ function updateCell(
         );
     }
 
+
     return getRowById(
         id
     );
 }
+
 
 function applyExternalCellUpdate({
     id,
@@ -967,11 +1076,14 @@ function applyExternalCellUpdate({
         );
     }
 
+
     const database =
         getPricePendingDatabase();
 
+
     const now =
         new Date().toISOString();
+
 
     const row =
         database
@@ -979,7 +1091,8 @@ function applyExternalCellUpdate({
                 SELECT
                     id,
                     manual_cells,
-                    pending_external_updates
+                    pending_external_updates,
+                    "${column}" AS current_column_value
                 FROM price_pending_rows
                 WHERE id = ?
                     AND active = 1
@@ -989,6 +1102,7 @@ function applyExternalCellUpdate({
                 id
             );
 
+
     if (
         !row
     ) {
@@ -997,15 +1111,18 @@ function applyExternalCellUpdate({
         );
     }
 
+
     const manualCells =
         parseJsonObject(
             row.manual_cells
         );
 
+
     const pendingUpdates =
         parseJsonObject(
             row.pending_external_updates
         );
+
 
     const externalUpdate = {
         value:
@@ -1024,17 +1141,18 @@ function applyExternalCellUpdate({
                 )
             )
                 ? Number(
-                      fileMtimeMs
-                  )
+                    fileMtimeMs
+                )
                 : null,
         updatedAt:
             now
     };
 
+
     if (
         manualCells[column] &&
         String(
-            row[column] ??
+            row.current_column_value ??
                 ""
         ).trim() !==
             ""
@@ -1043,6 +1161,7 @@ function applyExternalCellUpdate({
             column
         ] =
             externalUpdate;
+
 
         const result =
             database
@@ -1063,6 +1182,7 @@ function applyExternalCellUpdate({
                     id
                 );
 
+
         return {
             ...getRowById(
                 id
@@ -1077,9 +1197,11 @@ function applyExternalCellUpdate({
         };
     }
 
+
     delete pendingUpdates[
         column
     ];
+
 
     const result =
         database
@@ -1104,6 +1226,7 @@ function applyExternalCellUpdate({
                 id
             );
 
+
     return {
         ...getRowById(
             id
@@ -1118,11 +1241,13 @@ function applyExternalCellUpdate({
     };
 }
 
+
 function removeRow(
     id
 ) {
     const database =
         getPricePendingDatabase();
+
 
     const result =
         database
@@ -1138,6 +1263,7 @@ function removeRow(
                 id
             );
 
+
     if (
         result.changes ===
         0
@@ -1147,11 +1273,13 @@ function removeRow(
         );
     }
 
+
     return {
         success: true,
         id
     };
 }
+
 
 function getEmailReceiptColumn(
     type,
@@ -1171,10 +1299,12 @@ function getEmailReceiptColumn(
             .trim()
             .toLowerCase();
 
+
     const normalizedBranch =
         normalizeBranch(
             branch
         ).toLowerCase();
+
 
     if (
         !normalizedBranch
@@ -1183,6 +1313,7 @@ function getEmailReceiptColumn(
             `Filial inválida para atualização: ${branch}`
         );
     }
+
 
     if (
         [
@@ -1196,6 +1327,7 @@ function getEmailReceiptColumn(
         return `env_precos_${normalizedBranch}`;
     }
 
+
     if (
         [
             "pendencias",
@@ -1208,10 +1340,12 @@ function getEmailReceiptColumn(
         return `env_pend_${normalizedBranch}`;
     }
 
+
     throw new Error(
         `Tipo inválido para atualização: ${type}`
     );
 }
+
 
 function formatEmailReceiptDate(
     dateValue = new Date()
@@ -1220,6 +1354,7 @@ function formatEmailReceiptDate(
         new Date(
             dateValue
         );
+
 
     if (
         Number.isNaN(
@@ -1231,6 +1366,7 @@ function formatEmailReceiptDate(
         );
     }
 
+
     const day =
         String(
             date.getDate()
@@ -1238,6 +1374,7 @@ function formatEmailReceiptDate(
             2,
             "0"
         );
+
 
     const month =
         String(
@@ -1248,13 +1385,16 @@ function formatEmailReceiptDate(
             "0"
         );
 
+
     const year =
         String(
             date.getFullYear()
         );
 
+
     return `${day}/${month}/${year}`;
 }
+
 
 function updateEmailReceiptStatus({
     laboratory,
@@ -1267,6 +1407,7 @@ function updateEmailReceiptStatus({
             laboratory
         );
 
+
     if (
         !normalizedLaboratory
     ) {
@@ -1275,19 +1416,23 @@ function updateEmailReceiptStatus({
         );
     }
 
+
     const column =
         getEmailReceiptColumn(
             type,
             branch
         );
 
+
     const value =
         formatEmailReceiptDate(
             processedAt
         );
 
+
     const database =
         getPricePendingDatabase();
+
 
     const row =
         database
@@ -1311,6 +1456,7 @@ function updateEmailReceiptStatus({
                 normalizedLaboratory
             );
 
+
     if (
         !row
     ) {
@@ -1327,15 +1473,18 @@ function updateEmailReceiptStatus({
         };
     }
 
+
     const manualCells =
         parseJsonObject(
             row.manual_cells
         );
 
+
     const pendingUpdates =
         parseJsonObject(
             row.pending_external_updates
         );
+
 
     if (
         manualCells[column] &&
@@ -1357,8 +1506,10 @@ function updateEmailReceiptStatus({
                 new Date().toISOString()
         };
 
+
         const now =
             new Date().toISOString();
+
 
         database
             .prepare(`
@@ -1378,6 +1529,7 @@ function updateEmailReceiptStatus({
                 row.id
             );
 
+
         return {
             success: true,
             updated: false,
@@ -1396,12 +1548,15 @@ function updateEmailReceiptStatus({
         };
     }
 
+
     delete pendingUpdates[
         column
     ];
 
+
     const now =
         new Date().toISOString();
+
 
     const result =
         database
@@ -1424,6 +1579,7 @@ function updateEmailReceiptStatus({
                 row.id
             );
 
+
     return {
         success:
             result.changes > 0,
@@ -1442,6 +1598,7 @@ function updateEmailReceiptStatus({
         value
     };
 }
+
 
 module.exports = {
     listRows,

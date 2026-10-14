@@ -1,4 +1,4 @@
-﻿import {
+import {
     useCallback,
     useEffect,
     useMemo,
@@ -7,15 +7,21 @@
 } from 'react';
 
 
+
 import {
     loadModuleState,
     saveModuleState
 } from '../services/moduleState.service';
 
 
+
+const SAVE_DELAY_MS = 300;
+
+
+
 export function useModuleState(moduleId, initialState) {
-    const initializedRef = useRef(false);
     const stableModuleId = useMemo(() => moduleId, [moduleId]);
+
 
 
     const [state, setState] = useState(() => {
@@ -24,7 +30,9 @@ export function useModuleState(moduleId, initialState) {
         }
 
 
+
         const saved = loadModuleState(stableModuleId);
+
 
 
         if (!saved || typeof saved !== 'object') {
@@ -32,29 +40,65 @@ export function useModuleState(moduleId, initialState) {
         }
 
 
-        return { ...initialState, ...saved };
+
+        return {
+            ...initialState,
+            ...saved
+        };
     });
 
 
-    useEffect(() => {
-        if (!stableModuleId || initializedRef.current) {
-            return;
+
+    const pendingSaveRef = useRef(null);
+    const pendingStateRef = useRef(null);
+
+
+
+    const flushPendingSave = useCallback(() => {
+        if (pendingSaveRef.current) {
+            clearTimeout(pendingSaveRef.current);
+            pendingSaveRef.current = null;
         }
 
 
-        initializedRef.current = true;
+
+        if (
+            stableModuleId &&
+            pendingStateRef.current
+        ) {
+            saveModuleState(
+                stableModuleId,
+                pendingStateRef.current
+            );
 
 
-        const saved = loadModuleState(stableModuleId);
 
-
-        if (saved && typeof saved === 'object') {
-            setState((current) => ({
-                ...current,
-                ...saved
-            }));
+            pendingStateRef.current = null;
         }
     }, [stableModuleId]);
+
+
+
+    useEffect(() => {
+        return () => {
+            if (pendingSaveRef.current) {
+                clearTimeout(pendingSaveRef.current);
+            }
+
+
+
+            if (
+                stableModuleId &&
+                pendingStateRef.current
+            ) {
+                saveModuleState(
+                    stableModuleId,
+                    pendingStateRef.current
+                );
+            }
+        };
+    }, [stableModuleId]);
+
 
 
     const setField = useCallback((field, value) => {
@@ -65,17 +109,45 @@ export function useModuleState(moduleId, initialState) {
             };
 
 
+
             if (stableModuleId) {
-                saveModuleState(
-                    stableModuleId,
-                    { [field]: value }
-                );
+                pendingStateRef.current = {
+                    ...(pendingStateRef.current || {}),
+                    [field]: value
+                };
+
+
+
+                if (pendingSaveRef.current) {
+                    clearTimeout(pendingSaveRef.current);
+                }
+
+
+
+                pendingSaveRef.current = setTimeout(() => {
+                    pendingSaveRef.current = null;
+
+
+
+                    if (pendingStateRef.current) {
+                        saveModuleState(
+                            stableModuleId,
+                            pendingStateRef.current
+                        );
+
+
+
+                        pendingStateRef.current = null;
+                    }
+                }, SAVE_DELAY_MS);
             }
+
 
 
             return next;
         });
     }, [stableModuleId]);
+
 
 
     const setStateAndPersist = useCallback((updater) => {
@@ -86,16 +158,18 @@ export function useModuleState(moduleId, initialState) {
                     : updater;
 
 
+
             if (
                 stableModuleId &&
                 nextValue !== null &&
                 (typeof nextValue === 'object' || Array.isArray(nextValue))
             ) {
-                // Se for array, salva como valor direto
                 if (Array.isArray(nextValue)) {
                     saveModuleState(
                         stableModuleId,
-                        { _arrayValue: nextValue }
+                        {
+                            _arrayValue: nextValue
+                        }
                     );
                 } else {
                     saveModuleState(
@@ -106,14 +180,17 @@ export function useModuleState(moduleId, initialState) {
             }
 
 
+
             return nextValue;
         });
     }, [stableModuleId]);
 
 
+
     return [
         state,
         setField,
-        setStateAndPersist
+        setStateAndPersist,
+        flushPendingSave
     ];
 }

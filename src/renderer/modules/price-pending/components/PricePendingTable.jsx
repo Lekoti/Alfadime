@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 
 import {
@@ -33,7 +33,9 @@ const INITIAL_STATE = {
     },
     filterUpdated: false,
     filterOutdated: false,
-    filterBranch: ""
+    filterBranch: "",
+    filtersPanelOpen: false,
+    tableScrollTop: 0
 };
 
 
@@ -232,19 +234,38 @@ function PricePendingTable() {
 
     const filterBranch = state.filterBranch || "";
 
+    const filtersPanelOpen = Boolean(
+        state.filtersPanelOpen
+    );
+
 
         const [allRows, setAllRows] = useState([]);
     const [newLaboratory, setNewLaboratory] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [savingCell, setSavingCell] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
     const [ignoredFiles, setIgnoredFiles] = useState([]);
     const [showIgnoredModal, setShowIgnoredModal] = useState(false);
-    const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
     const [exportModalOpen, setExportModalOpen] = useState(false);
     const [sharedDbMode, setSharedDbMode] = useState(false);
     const [readOnly, setReadOnly] = useState(false);
+
+    const tableWrapperRef = useRef(null);
+    const editingCellRef = useRef(null);
+    const originalValuesRef = useRef(new Map());
+    const scrollTimerRef = useRef(null);
+    const isLoadingRowsRef = useRef(false);
+
+    function setFiltersPanelOpen(next) {
+        setField(
+            "filtersPanelOpen",
+            typeof next === "function"
+                ? next(Boolean(state.filtersPanelOpen))
+                : Boolean(next)
+        );
+    }
 
 
     const canSearch =
@@ -517,6 +538,14 @@ function PricePendingTable() {
 
     async function loadRows({ silent = false } = {}) {
         try {
+            if (isLoadingRowsRef.current) {
+                return;
+            }
+
+
+            isLoadingRowsRef.current = true;
+
+
             if (!silent) {
                 setLoading(true);
             }
@@ -533,8 +562,21 @@ function PricePendingTable() {
                 ? result
                 : [];
 
+            const editingCell = editingCellRef.current;
 
-            setAllRows(data);
+            const nextRows = editingCell
+                ? data.map((row) => {
+                    return row.id === editingCell.id
+                        ? {
+                            ...row,
+                            [editingCell.column]:
+                                editingCell.value
+                        }
+                        : row;
+                })
+                : data;
+
+            setAllRows(nextRows);
             setReadOnly(false);
         } catch (loadError) {
             console.error(loadError);
@@ -552,6 +594,9 @@ function PricePendingTable() {
                 )
             );
         } finally {
+            isLoadingRowsRef.current = false;
+
+
             if (!silent) {
                 setLoading(false);
             }
@@ -696,12 +741,38 @@ function PricePendingTable() {
 
 
     useEffect(() => {
+        if (
+            loading ||
+            !tableWrapperRef.current
+        ) {
+            return;
+        }
+
+
+        tableWrapperRef.current.scrollTop =
+            Number(state.tableScrollTop || 0);
+    }, [
+        loading,
+        state.tableScrollTop
+    ]);
+
+
+    useEffect(() => {
         if (!sharedDbMode) {
             return undefined;
         }
 
 
         const intervalId = setInterval(() => {
+            if (
+                editingCellRef.current ||
+                savingCell !== null ||
+                isLoadingRowsRef.current
+            ) {
+                return;
+            }
+
+
             loadRows({ silent: true });
         }, 20000);
 
@@ -709,7 +780,10 @@ function PricePendingTable() {
         return () => {
             clearInterval(intervalId);
         };
-    }, [sharedDbMode]);
+    }, [
+        sharedDbMode,
+        savingCell
+    ]);
 
 
 
@@ -809,6 +883,27 @@ function PricePendingTable() {
 
 
     function updateLocalValue(id, column, value) {
+        const cellKey = `${id}:${column}`;
+
+
+        if (!originalValuesRef.current.has(cellKey)) {
+            const currentRow = allRows.find((row) => row.id === id);
+
+
+            originalValuesRef.current.set(
+                cellKey,
+                currentRow?.[column] ?? ""
+            );
+        }
+
+
+        editingCellRef.current = {
+            id,
+            column,
+            value
+        };
+
+
         const updateRows = (currentRows) => {
             return currentRows.map((row) => {
                 return row.id === id
@@ -856,8 +951,22 @@ function PricePendingTable() {
         }
 
 
+        const cellKey = `${row.id}:${column}`;
+
+
+        if (
+            String(originalValuesRef.current.get(cellKey) ?? "") ===
+            String(row[column] ?? "")
+        ) {
+            editingCellRef.current = null;
+
+
+            return;
+        }
+
+
         try {
-            setSaving(true);
+            setSavingCell(cellKey);
             setError("");
 
 
@@ -867,6 +976,15 @@ function PricePendingTable() {
                     column,
                     row[column] || ""
                 );
+
+
+            originalValuesRef.current.set(
+                cellKey,
+                savedRow?.[column] ?? ""
+            );
+
+
+            editingCellRef.current = null;
 
 
             if (savedRow && savedRow.id === row.id) {
@@ -900,7 +1018,7 @@ function PricePendingTable() {
                 )
             );
         } finally {
-            setSaving(false);
+            setSavingCell(null);
         }
     }
 
@@ -1531,7 +1649,7 @@ function PricePendingTable() {
                     </div>
 
 
-                    {saving && (
+                    {(saving || savingCell !== null) && (
                         <span className="saving-indicator">
                             Salvando...
                         </span>
@@ -1539,7 +1657,27 @@ function PricePendingTable() {
                 </div>
 
 
-                <div className="price-pending-table-wrapper">
+                <div
+                    ref={tableWrapperRef}
+                    className="price-pending-table-wrapper"
+                    onScroll={(event) => {
+                        const nextScrollTop =
+                            event.currentTarget.scrollTop;
+
+
+                        if (scrollTimerRef.current) {
+                            clearTimeout(scrollTimerRef.current);
+                        }
+
+
+                        scrollTimerRef.current = setTimeout(() => {
+                            setField(
+                                "tableScrollTop",
+                                nextScrollTop
+                            );
+                        }, 300);
+                    }}
+                >
                     <table className="price-pending-table">
                         <thead>
                             <tr>
@@ -1674,7 +1812,7 @@ function PricePendingTable() {
                                                     "e clique fora para salvar"
                                                 }
                                                 disabled={
-                                                    saving ||
+                                                    savingCell !== null ||
                                                     readOnly ||
                                                     !canEditLaboratory
                                                 }
@@ -1700,7 +1838,7 @@ function PricePendingTable() {
                                                 }}
                                                 title={row.observation || ""}
                                                 disabled={
-                                                    saving ||
+                                                    savingCell !== null ||
                                                     readOnly ||
                                                     !canEditObservation
                                                 }
@@ -1770,7 +1908,7 @@ function PricePendingTable() {
                                                             ] || ""
                                                     }
                                                     disabled={
-                                                        saving ||
+                                                        savingCell !== null ||
                                                         readOnly ||
                                                         !canEditColumn
                                                     }

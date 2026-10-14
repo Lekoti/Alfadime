@@ -2,13 +2,19 @@ const repository = require(
     "./industry-contacts.repository"
 );
 
+
+
 const pricePendingRepository = require(
     "../price-pending/price-pending.repository"
 );
 
+
+
 const notificationsService = require(
     "../notifications/notifications.service"
 );
+
+
 
 const ALLOWED_BRANCHES = [
     "DPR",
@@ -18,11 +24,17 @@ const ALLOWED_BRANCHES = [
     "DSC"
 ];
 
+
+
 const NOTIFICATION_SOURCE_MODULE =
     "industry-contacts";
 
+
+
 const INCOMPLETE_CONTACT_NOTIFICATION_TYPE =
     "INCOMPLETE_CONTACT";
+
+
 
 function normalizeText(
     value
@@ -34,10 +46,14 @@ function normalizeText(
         return "";
     }
 
+
+
     return String(
         value
     ).trim();
 }
+
+
 
 function normalizeBranch(
     value
@@ -47,20 +63,28 @@ function normalizeBranch(
     ).toUpperCase();
 }
 
+
+
 function getContactStatus(
     row = {}
 ) {
     const problems = [];
 
+
+
     const hasContact =
         row.has_contact === 1 ||
         row.has_contact === true;
+
+
 
     if (
         !hasContact
     ) {
         return "Sem contato";
     }
+
+
 
     if (
         !normalizeText(
@@ -72,6 +96,8 @@ function getContactStatus(
         );
     }
 
+
+
     if (
         !normalizeText(
             row.phone
@@ -82,6 +108,8 @@ function getContactStatus(
         );
     }
 
+
+
     if (
         !normalizeText(
             row.email
@@ -91,6 +119,8 @@ function getContactStatus(
             "Falta e-mail"
         );
     }
+
+
 
     if (
         !ALLOWED_BRANCHES.includes(
@@ -104,12 +134,16 @@ function getContactStatus(
         );
     }
 
+
+
     return problems.length > 0
         ? problems.join(
               "; "
           )
         : "Contato completo";
 }
+
+
 
 function getPricePendingStatus(
     laboratory,
@@ -122,6 +156,8 @@ function getPricePendingStatus(
         );
 }
 
+
+
 function getAutomaticObservation(
     row = {},
     pricePendingStatus = ""
@@ -131,14 +167,20 @@ function getAutomaticObservation(
             row.notes
         );
 
+
+
     if (
         observation
     ) {
         return observation;
     }
 
+
+
     return pricePendingStatus;
 }
+
+
 
 function getNotificationEvents(
     row = {},
@@ -168,6 +210,8 @@ function getNotificationEvents(
     ];
 }
 
+
+
 function getIndustryGlobalCode(
     row = {}
 ) {
@@ -176,39 +220,54 @@ function getIndustryGlobalCode(
         row.laboratory ||
         "";
 
+
+
     return pricePendingRepository
         .getIndustryGlobalCodeByLaboratory(
             laboratory
         );
 }
 
+
+
 function enrichRow(
     row = {},
     context = {}
 ) {
+    const laboratoryKey =
+        `${normalizeText(
+            row.laboratory_name
+        ).toUpperCase()}:${normalizeBranch(
+            row.branch
+        )}`;
+
+
+
     const pricePendingStatus =
         context.pricePendingStatusMap?.get(
-            `${normalizeText(
-                row.laboratory_name
-            ).toUpperCase()}:${normalizeBranch(
-                row.branch
-            )}`
+            laboratoryKey
         ) ||
         getPricePendingStatus(
             row.laboratory_name,
             row.branch
         );
 
+
+
     const contactStatus =
         getContactStatus(
             row
         );
+
+
 
     const automaticObservation =
         getAutomaticObservation(
             row,
             pricePendingStatus
         );
+
+
 
     const industryGlobalCode =
         context.industryGlobalCodeMap?.get(
@@ -220,20 +279,32 @@ function enrichRow(
             row
         );
 
+
+
     return {
         ...row,
+
+
 
         industry_global_code:
             industryGlobalCode,
 
+
+
         status_label:
             contactStatus,
+
+
 
         price_pending_status:
             pricePendingStatus,
 
+
+
         automatic_observation:
             automaticObservation,
+
+
 
         notification_events:
             getNotificationEvents(
@@ -243,6 +314,8 @@ function enrichRow(
     };
 }
 
+
+
 function getContactNotificationSourceId(
     contact = {}
 ) {
@@ -251,10 +324,14 @@ function getContactNotificationSourceId(
             contact.laboratory_key
         );
 
+
+
     const branch =
         normalizeBranch(
             contact.branch
         );
+
+
 
     if (
         !laboratoryKey ||
@@ -263,8 +340,12 @@ function getContactNotificationSourceId(
         return null;
     }
 
+
+
     return `${laboratoryKey}:${branch}`;
 }
+
+
 
 function removeIncompleteContactNotification(
     sourceId
@@ -275,6 +356,8 @@ function removeIncompleteContactNotification(
         return null;
     }
 
+
+
     return notificationsService.deleteBySource(
         NOTIFICATION_SOURCE_MODULE,
         sourceId,
@@ -282,16 +365,22 @@ function removeIncompleteContactNotification(
     );
 }
 
+
+
 function syncIncompleteContactNotification(
     contact
 ) {
     const contactStatus =
         contact.status_label;
 
+
+
     const sourceId =
         getContactNotificationSourceId(
             contact
         );
+
+
 
     if (
         !sourceId
@@ -299,12 +388,16 @@ function syncIncompleteContactNotification(
         return null;
     }
 
+
+
     const existingNotification =
         notificationsService.findBySource(
             NOTIFICATION_SOURCE_MODULE,
             sourceId,
             INCOMPLETE_CONTACT_NOTIFICATION_TYPE
         );
+
+
 
     if (
         contactStatus ===
@@ -318,8 +411,12 @@ function syncIncompleteContactNotification(
             );
         }
 
+
+
         return null;
     }
+
+
 
     const notificationData = {
         type:
@@ -354,6 +451,8 @@ function syncIncompleteContactNotification(
         }
     };
 
+
+
     if (
         existingNotification
     ) {
@@ -363,10 +462,14 @@ function syncIncompleteContactNotification(
         );
     }
 
+
+
     return notificationsService.createNotification(
         notificationData
     );
 }
+
+
 
 function buildPricePendingStatusMap() {
     if (
@@ -378,8 +481,12 @@ function buildPricePendingStatusMap() {
             .getPricePendingStatusMap();
     }
 
+
+
     return new Map();
 }
+
+
 
 function buildIndustryGlobalCodeMap() {
     if (
@@ -391,8 +498,12 @@ function buildIndustryGlobalCodeMap() {
             pricePendingRepository
                 .getIndustryGlobalCodeMap();
 
+
+
         const normalizedMap =
             new Map();
+
+
 
         for (
             const [
@@ -408,11 +519,17 @@ function buildIndustryGlobalCodeMap() {
             );
         }
 
+
+
         return normalizedMap;
     }
 
+
+
     return new Map();
 }
+
+
 
 function syncNotificationsInBackground(
     rows
@@ -439,15 +556,23 @@ function syncNotificationsInBackground(
     );
 }
 
+
+
 function listLaboratories() {
     const contacts =
         repository.listLaboratories();
 
+
+
     const pricePendingStatusMap =
         buildPricePendingStatusMap();
 
+
+
     const industryGlobalCodeMap =
         buildIndustryGlobalCodeMap();
+
+
 
     const rows =
         contacts.map(
@@ -461,8 +586,12 @@ function listLaboratories() {
                 )
         );
 
+
+
     const total =
         rows.length;
+
+
 
     const withContact =
         rows.filter(
@@ -470,13 +599,19 @@ function listLaboratories() {
                 row.has_contact === 1
         ).length;
 
+
+
     const withoutContact =
         total -
         withContact;
 
+
+
     syncNotificationsInBackground(
         rows
     );
+
+
 
     return {
         rows,
@@ -488,26 +623,58 @@ function listLaboratories() {
     };
 }
 
+
+
 function saveContact(
     data = {}
 ) {
-    const contact =
+    const savedContact =
         repository.saveContact(
             data
         );
 
+
+
+    const contact = {
+        ...savedContact,
+        has_contact: 1,
+        source_contact: 1
+    };
+
+
+
+    const pricePendingStatusMap =
+        buildPricePendingStatusMap();
+
+
+
+    const industryGlobalCodeMap =
+        buildIndustryGlobalCodeMap();
+
+
+
     const enrichedContact =
         enrichRow(
-            contact
+            contact,
+            {
+                pricePendingStatusMap,
+                industryGlobalCodeMap
+            }
         );
+
+
 
     syncIncompleteContactNotification(
         enrichedContact
     );
 
+
+
     return {
         contact:
             enrichedContact,
+
+
 
         spreadsheet: {
             success: true,
@@ -518,6 +685,8 @@ function saveContact(
     };
 }
 
+
+
 function deleteContact(
     id
 ) {
@@ -526,10 +695,14 @@ function deleteContact(
     );
 }
 
+
+
 function getLaboratoriesWithoutContacts() {
     return repository
         .getLaboratoriesWithoutContacts();
 }
+
+
 
 module.exports = {
     listLaboratories,

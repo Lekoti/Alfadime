@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import PurchaseFilters from "../components/PurchaseFilters";
 import PurchaseTable from "../components/PurchaseTable";
 import PurchaseCurveTargets from "../components/PurchaseCurveTargets";
@@ -11,7 +11,12 @@ import {
 } from "../constants/purchases.constants";
 import { usePurchases } from "../hooks/usePurchases";
 import { useModuleArrayState } from "../../../hooks/useModuleArrayState";
+import { useModuleState } from "../../../hooks/useModuleState";
 import "../styles/purchases.css";
+
+
+const MODULE_ID = "purchases";
+
 
 const DEFAULT_CURVE_DAYS = {
     A: 90,
@@ -22,6 +27,7 @@ const DEFAULT_CURVE_DAYS = {
     F: 30,
     G: 30
 };
+
 
 const DEFAULT_FILTERS = {
     search: "",
@@ -34,30 +40,84 @@ const DEFAULT_FILTERS = {
     curveDays: DEFAULT_CURVE_DAYS
 };
 
+
+const INITIAL_STATE = {
+    filters: DEFAULT_FILTERS,
+    filtersPanelOpen: false
+};
+
+
+const FILTER_KEYS = [
+    "search",
+    "company",
+    "laboratoryname",
+    "effectivecurve",
+    "status"
+];
+
+
 export default function PurchasesPage() {
-    // Filtros com useState simples (sem persistência)
-    const [filters, setFilters] = useState(DEFAULT_FILTERS);
-    
-    // Colunas e ordem com persistência
+    const [
+        moduleState,
+        setModuleField
+    ] = useModuleState(
+        MODULE_ID,
+        INITIAL_STATE
+    );
+
+    const filters =
+        moduleState.filters ||
+        DEFAULT_FILTERS;
+
+    const filtersPanelOpen = Boolean(
+        moduleState.filtersPanelOpen
+    );
+
     const [visibleColumns, setVisibleColumns] = useModuleArrayState(
         "purchases-visible-columns",
         DEFAULT_VISIBLE_PURCHASE_COLUMNS
     );
-    
+
     const [columnOrder, setColumnOrder] = useModuleArrayState(
         "purchases-column-order",
         DEFAULT_PURCHASE_COLUMN_ORDER
     );
-    
-    const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
+
     const [selectedIds, setSelectedIds] = useState([]);
     const [selectAllFiltered, setSelectAllFiltered] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [exportError, setExportError] = useState(null);
 
-    // Remover limite de 50 linhas ao filtrar por indústria
-    const hasIndustryFilter = filters.laboratoryname && filters.laboratoryname !== "";
-    const currentPageSize = hasIndustryFilter ? 10000 : 50;
+
+    function setFilters(next) {
+        setModuleField(
+            "filters",
+            typeof next === "function"
+                ? next(filters)
+                : next
+        );
+    }
+
+
+    function setFiltersPanelOpen(next) {
+        setModuleField(
+            "filtersPanelOpen",
+            typeof next === "function"
+                ? next(filtersPanelOpen)
+                : Boolean(next)
+        );
+    }
+
+
+    const hasActiveFilter = FILTER_KEYS.some(
+        (key) => String(filters[key] || "").trim() !== ""
+    );
+
+
+    const currentPageSize = hasActiveFilter
+        ? 10000
+        : 50;
+
 
     const {
         rows,
@@ -72,11 +132,19 @@ export default function PurchasesPage() {
         pageSize: currentPageSize
     });
 
+
     useEffect(() => {
         setSelectedIds([]);
         setSelectAllFiltered(false);
         setExportError(null);
-    }, [filters.search, filters.company, filters.laboratoryname, filters.effectivecurve, filters.status]);
+    }, [
+        filters.search,
+        filters.company,
+        filters.laboratoryname,
+        filters.effectivecurve,
+        filters.status
+    ]);
+
 
     function updateFilters(nextFilters) {
         setFilters((current) => ({
@@ -84,9 +152,11 @@ export default function PurchasesPage() {
             ...nextFilters,
             page: 1
         }));
+
         setSelectedIds([]);
         setSelectAllFiltered(false);
     }
+
 
     function updateCurveDays(nextCurveDays) {
         setFilters((current) => ({
@@ -96,16 +166,23 @@ export default function PurchasesPage() {
         }));
     }
 
+
     function changePage(page) {
-        setFilters((current) => ({ ...current, page }));
+        setFilters((current) => ({
+            ...current,
+            page
+        }));
     }
+
 
     async function handleSync() {
         const confirmed = window.confirm(
             "Atualizar Curva Compras com base na planilha agora? " +
             "Novos produtos serao incluidos e produtos existentes serao atualizados conforme os dados disponiveis na planilha."
         );
+
         if (!confirmed) return;
+
         try {
             await synchronize();
         } catch (syncError) {
@@ -113,15 +190,19 @@ export default function PurchasesPage() {
         }
     }
 
+
     function toggleSelected(id) {
         setSelectAllFiltered(false);
+
         setSelectedIds((current) => {
             if (current.includes(id)) {
                 return current.filter((selectedId) => selectedId !== id);
             }
+
             return [...current, id];
         });
     }
+
 
     function toggleSelectAll() {
         if (selectAllFiltered) {
@@ -129,22 +210,29 @@ export default function PurchasesPage() {
             setSelectedIds([]);
             return;
         }
+
         setSelectAllFiltered(true);
         setSelectedIds(rows.map((row) => row.id));
     }
+
 
     async function handleExportStandard() {
         if (selectedIds.length === 0 && !selectAllFiltered) {
             setExportError("Selecione ao menos um produto para exportar.");
             return;
         }
+
         try {
             setExporting(true);
             setExportError(null);
+
             await window.alfadime.purchases.exportExcel({
                 selectedIds: selectAllFiltered ? null : selectedIds,
                 selectAllFiltered,
-                filters: { ...filters, pageSize: currentPageSize },
+                filters: {
+                    ...filters,
+                    pageSize: currentPageSize
+                },
                 visibleColumns,
                 columnOrder
             });
@@ -156,18 +244,22 @@ export default function PurchasesPage() {
         }
     }
 
+
     function handleVisibleColumnsChange(newColumns) {
         setVisibleColumns(newColumns);
     }
+
 
     function handleColumnOrderChange(newOrder) {
         setColumnOrder(newOrder);
     }
 
+
     return (
         <main className="purchases-page">
             <div className="purchases-title-bar">
                 <h1>Compras</h1>
+
                 <button
                     type="button"
                     className="purchases-filters-toggle"
@@ -177,10 +269,12 @@ export default function PurchasesPage() {
                 </button>
             </div>
 
+
             {filtersPanelOpen && (
                 <section className="purchases-floating-panel">
                     <div className="purchases-floating-panel-header">
                         <strong>Filtros e ações</strong>
+
                         <button
                             type="button"
                             onClick={() => setFiltersPanelOpen(false)}
@@ -191,16 +285,20 @@ export default function PurchasesPage() {
                         </button>
                     </div>
 
+
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Filtros</div>
+
                         <PurchaseFilters
                             filters={filters}
                             onFiltersChange={updateFilters}
                         />
                     </div>
 
+
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Metas de estoque por curva</div>
+
                         <PurchaseCurveTargets
                             curveDays={filters.curveDays}
                             rows={rows}
@@ -208,21 +306,26 @@ export default function PurchasesPage() {
                         />
                     </div>
 
+
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Resumo</div>
+
                         <div className="purchases-panel-summary-grid">
                             <div className="purchases-panel-summary-item">
                                 <small>Produtos exibidos</small>
                                 <strong>{summary.products}</strong>
                             </div>
+
                             <div className="purchases-panel-summary-item">
                                 <small>Itens críticos</small>
                                 <strong>{summary.criticalProducts}</strong>
                             </div>
+
                             <div className="purchases-panel-summary-item">
                                 <small>Qtde. com sugestão</small>
                                 <strong>{new Intl.NumberFormat("pt-BR").format(summary.suggestedQuantity)}</strong>
                             </div>
+
                             <div className="purchases-panel-summary-item">
                                 <small>Valor sugerido</small>
                                 <strong>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(summary.suggestedValue || 0)}</strong>
@@ -230,8 +333,10 @@ export default function PurchasesPage() {
                         </div>
                     </div>
 
+
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Ações</div>
+
                         <div className="purchases-panel-actions">
                             <button
                                 type="button"
@@ -242,6 +347,7 @@ export default function PurchasesPage() {
                                 {exporting ? "Exportando..." : "Exportar Excel"}
                             </button>
 
+
                             <div className="purchases-panel-column-selector-wrapper">
                                 <PurchaseColumnSelector
                                     columns={PURCHASE_COLUMNS}
@@ -251,6 +357,7 @@ export default function PurchasesPage() {
                                     onColumnOrderChange={handleColumnOrderChange}
                                 />
                             </div>
+
 
                             <button
                                 type="button"
@@ -265,11 +372,13 @@ export default function PurchasesPage() {
                 </section>
             )}
 
+
             {error && (
                 <div className="purchases-error">
                     <strong>Erro:</strong> {error}
                 </div>
             )}
+
 
             {exportError && (
                 <div className="purchases-error">
@@ -277,21 +386,25 @@ export default function PurchasesPage() {
                 </div>
             )}
 
+
             <section className="purchases-card">
                 <div className="purchases-card-header">
                     <div>
                         <strong>Sugestões de compras</strong>
+
                         <span>
                             Exibindo {rows.length} de {pagination.total} produtos.
                             Quantidade e valor unitário podem ser alterados manualmente.
                         </span>
                     </div>
 
+
                     <div className="purchases-selection-info">
                         <strong>{selectedIds.length}</strong> selecionados
                         {selectAllFiltered && " (todos os filtrados)"}
                     </div>
                 </div>
+
 
                 {loading ? (
                     <div className="purchases-loading">
@@ -309,6 +422,7 @@ export default function PurchasesPage() {
                         onToggleAll={toggleSelectAll}
                     />
                 )}
+
 
                 <ProductPagination
                     pagination={pagination}

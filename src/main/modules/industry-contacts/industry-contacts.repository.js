@@ -1,10 +1,12 @@
 const crypto = require("node:crypto");
 
+
 const {
     getDatabase
 } = require(
     "./industry-contacts.database"
 );
+
 
 function normalizeLaboratoryKey(value) {
     return String(value || "")
@@ -15,6 +17,7 @@ function normalizeLaboratoryKey(value) {
         .replace(/[^A-Z0-9]/g, "");
 }
 
+
 function normalizeText(value) {
     if (
         value === null ||
@@ -23,14 +26,18 @@ function normalizeText(value) {
         return null;
     }
 
+
     const text = String(value).trim();
+
 
     return text || null;
 }
 
+
 function normalizeBranch(value) {
     return normalizeText(value)?.toUpperCase() || "";
 }
+
 
 function mapContactRow(row) {
     return {
@@ -63,8 +70,10 @@ function mapContactRow(row) {
     };
 }
 
+
 function getLaboratoriesWithContacts() {
     const database = getDatabase();
+
 
     const rows =
         database
@@ -90,22 +99,27 @@ function getLaboratoriesWithContacts() {
             `)
             .all();
 
+
     return rows.map(mapContactRow);
 }
+
 
 function getLaboratoriesWithoutContacts() {
     return [];
 }
 
+
 function listLaboratories() {
     return getLaboratoriesWithContacts();
 }
+
 
 function getContactByLaboratoryKey(
     laboratoryKey,
     branch = ""
 ) {
     const database = getDatabase();
+
 
     return database
         .prepare(`
@@ -134,21 +148,54 @@ function getContactByLaboratoryKey(
         );
 }
 
+
+function getContactById(id) {
+    const database = getDatabase();
+
+
+    return database
+        .prepare(`
+            SELECT
+                id,
+                laboratory_name,
+                laboratory_key,
+                branch,
+                contact_name,
+                phone,
+                email,
+                service_region,
+                notes,
+                cargo,
+                spreadsheet_row,
+                created_at,
+                updated_at
+            FROM industry_contacts
+            WHERE id = ?
+            LIMIT 1
+        `)
+        .get(id);
+}
+
+
 function saveContact(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
     const laboratoryName = normalizeText(
         data.laboratory_name
     );
 
+
     const laboratoryKey = normalizeLaboratoryKey(
         data.laboratory_key || laboratoryName
     );
 
+
     const branch = normalizeBranch(
         data.branch || data.filial
     );
+
 
     if (!laboratoryName || !laboratoryKey) {
         throw new Error(
@@ -156,8 +203,21 @@ function saveContact(data = {}) {
         );
     }
 
+
+    const existingContact = data.id
+        ? getContactById(data.id)
+        : null;
+
+
+    if (data.id && !existingContact) {
+        throw new Error(
+            "Contato não encontrado para atualização."
+        );
+    }
+
+
     const contact = {
-        id: data.id || crypto.randomUUID(),
+        id: existingContact?.id || crypto.randomUUID(),
         laboratory_name: laboratoryName,
         laboratory_key: laboratoryKey,
         branch,
@@ -172,10 +232,41 @@ function saveContact(data = {}) {
         notes: normalizeText(data.notes),
         cargo: normalizeText(data.cargo),
         spreadsheet_row:
-            data.spreadsheet_row || null,
-        created_at: data.created_at || now,
+            data.spreadsheet_row ||
+            existingContact?.spreadsheet_row ||
+            null,
+        created_at:
+            existingContact?.created_at ||
+            data.created_at ||
+            now,
         updated_at: now
     };
+
+
+    if (existingContact) {
+        database
+            .prepare(`
+                UPDATE industry_contacts
+                SET
+                    laboratory_name = @laboratory_name,
+                    laboratory_key = @laboratory_key,
+                    branch = @branch,
+                    contact_name = @contact_name,
+                    phone = @phone,
+                    email = @email,
+                    service_region = @service_region,
+                    notes = @notes,
+                    cargo = @cargo,
+                    spreadsheet_row = @spreadsheet_row,
+                    updated_at = @updated_at
+                WHERE id = @id
+            `)
+            .run(contact);
+
+
+        return getContactById(contact.id);
+    }
+
 
     database
         .prepare(`
@@ -231,14 +322,17 @@ function saveContact(data = {}) {
         `)
         .run(contact);
 
+
     return getContactByLaboratoryKey(
         laboratoryKey,
         branch
     );
 }
 
+
 function deleteContact(id) {
     const database = getDatabase();
+
 
     const result =
         database
@@ -248,10 +342,12 @@ function deleteContact(id) {
             `)
             .run(id);
 
+
     return {
         success: result.changes > 0
     };
 }
+
 
 module.exports = {
     normalizeLaboratoryKey,
@@ -260,6 +356,7 @@ module.exports = {
     getLaboratoriesWithoutContacts,
     listLaboratories,
     getContactByLaboratoryKey,
+    getContactById,
     saveContact,
     deleteContact
 };

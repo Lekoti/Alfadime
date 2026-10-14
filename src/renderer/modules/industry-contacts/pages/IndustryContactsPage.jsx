@@ -46,6 +46,9 @@ import {
 import usePermissions from "../../auth/hooks/usePermissions";
 
 
+import { useModuleState } from "../../../hooks/useModuleState";
+
+
 import "../styles/industry-contacts.css";
 
 
@@ -68,6 +71,16 @@ const CHARGE_LABELS = {
 
 const PERMISSION_MODULE_KEY =
     "industry-contacts";
+
+const MODULE_ID =
+    "industry-contacts";
+
+const INITIAL_STATE = {
+    filters: {
+        ...EMPTY_INDUSTRY_CONTACT_FILTERS
+    },
+    filtersOpen: false
+};
 
 
 function IndustryContactsPage() {
@@ -104,18 +117,47 @@ function IndustryContactsPage() {
     const [rows, setRows] =
         useState([]);
 
-    const [filters, setFilters] =
-        useState({
+    const [
+        moduleState,
+        setModuleField
+    ] = useModuleState(
+        MODULE_ID,
+        INITIAL_STATE
+    );
+
+    const filters =
+        moduleState.filters ||
+        {
             ...EMPTY_INDUSTRY_CONTACT_FILTERS
-        });
+        };
 
     const [form, setForm] =
         useState({
             ...EMPTY_INDUSTRY_CONTACT_FORM
         });
 
-    const [filtersOpen, setFiltersOpen] =
-        useState(false);
+    const filtersOpen = Boolean(
+        moduleState.filtersOpen
+    );
+
+    function setFilters(next) {
+        setModuleField(
+            "filters",
+            typeof next === "function"
+                ? next(filters)
+                : next
+        );
+    }
+
+
+    function setFiltersOpen(next) {
+        setModuleField(
+            "filtersOpen",
+            typeof next === "function"
+                ? next(filtersOpen)
+                : Boolean(next)
+        );
+    }
 
     const [formOpen, setFormOpen] =
         useState(false);
@@ -542,9 +584,51 @@ function IndustryContactsPage() {
 
 
         try {
-            await saveIndustryContact(
-                form
-            );
+            const result =
+                await saveIndustryContact(
+                    form
+                );
+
+
+            const savedContact =
+                result?.contact;
+
+
+            if (savedContact) {
+                setRows((currentRows) => {
+                    const savedId =
+                        savedContact.contact_id ||
+                        savedContact.id;
+
+
+                    const existingIndex =
+                        currentRows.findIndex((row) => {
+                            const rowId =
+                                row.contact_id ||
+                                row.id;
+
+
+                            return rowId === savedId;
+                        });
+
+
+                    if (existingIndex === -1) {
+                        return [
+                            ...currentRows,
+                            savedContact
+                        ];
+                    }
+
+
+                    return currentRows.map((row, index) => {
+                        return index === existingIndex
+                            ? savedContact
+                            : row;
+                    });
+                });
+            } else {
+                await loadData();
+            }
 
 
             setForm({
@@ -558,9 +642,6 @@ function IndustryContactsPage() {
             setSuccess(
                 "Contato salvo com sucesso."
             );
-
-
-            await loadData();
         } catch (
             saveError
         ) {
@@ -652,12 +733,21 @@ function IndustryContactsPage() {
             }
 
 
+            setRows((currentRows) => {
+                return currentRows.filter((row) => {
+                    const rowId =
+                        row.contact_id ||
+                        row.id;
+
+
+                    return rowId !== contactId;
+                });
+            });
+
+
             setSuccess(
                 "Contato excluído com sucesso."
             );
-
-
-            await loadData();
         } catch (
             deleteError
         ) {
