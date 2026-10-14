@@ -7,131 +7,197 @@ import { listNotifications } from "../services/notifications.service";
 import { useModuleState } from "../../../hooks/useModuleState";
 import "../styles/notifications.css";
 import "../styles/notifications-pagination.css";
+import "../styles/notifications-refresh.css";
 
-const MODULE_ID = "notifications";
-const PAGE_SIZE = 50;
-const INITIAL_STATE = {
-    filters: { ...NOTIFICATION_FILTER_DEFAULTS, page: 1 }
-};
+const INITIAL_STATE = { filters: { ...NOTIFICATION_FILTER_DEFAULTS, page: 1 } };
 const EMPTY_PAGINATION = {
-    page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 1, from: 0, to: 0
+    page: 1, pageSize: 50, total: 0, totalPages: 1, from: 0, to: 0
 };
+
+function formatTimestamp(value) {
+    if (!value) return "Ainda não realizada";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Data indisponível" : date.toLocaleString("pt-BR");
+}
+
 
 export default function NotificationsPage() {
-    const [moduleState, setModuleField] = useModuleState(MODULE_ID, INITIAL_STATE);
+    const [moduleState, setModuleField] = useModuleState("notifications", INITIAL_STATE);
     const filters = moduleState.filters || INITIAL_STATE.filters;
-    const requestedPage = Math.max(1, Math.floor(Number(filters.page) || 1));
     const [notifications, setNotifications] = useState([]);
     const [pagination, setPagination] = useState(EMPTY_PAGINATION);
     const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(false);
+    const [lastSuccessAt, setLastSuccessAt] = useState(null);
+    const [statusLoaded, setStatusLoaded] = useState(false);
     const [error, setError] = useState("");
-    const [refresh, setRefresh] = useState(0);
+    const [updateError, setUpdateError] = useState("");
+
+    const [reload, setReload] = useState(0);
     const requestRef = useRef(0);
+    const mountedRef = useRef(false);
+    const updateRef = useRef(false);
     const queryKey = JSON.stringify({
-        ...filters, page: requestedPage, pageSize: PAGE_SIZE, paginate: true
+        ...filters,
+        page: Math.max(1, Math.floor(Number(filters.page) || 1)),
+        pageSize: 50,
+        paginate: true
     });
 
     useEffect(() => {
+        mountedRef.current = true;
         let active = true;
-        const requestId = ++requestRef.current;
+        async function loadStatus() {
+            try {
+                const api = window.alfadime?.notifications;
+                if (!api?.refreshStatus) {
+                    throw new Error("API de atualização não instalada. Reinicie o aplicativo.");
+                }
+                const status = await api.refreshStatus();
+                if (!active) return;
+                setLastSuccessAt(status.lastSuccessAt);
+                setUpdating(Boolean(status.running));
+                setStatusLoaded(true);
+                if (status.running) {
+                    updateRef.current = true;
+                    try {
+                        const result = await api.refresh();
+                        if (result?.success !== true) {
+                            throw new Error(result?.error || "Atualização sem confirmação de sucesso.");
+                        }
+                        if (active) {
+                            setLastSuccessAt(result.lastSuccessAt);
+
+                            setReload((value) => value + 1);
+                        }
+                    } finally {
+                        updateRef.current = false;
+                        if (active) setUpdating(false);
+                    }
+                }
+            } catch (statusError) {
+                if (active) {
+                    setUpdateError(statusError.message);
+                    setStatusLoaded(true);
+                    setUpdating(false);
+                }
+            }
+        }
+        loadStatus();
+        return () => { active = false; mountedRef.current = false; };
+    }, []);
+
+    useEffect(() => {
+        if (updating) return;
+        let active = true;
+        const id = ++requestRef.current;
         async function load() {
             setLoading(true);
             setError("");
             try {
                 const result = await listNotifications(JSON.parse(queryKey));
-                if (!active || requestId !== requestRef.current) return;
+                if (!active || id !== requestRef.current) return;
                 if (!Array.isArray(result?.rows) || !result?.pagination) {
-                    throw new Error(
-                        "Resposta sem paginação. Atualize os arquivos do backend e reinicie o aplicativo."
-                    );
+                    throw new Error("Resposta sem paginação. Confira o backend atualizado.");
                 }
                 setNotifications(result.rows);
                 setPagination(result.pagination);
             } catch (requestError) {
-                if (!active || requestId !== requestRef.current) return;
-                setNotifications([]);
-                setPagination(EMPTY_PAGINATION);
-                setError(requestError?.message || "Não foi possível carregar as notificações.");
+                if (active && id === requestRef.current) setError(requestError.message);
             } finally {
-                if (active && requestId === requestRef.current) setLoading(false);
+                if (active && id === requestRef.current) setLoading(false);
             }
         }
         load();
         return () => { active = false; };
-    }, [queryKey, refresh]);
+    }, [queryKey, reload, updating]);
+
+    async function handleRefresh() {
+        if (updateRef.current) return;
+        updateRef.current = true;
+        setUpdating(true);
+        setUpdateError("");
+
+        try {
+            const api = window.alfadime?.notifications;
+            if (!api?.refresh) throw new Error("API de atualização não instalada.");
+            const result = await api.refresh();
+            if (result?.success !== true) {
+                throw new Error(result?.error || "Atualização sem confirmação de sucesso.");
+            }
+            if (!mountedRef.current) return;
+            setLastSuccessAt(result.lastSuccessAt);
+
+            setReload((value) => value + 1);
+        } catch (refreshError) {
+            if (mountedRef.current) setUpdateError(refreshError.message);
+        } finally {
+            updateRef.current = false;
+            if (mountedRef.current) setUpdating(false);
+        }
+    }
 
     function updateFilters(nextFilters) {
         setModuleField("filters", { ...filters, ...nextFilters, page: 1 });
     }
-
     function clearFilters() {
         setModuleField("filters", { ...NOTIFICATION_FILTER_DEFAULTS, page: 1 });
     }
-
-    function changePage(nextPage) {
-        if (loading || error) return;
-        const page = Math.min(Math.max(nextPage, 1), pagination.totalPages);
-        setModuleField("filters", { ...filters, page });
+    function changePage(page) {
+        if (loading || updating || error) return;
+        setModuleField("filters", {
+            ...filters, page: Math.min(Math.max(page, 1), pagination.totalPages)
+        });
     }
 
     return (
         <main className="notifications-page">
             <div className="notifications-title-bar">
                 <h1>Notificações</h1>
+
             </div>
-            <NotificationsFilters
-                filters={filters}
-                onChange={updateFilters}
-                onClear={clearFilters}
-                branches={INDUSTRY_CONTACT_BRANCHES}
-            />
-            <section className="notifications-card" aria-busy={loading}>
-                <div className="notifications-card-header">
-                    <div>
-                        <strong>Notificações</strong>
-                        <span aria-live="polite">
-                            {loading
-                                ? "Carregando notificações..."
-                                : error
-                                    ? "Não foi possível carregar as notificações."
-                                    : `Exibindo ${pagination.from}–${pagination.to} de ${pagination.total} notificações.`}
-                        </span>
-                    </div>
-                </div>
-                {error ? (
-                    <div className="notifications-error" role="alert">
-                        {error}
-                        <button
-                            type="button"
-                            className="notifications-retry-button"
-                            onClick={() => setRefresh((current) => current + 1)}
-                        >
-                            Tentar novamente
-                        </button>
-                    </div>
-                ) : loading ? (
-                    <div className="notifications-loading">Carregando notificações...</div>
-                ) : (
-                    <NotificationsTable notifications={notifications} />
-                )}
-                <nav className="notifications-pagination" aria-label="Paginação de notificações">
-                    <span>
-                        Página {pagination.page} de {pagination.totalPages}
+            <NotificationsFilters filters={filters} onChange={updateFilters}
+                onClear={clearFilters} branches={INDUSTRY_CONTACT_BRANCHES} 
+                refreshControls={
+                    <div className="notifications-refresh-controls">
+                    <button type="button" className="notifications-refresh-button"
+                        disabled={updating || !statusLoaded} onClick={handleRefresh}>
+                        {updating ? "Atualizando…" : "Atualizar notificações"}
+                    </button>
+                    <span className="notifications-last-refresh" aria-live="polite">
+                        Última atualização: {statusLoaded ? formatTimestamp(lastSuccessAt) : "Carregando…"}
                     </span>
-                    <button
-                        type="button"
-                        disabled={loading || Boolean(error) || pagination.page <= 1}
-                        onClick={() => changePage(pagination.page - 1)}
-                    >
-                        Anterior
+                </div>
+                }
+            />
+            {updateError && <div className="notifications-error" role="alert">{updateError}</div>}
+            {updating && <div className="notifications-refresh-feedback" role="status">
+                Conferindo Contatos, Preços e Pendências e Auditoria de Produtos…
+            </div>}
+            <section className="notifications-card" aria-busy={loading || updating}>
+                <div className="notifications-card-header"><div>
+                    <strong>Notificações</strong>
+                </div></div>
+                {error ? <div className="notifications-error" role="alert">
+                    {error}
+                    <button type="button" className="notifications-retry-button"
+                        disabled={updating} onClick={() => setReload((value) => value + 1)}>
+                        Tentar novamente
                     </button>
-                    <button
-                        type="button"
-                        disabled={loading || Boolean(error) || pagination.page >= pagination.totalPages}
-                        onClick={() => changePage(pagination.page + 1)}
-                    >
-                        Próxima
-                    </button>
+                </div> : loading ? <div className="notifications-loading">Carregando notificações…</div> :
+                    <NotificationsTable notifications={notifications} />}
+                <nav className="notifications-pagination" aria-label="Paginação de notificações">
+                    <span className="notifications-pagination-count" aria-live="polite">
+                        {loading ? "Carregando notificações…" : error ? "Contagem indisponível." :
+                            `Exibindo ${pagination.from}–${pagination.to} de ${pagination.total} notificações.`}
+                    </span>
+                    <div className="notifications-pagination-controls">
+                        <span>Página {pagination.page} de {pagination.totalPages}</span>
+                        <button type="button" disabled={loading || updating || Boolean(error) || pagination.page <= 1}
+                            onClick={() => changePage(pagination.page - 1)}>Anterior</button>
+                        <button type="button" disabled={loading || updating || Boolean(error) || pagination.page >= pagination.totalPages}
+                            onClick={() => changePage(pagination.page + 1)}>Próxima</button>
+                    </div>
                 </nav>
             </section>
         </main>

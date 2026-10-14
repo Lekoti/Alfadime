@@ -15,6 +15,13 @@ function registerNotificationsIpc() {
 
     registered = true;
 
+    ipcMain.handle("notifications:refresh", () => {
+        return require("./notifications-refresh.service").refreshNotifications();
+    });
+    ipcMain.handle("notifications:refresh-status", () => {
+        return require("./notifications-refresh.service").getRefreshStatus();
+    });
+
     ipcMain.handle(
         "notifications:list",
         (_event, filters = {}) => {

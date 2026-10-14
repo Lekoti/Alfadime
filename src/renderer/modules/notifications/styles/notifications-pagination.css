@@ -2,7 +2,8 @@
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 7px;
     min-height: 30px;
     border-top: 1px solid #d5dbe3;
@@ -10,6 +11,17 @@
     background: #ffffff;
     color: #5e6b79;
     font-size: 10px;
+}
+
+.notifications-pagination-count {
+    margin-right: auto;
+}
+
+.notifications-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
 }
 
 .notifications-pagination button,
@@ -38,4 +50,20 @@
 
 .notifications-retry-button {
     margin-left: 8px;
+}
+
+.notifications-update-summary {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 6px;
+    border: 1px solid #b9cbdc;
+    border-radius: 4px;
+    padding: 5px 8px;
+    background: #edf3f8;
+    color: #344b65;
+    font-size: 10px;
 }

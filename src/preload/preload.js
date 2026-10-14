@@ -619,6 +619,8 @@ contextBridge.exposeInMainWorld(
 
 
         notifications: {
+            refresh: () => invoke("notifications:refresh"),
+            refreshStatus: () => invoke("notifications:refresh-status"),
             list: (
                 filters
             ) =>

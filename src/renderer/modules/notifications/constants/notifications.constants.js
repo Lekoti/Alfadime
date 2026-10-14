@@ -35,7 +35,7 @@ export const NOTIFICATION_TYPE_LABELS = {
         "Divergência de produto",
 
     SIRS_ERROR:
-        "Código SIRS incorreto",
+        "Divergência de código Sirius",
 
     INCOMPLETE_CONTACT:
         "Contato incompleto"

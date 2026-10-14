@@ -9,6 +9,7 @@ import {
 
 
 const SOURCE_MODULES = [
+    { value: "product-audit", label: "Auditoria de Produtos" },
     {
         value: "products",
         label: "Produtos"
@@ -20,10 +21,6 @@ const SOURCE_MODULES = [
     {
         value: "industry-contacts",
         label: "Contatos"
-    },
-    {
-        value: "purchases",
-        label: "Compras"
     }
 ];
 
@@ -32,7 +29,7 @@ function NotificationsFilters({
     filters,
     onChange,
     onClear,
-    branches = []
+    branches = [], refreshControls = null
 }) {
     function handleChange(event) {
         const { name, value } = event.target;
@@ -154,6 +151,7 @@ function NotificationsFilters({
             >
                 Limpar
             </button>
+        {refreshControls}
         </section>
     );
 }

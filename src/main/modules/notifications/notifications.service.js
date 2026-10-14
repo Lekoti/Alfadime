@@ -76,7 +76,7 @@ function positiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER) {
 
 function listNotifications(filters = {}) {
     const normalizedFilters = normalizeFilters(filters);
-    reconcileNotifications();
+
     if (filters.paginate !== true) {
         return repository.listNotifications(normalizedFilters);
     }
@@ -181,7 +181,7 @@ function remove(id) {
 
 function getSummary(filters = {}) {
     const normalizedFilters = normalizeFilters(filters);
-    reconcileNotifications();
+
     const total = repository.countNotifications(normalizedFilters);
     const pending = repository.countNotifications({
         ...normalizedFilters, status: NOTIFICATION_STATUSES.PENDING

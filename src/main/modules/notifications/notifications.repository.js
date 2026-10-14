@@ -36,7 +36,19 @@ function mapNotificationRow(row) {
 function buildListWhere(filters = {}) {
     const conditions = [];
     const params = {};
+    const siriusFilter = filters.type === "SIRS_ERROR";
+    if (siriusFilter) {
+        conditions.push(`(
+            type = 'SIRS_ERROR'
+            OR (
+                type = 'PRODUCT_DIVERGENCE'
+                AND CASE WHEN json_valid(metadata)
+                    THEN json_extract(metadata, '$.field_name') ELSE NULL END = 'sirius_code'
+            )
+        )`);
+    }
     for (const field of ["status", "type", "priority", "source_module", "branch"]) {
+        if (field === "type" && siriusFilter) continue;
         if (filters[field]) {
             conditions.push(`${field} = @${field}`);
             params[field] = String(filters[field]).trim();
