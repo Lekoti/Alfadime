@@ -1,18 +1,24 @@
-﻿import {
-    Outlet
-} from "react-router-dom";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 
 import Sidebar from "./Sidebar";
-import AppUpdater from
-    "../components/app-updater/AppUpdater";
+import AppUpdater from "../components/app-updater/AppUpdater";
 
 import "./MainLayout.css";
 
-
 function MainLayout() {
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    function toggleSidebar() {
+        setSidebarCollapsed((current) => !current);
+    }
+
     return (
-        <div className="alfadime-shell">
-            <Sidebar />
+        <div className={`alfadime-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
+            <Sidebar
+                collapsed={sidebarCollapsed}
+                onToggle={toggleSidebar}
+            />
 
             <main className="alfadime-content">
                 <AppUpdater />
@@ -24,6 +30,5 @@ function MainLayout() {
         </div>
     );
 }
-
 
 export default MainLayout;

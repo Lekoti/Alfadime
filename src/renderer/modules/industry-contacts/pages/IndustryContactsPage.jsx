@@ -5,12 +5,14 @@ import {
     useState
 } from "react";
 
+
 import {
     Download,
     Mail,
     Plus,
     SlidersHorizontal
 } from "lucide-react";
+
 
 import {
     listIndustryContacts,
@@ -20,14 +22,18 @@ import {
     sendIndustryContactCharge
 } from "../services/industry-contacts.service";
 
+
 import IndustryContactsFilters from
     "../components/IndustryContactsFilters";
+
 
 import IndustryContactsForm from
     "../components/IndustryContactsForm";
 
+
 import IndustryContactsTable from
     "../components/IndustryContactsTable";
+
 
 import {
     EMPTY_INDUSTRY_CONTACT_FILTERS,
@@ -36,20 +42,25 @@ import {
     INDUSTRY_CONTACT_EXPORT_COLUMNS
 } from "../constants/industry-contacts.constants";
 
+
 import usePermissions from "../../auth/hooks/usePermissions";
 
+
 import { useModuleState } from "../../../hooks/useModuleState";
+
 
 import IndustryContactsChargePreview from "../components/IndustryContactsChargePreview";
 import IndustryContactsBulkChargeModal from "../components/IndustryContactsBulkChargeModal";
 import { matchesChargeUpdate, formatChargeDate } from "../utils/industry-contacts-charge.utils";
 import "../styles/industry-contacts.css";
 
+
 const CHARGE_TYPES = {
     PRICES: "prices",
     PENDING: "pending",
     BOTH: "both"
 };
+
 
 const CHARGE_LABELS = {
     [CHARGE_TYPES.PRICES]:
@@ -60,11 +71,14 @@ const CHARGE_LABELS = {
         "Cobrar preços e pendências"
 };
 
+
 const PERMISSION_MODULE_KEY =
     "industry-contacts";
 
+
 const MODULE_ID =
     "industry-contacts";
+
 
 const INITIAL_STATE = {
     filters: {
@@ -73,11 +87,13 @@ const INITIAL_STATE = {
     filtersOpen: false
 };
 
+
 function IndustryContactsPage() {
     const {
         isLoading: isLoadingPermissions,
         can
     } = usePermissions();
+
 
     const canEdit =
         can(
@@ -85,11 +101,13 @@ function IndustryContactsPage() {
             "can_edit"
         );
 
+
     const canDelete =
         can(
             PERMISSION_MODULE_KEY,
             "can_delete"
         );
+
 
     const canExport =
         can(
@@ -97,14 +115,17 @@ function IndustryContactsPage() {
             "can_export"
         );
 
+
     const canCharge =
         can(
             PERMISSION_MODULE_KEY,
             "can_approve"
         );
 
+
     const [rows, setRows] =
         useState([]);
+
 
     const [
         moduleState,
@@ -114,20 +135,24 @@ function IndustryContactsPage() {
         INITIAL_STATE
     );
 
+
     const filters =
         moduleState.filters ||
         {
             ...EMPTY_INDUSTRY_CONTACT_FILTERS
         };
 
+
     const [form, setForm] =
         useState({
             ...EMPTY_INDUSTRY_CONTACT_FORM
         });
 
+
     const filtersOpen = Boolean(
         moduleState.filtersOpen
     );
+
 
     function setFilters(next) {
         setModuleField(
@@ -138,6 +163,7 @@ function IndustryContactsPage() {
         );
     }
 
+
     function setFiltersOpen(next) {
         setModuleField(
             "filtersOpen",
@@ -147,53 +173,70 @@ function IndustryContactsPage() {
         );
     }
 
+
     const [formOpen, setFormOpen] =
         useState(false);
+
 
     const [loading, setLoading] =
         useState(true);
 
+
     const [saving, setSaving] =
         useState(false);
+
 
     const [exporting, setExporting] =
         useState(false);
 
+
     const [deleting, setDeleting] =
         useState(false);
+
 
     const [charging, setCharging] =
         useState(false);
 
+
     const [bulkChargeOpen, setBulkChargeOpen] =
         useState(false);
+
 
     const [chargeRow, setChargeRow] =
         useState(null);
 
+
     const [chargeMenuOpen, setChargeMenuOpen] =
         useState(false);
+
 
     const [previewOpen, setPreviewOpen] =
         useState(false);
 
+
     const [chargeType, setChargeType] =
         useState("");
+
 
     const [chargePreview, setChargePreview] =
         useState(null);
 
+
     const [error, setError] =
         useState("");
+
 
     const [success, setSuccess] =
         useState("");
 
+
     const loadingRef =
         useRef(false);
 
+
     const requestIdRef =
         useRef(0);
+
 
     async function loadData() {
         if (
@@ -202,22 +245,28 @@ function IndustryContactsPage() {
             return;
         }
 
+
         const requestId =
             requestIdRef.current +
             1;
 
+
         requestIdRef.current =
             requestId;
+
 
         loadingRef.current =
             true;
 
+
         setLoading(true);
         setError("");
+
 
         try {
             const result =
                 await listIndustryContacts();
+
 
             if (
                 requestId !==
@@ -225,6 +274,7 @@ function IndustryContactsPage() {
             ) {
                 return;
             }
+
 
             setRows(
                 Array.isArray(
@@ -243,10 +293,12 @@ function IndustryContactsPage() {
                 return;
             }
 
+
             console.error(
                 "Erro ao carregar contatos:",
                 loadError
             );
+
 
             setError(
                 "Não foi possível carregar os contatos."
@@ -259,10 +311,12 @@ function IndustryContactsPage() {
                 setLoading(false);
             }
 
+
             loadingRef.current =
                 false;
         }
     }
+
 
     useEffect(() => {
         if (
@@ -271,10 +325,12 @@ function IndustryContactsPage() {
             return;
         }
 
+
         loadData();
     }, [
         isLoadingPermissions
     ]);
+
 
     const branches = useMemo(() => {
         const values = new Set(
@@ -286,12 +342,14 @@ function IndustryContactsPage() {
                 .filter(Boolean)
         );
 
+
         INDUSTRY_CONTACT_BRANCHES.forEach(
             (branch) =>
                 values.add(
                     branch
                 )
         );
+
 
         return Array.from(
             values
@@ -306,6 +364,7 @@ function IndustryContactsPage() {
                 )
         );
     }, [rows]);
+
 
     const cargos = useMemo(() => {
         return Array.from(
@@ -329,6 +388,7 @@ function IndustryContactsPage() {
         );
     }, [rows]);
 
+
     const filteredRows = useMemo(() => {
         const search =
             filters.search
@@ -336,6 +396,7 @@ function IndustryContactsPage() {
                 .toLocaleLowerCase(
                     "pt-BR"
                 );
+
 
         return rows.filter(
             (row) => {
@@ -354,6 +415,7 @@ function IndustryContactsPage() {
                     row.notes
                 ];
 
+
                 const matchesSearch =
                     !search ||
                     searchableValues
@@ -371,11 +433,13 @@ function IndustryContactsPage() {
                                     )
                         );
 
+
                 const status =
                     String(
                         row.status_label ||
                             ""
                     ).trim();
+
 
                 const matchesStatus =
                     filters.status ===
@@ -395,15 +459,18 @@ function IndustryContactsPage() {
                     filters.status ===
                         status;
 
+
                 const matchesBranch =
                     !filters.branch ||
                     row.branch ===
                         filters.branch;
 
+
                 const matchesCargo =
                     !filters.cargo ||
                     row.cargo ===
                         filters.cargo;
+
 
                 return (
                     matchesSearch &&
@@ -419,9 +486,11 @@ function IndustryContactsPage() {
         filters
     ]);
 
+
     const summary = useMemo(() => {
         const total =
             rows.length;
+
 
         const withContact =
             rows.filter(
@@ -429,6 +498,7 @@ function IndustryContactsPage() {
                     row.has_contact ===
                     1
             ).length;
+
 
         return {
             total,
@@ -439,11 +509,13 @@ function IndustryContactsPage() {
         };
     }, [rows]);
 
+
     function clearFilters() {
         setFilters({
             ...EMPTY_INDUSTRY_CONTACT_FILTERS
         });
     }
+
 
     function openCreateForm() {
         if (
@@ -453,18 +525,23 @@ function IndustryContactsPage() {
                 "Você não tem permissão para criar contatos."
             );
 
+
             return;
         }
 
+
         setError("");
         setSuccess("");
+
 
         setForm({
             ...EMPTY_INDUSTRY_CONTACT_FORM
         });
 
+
         setFormOpen(true);
     }
+
 
     function editRow(
         row
@@ -476,11 +553,14 @@ function IndustryContactsPage() {
                 "Você não tem permissão para editar contatos."
             );
 
+
             return;
         }
 
+
         setError("");
         setSuccess("");
+
 
         setForm({
             id:
@@ -513,13 +593,16 @@ function IndustryContactsPage() {
                 ""
         });
 
+
         setFormOpen(true);
     }
+
 
     async function handleSubmit(
         event
     ) {
         event.preventDefault();
+
 
         if (
             !canEdit
@@ -528,12 +611,15 @@ function IndustryContactsPage() {
                 "Você não tem permissão para salvar contatos."
             );
 
+
             return;
         }
+
 
         setSaving(true);
         setError("");
         setSuccess("");
+
 
         try {
             const result =
@@ -541,8 +627,10 @@ function IndustryContactsPage() {
                     form
                 );
 
+
             const savedContact =
                 result?.contact;
+
 
             if (savedContact) {
                 setRows((currentRows) => {
@@ -550,14 +638,17 @@ function IndustryContactsPage() {
                         savedContact.contact_id ||
                         savedContact.id;
 
+
                     const existingIndex =
                         currentRows.findIndex((row) => {
                             const rowId =
                                 row.contact_id ||
                                 row.id;
 
+
                             return rowId === savedId;
                         });
+
 
                     if (existingIndex === -1) {
                         return [
@@ -565,6 +656,7 @@ function IndustryContactsPage() {
                             savedContact
                         ];
                     }
+
 
                     return currentRows.map((row, index) => {
                         return index === existingIndex
@@ -576,13 +668,17 @@ function IndustryContactsPage() {
                 await loadData();
             }
 
+
             setForm({
                 ...EMPTY_INDUSTRY_CONTACT_FORM
             });
 
+
             setFormOpen(false);
 
+
             await loadData();
+
 
             setSuccess(
                 "Contato salvo com sucesso."
@@ -595,6 +691,7 @@ function IndustryContactsPage() {
                 saveError
             );
 
+
             setError(
                 saveError?.message ||
                     "Não foi possível salvar o contato."
@@ -603,6 +700,7 @@ function IndustryContactsPage() {
             setSaving(false);
         }
     }
+
 
     async function handleDelete(
         row
@@ -614,12 +712,15 @@ function IndustryContactsPage() {
                 "Você não tem permissão para excluir contatos."
             );
 
+
             return;
         }
+
 
         const contactId =
             row?.contact_id ||
             row?.id;
+
 
         if (
             !contactId
@@ -628,17 +729,21 @@ function IndustryContactsPage() {
                 "Não foi possível identificar o contato."
             );
 
+
             return;
         }
+
 
         const laboratory =
             row?.laboratory_name ||
             "este contato";
 
+
         const confirmed =
             window.confirm(
                 `Deseja excluir o contato de ${laboratory}?`
             );
+
 
         if (
             !confirmed
@@ -646,15 +751,18 @@ function IndustryContactsPage() {
             return;
         }
 
+
         setDeleting(true);
         setError("");
         setSuccess("");
+
 
         try {
             const result =
                 await deleteIndustryContact(
                     contactId
                 );
+
 
             if (
                 result?.success ===
@@ -665,15 +773,18 @@ function IndustryContactsPage() {
                 );
             }
 
+
             setRows((currentRows) => {
                 return currentRows.filter((row) => {
                     const rowId =
                         row.contact_id ||
                         row.id;
 
+
                     return rowId !== contactId;
                 });
             });
+
 
             setSuccess(
                 "Contato excluído com sucesso."
@@ -686,6 +797,7 @@ function IndustryContactsPage() {
                 deleteError
             );
 
+
             setError(
                 deleteError?.message ||
                     "Não foi possível excluir o contato."
@@ -694,6 +806,7 @@ function IndustryContactsPage() {
             setDeleting(false);
         }
     }
+
 
     function getChargeBlockMessage(
         row,
@@ -707,8 +820,10 @@ function IndustryContactsPage() {
             );
         }
 
+
         return "";
     }
+
 
     function handleCharge(
         row
@@ -720,8 +835,10 @@ function IndustryContactsPage() {
                 "Você não tem permissão para enviar cobranças."
             );
 
+
             return;
         }
+
 
         setError("");
         setSuccess("");
@@ -732,6 +849,7 @@ function IndustryContactsPage() {
         setChargeType("");
     }
 
+
     async function handleSelectCharge(
         type
     ) {
@@ -741,6 +859,7 @@ function IndustryContactsPage() {
                 type
             );
 
+
         if (
             blockMessage
         ) {
@@ -749,12 +868,15 @@ function IndustryContactsPage() {
             );
             setChargeMenuOpen(false);
 
+
             return;
         }
+
 
         setCharging(true);
         setError("");
         setSuccess("");
+
 
         try {
             const preview =
@@ -770,17 +892,21 @@ function IndustryContactsPage() {
                         type
                 });
 
+
             setChargeType(
                 type
             );
+
 
             setChargePreview(
                 preview
             );
 
+
             setChargeMenuOpen(
                 false
             );
+
 
             setPreviewOpen(
                 true
@@ -793,10 +919,12 @@ function IndustryContactsPage() {
                 chargeError
             );
 
+
             setError(
                 chargeError?.message ||
                     "Não foi possível preparar a cobrança."
             );
+
 
             setChargeMenuOpen(
                 false
@@ -808,6 +936,7 @@ function IndustryContactsPage() {
         }
     }
 
+
     async function handleSendCharge() {
         if (
             !canCharge
@@ -816,8 +945,10 @@ function IndustryContactsPage() {
                 "Você não tem permissão para enviar cobranças."
             );
 
+
             return;
         }
+
 
         if (
             !chargePreview
@@ -826,13 +957,16 @@ function IndustryContactsPage() {
                 "A prévia da cobrança não está disponível."
             );
 
+
             return;
         }
+
 
         const confirmed =
             window.confirm(
                 "Confirma o envio desta cobrança?"
             );
+
 
         if (
             !confirmed
@@ -840,9 +974,11 @@ function IndustryContactsPage() {
             return;
         }
 
+
         setCharging(true);
         setError("");
         setSuccess("");
+
 
         try {
             const result =
@@ -858,6 +994,7 @@ function IndustryContactsPage() {
                     charge_type:
                         chargeType
                 });
+
 
             closeChargePreview();
             await loadData();
@@ -880,6 +1017,7 @@ function IndustryContactsPage() {
                 sendError
             );
 
+
             setError(
                 sendError?.message ||
                     "Não foi possível enviar a cobrança."
@@ -891,27 +1029,33 @@ function IndustryContactsPage() {
         }
     }
 
+
     function closeChargePreview() {
         setChargeMenuOpen(
             false
         );
 
+
         setPreviewOpen(
             false
         );
+
 
         setChargeRow(
             null
         );
 
+
         setChargeType(
             ""
         );
+
 
         setChargePreview(
             null
         );
     }
+
 
     async function handleExport() {
         if (
@@ -921,8 +1065,10 @@ function IndustryContactsPage() {
                 "Você não tem permissão para exportar contatos."
             );
 
+
             return;
         }
+
 
         if (
             !rows.length
@@ -931,15 +1077,19 @@ function IndustryContactsPage() {
                 "Não existem contatos para exportar."
             );
 
+
             return;
         }
+
 
         setExporting(
             true
         );
 
+
         setError("");
         setSuccess("");
+
 
         try {
             const exportRows =
@@ -951,6 +1101,7 @@ function IndustryContactsPage() {
                     })
                 );
 
+
             const result =
                 await window.alfadime.export
                     .industryContacts(
@@ -958,6 +1109,7 @@ function IndustryContactsPage() {
                         INDUSTRY_CONTACT_EXPORT_COLUMNS,
                         exportRows
                     );
+
 
             if (
                 !result?.cancelled
@@ -975,6 +1127,7 @@ function IndustryContactsPage() {
                 exportError
             );
 
+
             setError(
                 exportError.message ||
                     "Não foi possível exportar os contatos."
@@ -986,11 +1139,13 @@ function IndustryContactsPage() {
         }
     }
 
+
     function closeActionsPanel() {
         setFiltersOpen(
             false
         );
     }
+
 
     if (
         isLoadingPermissions
@@ -1004,12 +1159,14 @@ function IndustryContactsPage() {
         );
     }
 
+
     return (
         <main className="industry-contacts-page">
             <header className="industry-contacts-header">
                 <h1>
                     Contatos
                 </h1>
+
 
                 <button
                     type="button"
@@ -1030,6 +1187,7 @@ function IndustryContactsPage() {
                         strokeWidth={1.9}
                     />
 
+
                     {
                         filtersOpen
                             ? "Fechar filtros e ações"
@@ -1037,6 +1195,7 @@ function IndustryContactsPage() {
                     }
                 </button>
             </header>
+
 
             {filtersOpen && (
                 <section
@@ -1066,6 +1225,7 @@ function IndustryContactsPage() {
                         </button>
                     </div>
 
+
                     <IndustryContactsFilters
                         filters={filters}
                         branches={branches}
@@ -1090,10 +1250,11 @@ function IndustryContactsPage() {
                 </section>
             )}
 
+
             {formOpen && (
                 <section
                     className={
-                        "industry-contacts-actions-panel"
+                        "industry-contacts-actions-panel industry-contacts-form-panel"
                     }
                 >
                     <IndustryContactsForm
@@ -1114,6 +1275,7 @@ function IndustryContactsPage() {
                                 false
                             );
 
+
                             setForm({
                                 ...EMPTY_INDUSTRY_CONTACT_FORM
                             });
@@ -1121,6 +1283,7 @@ function IndustryContactsPage() {
                     />
                 </section>
             )}
+
 
             {error && (
                 <div
@@ -1132,6 +1295,7 @@ function IndustryContactsPage() {
                 </div>
             )}
 
+
             {success && (
                 <div
                     className={
@@ -1141,6 +1305,7 @@ function IndustryContactsPage() {
                     {success}
                 </div>
             )}
+
 
             <section
                 className={
@@ -1157,6 +1322,7 @@ function IndustryContactsPage() {
                             Lista de contatos
                         </h2>
 
+
                         <span>
                             {loading
                                 ? "Carregando contatos..."
@@ -1164,6 +1330,7 @@ function IndustryContactsPage() {
                         </span>
                     </div>
                 </div>
+
 
                 <IndustryContactsTable
                     rows={
@@ -1199,6 +1366,7 @@ function IndustryContactsPage() {
                 />
             </section>
 
+
             {chargeMenuOpen &&
                 chargeRow && (
                     <div
@@ -1223,12 +1391,14 @@ function IndustryContactsPage() {
                                         Cobrar contato
                                     </h2>
 
+
                                     <span>
                                         {
                                             chargeRow.laboratory_name
                                         }
                                     </span>
                                 </div>
+
 
                                 <button
                                     type="button"
@@ -1244,9 +1414,11 @@ function IndustryContactsPage() {
                                 </button>
                             </div>
 
+
                             <p>
                                 Selecione o tipo de cobrança:
                             </p>
+
 
                             <div
                                 className={
@@ -1272,8 +1444,10 @@ function IndustryContactsPage() {
                                         strokeWidth={1.9}
                                     />
 
+
                                     Cobrar preços
                                 </button>
+
 
                                 <button
                                     type="button"
@@ -1294,8 +1468,10 @@ function IndustryContactsPage() {
                                         strokeWidth={1.9}
                                     />
 
+
                                     Cobrar pendências
                                 </button>
+
 
                                 <button
                                     type="button"
@@ -1316,9 +1492,11 @@ function IndustryContactsPage() {
                                         strokeWidth={1.9}
                                     />
 
+
                                     Cobrar ambos
                                 </button>
                             </div>
+
 
                             <button
                                 type="button"
@@ -1337,6 +1515,7 @@ function IndustryContactsPage() {
                         </div>
                     </div>
                 )}
+
 
             {previewOpen &&
                 chargeRow &&
@@ -1363,6 +1542,7 @@ function IndustryContactsPage() {
                                         Prévia da cobrança
                                     </h2>
 
+
                                     <span>
                                         {
                                             CHARGE_LABELS[
@@ -1371,6 +1551,7 @@ function IndustryContactsPage() {
                                         }
                                     </span>
                                 </div>
+
 
                                 <button
                                     type="button"
@@ -1389,7 +1570,9 @@ function IndustryContactsPage() {
                                 </button>
                             </div>
 
+
                             <IndustryContactsChargePreview preview={chargePreview} />
+
 
                             <div
                                 className={
@@ -1410,6 +1593,7 @@ function IndustryContactsPage() {
                                 >
                                     Cancelar
                                 </button>
+
 
                                 <button
                                     type="button"
@@ -1444,5 +1628,6 @@ function IndustryContactsPage() {
         </main>
     );
 }
+
 
 export default IndustryContactsPage;
