@@ -1,2 +1,0 @@
-Set-ExecutionPolicy -Scope Process Bypass
-.\gerar-inventario-alfadime.ps1
