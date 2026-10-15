@@ -1043,3 +1043,73 @@
     color: #9f414c;
 }
 
+
+/* Contatos: tabela adaptada à largura disponível, sem rolagem horizontal */
+.industry-contacts-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.industry-contacts-table {
+    width: 100%;
+    min-width: 0;
+    border-collapse: collapse;
+    table-layout: auto;
+    font-size: 9px;
+}
+
+.industry-contacts-table th,
+.industry-contacts-table td {
+    box-sizing: border-box;
+    border-top: 1px solid #e1e6ed;
+    padding: 6px 5px;
+    text-align: left;
+    vertical-align: middle;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.industry-contacts-table th {
+    background: #f5f8fb;
+    color: #6b7785;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.industry-contacts-laboratory {
+    color: #263241;
+    font-weight: 700;
+    min-width: 120px;
+}
+
+.industry-contacts-observation-cell {
+    min-width: 140px;
+    max-width: 260px;
+    overflow: hidden;
+    color: #56616d;
+    white-space: normal;
+}
+
+.industry-contacts-row-actions,
+.industry-contacts-status {
+    white-space: nowrap;
+}
+
+.industry-contacts-status {
+    max-width: 120px;
+}
+
+@media (max-width: 560px) {
+    .industry-contacts-table-wrapper {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .industry-contacts-table {
+        min-width: 0;
+    }
+}
