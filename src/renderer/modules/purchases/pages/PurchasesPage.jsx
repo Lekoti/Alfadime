@@ -19,9 +19,7 @@ import {
 } from "../services/purchases.service";
 import "../styles/purchases.css";
 
-
 const MODULE_ID = "purchases";
-
 
 const DEFAULT_CURVE_DAYS = {
     A: 90,
@@ -32,7 +30,6 @@ const DEFAULT_CURVE_DAYS = {
     F: 30,
     G: 30
 };
-
 
 const DEFAULT_FILTERS = {
     search: "",
@@ -45,12 +42,10 @@ const DEFAULT_FILTERS = {
     curveDays: DEFAULT_CURVE_DAYS
 };
 
-
 const INITIAL_STATE = {
     filters: DEFAULT_FILTERS,
     filtersPanelOpen: false
 };
-
 
 const FILTER_KEYS = [
     "search",
@@ -59,7 +54,6 @@ const FILTER_KEYS = [
     "effectivecurve",
     "status"
 ];
-
 
 export default function PurchasesPage() {
     const [
@@ -93,6 +87,21 @@ export default function PurchasesPage() {
     const [exporting, setExporting] = useState(false);
     const [exportError, setExportError] = useState(null);
 
+    useEffect(() => {
+        if (!visibleColumns.includes("averagesale")) {
+            setVisibleColumns([
+                ...visibleColumns,
+                "averagesale"
+            ]);
+        }
+
+        if (!columnOrder.includes("averagesale")) {
+            setColumnOrder([
+                ...columnOrder,
+                "averagesale"
+            ]);
+        }
+    }, [visibleColumns, columnOrder, setVisibleColumns, setColumnOrder]);
 
     function setFilters(next) {
         setModuleField(
@@ -103,7 +112,6 @@ export default function PurchasesPage() {
         );
     }
 
-
     function setFiltersPanelOpen(next) {
         setModuleField(
             "filtersPanelOpen",
@@ -113,16 +121,13 @@ export default function PurchasesPage() {
         );
     }
 
-
     const hasActiveFilter = FILTER_KEYS.some(
         (key) => String(filters[key] || "").trim() !== ""
     );
 
-
     const currentPageSize = hasActiveFilter
         ? 10000
         : 50;
-
 
     const {
         rows,
@@ -138,7 +143,6 @@ export default function PurchasesPage() {
         pageSize: currentPageSize
     });
 
-
     useEffect(() => {
         setSelectedIds([]);
         setSelectAllFiltered(false);
@@ -151,7 +155,6 @@ export default function PurchasesPage() {
         filters.status
     ]);
 
-
     function updateFilters(nextFilters) {
         setFilters((current) => ({
             ...current,
@@ -163,7 +166,6 @@ export default function PurchasesPage() {
         setSelectAllFiltered(false);
     }
 
-
     function updateCurveDays(nextCurveDays) {
         setFilters((current) => ({
             ...current,
@@ -172,14 +174,12 @@ export default function PurchasesPage() {
         }));
     }
 
-
     function changePage(page) {
         setFilters((current) => ({
             ...current,
             page
         }));
     }
-
 
     async function handleSync() {
         const confirmed = window.confirm(
@@ -211,7 +211,6 @@ export default function PurchasesPage() {
         }
     }
 
-
     async function handleQuantityChange(product, quantity) {
         try {
             await setPurchaseQuantityOverride(product.id, quantity);
@@ -225,7 +224,6 @@ export default function PurchasesPage() {
         }
     }
 
-
     function toggleSelected(id) {
         setSelectAllFiltered(false);
 
@@ -238,7 +236,6 @@ export default function PurchasesPage() {
         });
     }
 
-
     function toggleSelectAll() {
         if (selectAllFiltered) {
             setSelectAllFiltered(false);
@@ -249,7 +246,6 @@ export default function PurchasesPage() {
         setSelectAllFiltered(true);
         setSelectedIds(rows.map((row) => row.id));
     }
-
 
     async function handleExportStandard() {
         if (selectedIds.length === 0 && !selectAllFiltered) {
@@ -279,16 +275,13 @@ export default function PurchasesPage() {
         }
     }
 
-
     function handleVisibleColumnsChange(newColumns) {
         setVisibleColumns(newColumns);
     }
 
-
     function handleColumnOrderChange(newOrder) {
         setColumnOrder(newOrder);
     }
-
 
     return (
         <main className="purchases-page">
@@ -303,7 +296,6 @@ export default function PurchasesPage() {
                     {filtersPanelOpen ? "Fechar filtros e ações" : "Filtros e ações"}
                 </button>
             </div>
-
 
             {filtersPanelOpen && (
                 <section className="purchases-floating-panel">
@@ -320,7 +312,6 @@ export default function PurchasesPage() {
                         </button>
                     </div>
 
-
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Filtros</div>
 
@@ -329,7 +320,6 @@ export default function PurchasesPage() {
                             onFiltersChange={updateFilters}
                         />
                     </div>
-
 
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Metas de estoque por curva</div>
@@ -340,7 +330,6 @@ export default function PurchasesPage() {
                             onCurveDaysChange={updateCurveDays}
                         />
                     </div>
-
 
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Resumo</div>
@@ -368,7 +357,6 @@ export default function PurchasesPage() {
                         </div>
                     </div>
 
-
                     <div className="purchases-panel-section">
                         <div className="purchases-panel-section-title">Ações</div>
 
@@ -382,7 +370,6 @@ export default function PurchasesPage() {
                                 {exporting ? "Exportando..." : "Exportar Excel"}
                             </button>
 
-
                             <div className="purchases-panel-column-selector-wrapper">
                                 <PurchaseColumnSelector
                                     columns={PURCHASE_COLUMNS}
@@ -392,7 +379,6 @@ export default function PurchasesPage() {
                                     onColumnOrderChange={handleColumnOrderChange}
                                 />
                             </div>
-
 
                             <button
                                 type="button"
@@ -407,20 +393,17 @@ export default function PurchasesPage() {
                 </section>
             )}
 
-
             {error && (
                 <div className="purchases-error">
                     <strong>Erro:</strong> {error}
                 </div>
             )}
 
-
             {exportError && (
                 <div className="purchases-error">
                     <strong>Erro:</strong> {exportError}
                 </div>
             )}
-
 
             <section className="purchases-card">
                 <div className="purchases-card-header">
@@ -433,13 +416,11 @@ export default function PurchasesPage() {
                         </span>
                     </div>
 
-
                     <div className="purchases-selection-info">
                         <strong>{selectedIds.length}</strong> selecionados
                         {selectAllFiltered && " (todos os filtrados)"}
                     </div>
                 </div>
-
 
                 {loading ? (
                     <div className="purchases-loading">
@@ -458,7 +439,6 @@ export default function PurchasesPage() {
                         onQuantityChange={handleQuantityChange}
                     />
                 )}
-
 
                 <ProductPagination
                     pagination={pagination}

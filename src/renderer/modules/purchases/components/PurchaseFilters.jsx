@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { getPurchaseFilterOptions } from "../services/purchases.service";
 
-
-
 function PurchaseFilters({
     filters,
     onFiltersChange
@@ -13,12 +11,8 @@ function PurchaseFilters({
         effectivecurve: []
     });
 
-
-
     useEffect(() => {
         let active = true;
-
-
 
         async function loadOptions() {
             try {
@@ -28,14 +22,10 @@ function PurchaseFilters({
                     "effectivecurve"
                 ];
 
-
-
                 const entries = await Promise.all(
                     fields.map(async (field) => {
                         const values =
                             await getPurchaseFilterOptions(field);
-
-
 
                         return [
                             field === "laboratoryname"
@@ -45,8 +35,6 @@ function PurchaseFilters({
                         ];
                     })
                 );
-
-
 
                 if (active) {
                     setOptions(Object.fromEntries(entries));
@@ -59,18 +47,12 @@ function PurchaseFilters({
             }
         }
 
-
-
         loadOptions();
-
-
 
         return () => {
             active = false;
         };
     }, []);
-
-
 
     function update(key, value) {
         onFiltersChange({
@@ -79,8 +61,6 @@ function PurchaseFilters({
             page: 1
         });
     }
-
-
 
     function clear() {
         onFiltersChange({
@@ -93,8 +73,6 @@ function PurchaseFilters({
             page: 1
         });
     }
-
-
 
     return (
         <section className="purchases-filters">
@@ -109,8 +87,6 @@ function PurchaseFilters({
                     }
                 />
             </div>
-
-
 
             <div className="purchases-filter-field">
                 <label>Empresa</label>
@@ -129,8 +105,6 @@ function PurchaseFilters({
                 </select>
             </div>
 
-
-
             <div className="purchases-filter-field">
                 <label>Laboratório</label>
                 <select
@@ -148,8 +122,6 @@ function PurchaseFilters({
                 </select>
             </div>
 
-
-
             <div className="purchases-filter-field">
                 <label>Curva</label>
                 <select
@@ -166,8 +138,6 @@ function PurchaseFilters({
                     ))}
                 </select>
             </div>
-
-
 
             <div className="purchases-filter-field">
                 <label>Situação</label>
@@ -189,8 +159,6 @@ function PurchaseFilters({
                 </select>
             </div>
 
-
-
             <button
                 type="button"
                 className="purchases-clear-button"
@@ -201,7 +169,5 @@ function PurchaseFilters({
         </section>
     );
 }
-
-
 
 export default PurchaseFilters;
