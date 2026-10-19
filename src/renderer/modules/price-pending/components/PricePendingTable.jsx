@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
 
 
-
 import {
     getPendingExternalUpdate,
     getUpdateDateClass
 } from "../utils/price-pending.utils";
-
 
 
 export default function PricePendingTable({
@@ -28,23 +26,19 @@ export default function PricePendingTable({
     const safeRows = Array.isArray(rows) ? rows : [];
 
 
-
     const totalColumns = useMemo(() => {
         let count = visibleColumnsList.length;
-
 
         if (permissions.canViewIndustryGlobalCode) count += 1;
         if (permissions.canViewLaboratory) count += 1;
         if (permissions.canViewObservation) count += 1;
         if (permissions.canRemoveLaboratory) count += 1;
 
-
         return count;
     }, [
         permissions,
         visibleColumnsList
     ]);
-
 
 
     return (
@@ -54,13 +48,11 @@ export default function PricePendingTable({
                     <strong>Lista de laboratórios</strong>
 
 
-
                     <span>
                         {safeRows.length} registro(s)
                         {searchTerm && ` (filtrado de ${allRowsCount})`}
                     </span>
                 </div>
-
 
 
                 {(saving || savingCell !== null) && (
@@ -69,7 +61,6 @@ export default function PricePendingTable({
                     </span>
                 )}
             </div>
-
 
 
             <div
@@ -90,7 +81,6 @@ export default function PricePendingTable({
                             )}
 
 
-
                             {permissions.canViewLaboratory && (
                                 <th
                                     rowSpan="2"
@@ -101,7 +91,6 @@ export default function PricePendingTable({
                             )}
 
 
-
                             {permissions.canViewObservation && (
                                 <th
                                     rowSpan="2"
@@ -110,7 +99,6 @@ export default function PricePendingTable({
                                     Observação
                                 </th>
                             )}
-
 
 
                             {headerGroups.map(({ group, groupColumns }) => (
@@ -124,7 +112,6 @@ export default function PricePendingTable({
                             ))}
 
 
-
                             {permissions.canRemoveLaboratory && (
                                 <th
                                     rowSpan="2"
@@ -134,7 +121,6 @@ export default function PricePendingTable({
                                 </th>
                             )}
                         </tr>
-
 
 
                         <tr>
@@ -154,7 +140,6 @@ export default function PricePendingTable({
                     </thead>
 
 
-
                     <tbody>
                         {safeRows.length === 0 && (
                             <tr>
@@ -170,7 +155,6 @@ export default function PricePendingTable({
                         )}
 
 
-
                         {safeRows.map((row) => (
                             <tr key={row.id}>
                                 {permissions.canViewIndustryGlobalCode && (
@@ -178,7 +162,6 @@ export default function PricePendingTable({
                                         {row.industry_global_code || ""}
                                     </td>
                                 )}
-
 
 
                                 {permissions.canViewLaboratory && (
@@ -206,7 +189,6 @@ export default function PricePendingTable({
                                 )}
 
 
-
                                 {permissions.canViewObservation && (
                                     <td className="observation-cell">
                                         <input
@@ -232,7 +214,6 @@ export default function PricePendingTable({
                                 )}
 
 
-
                                 {visibleColumnsList.map((column) => {
                                     const pendingUpdate =
                                         getPendingExternalUpdate(
@@ -241,6 +222,10 @@ export default function PricePendingTable({
                                         );
 
 
+                                    const isManualUpdate = Boolean(
+                                        row.manual_cells?.[column.key]
+                                    );
+
 
                                     const canEditColumn =
                                         permissions.canEditValues &&
@@ -248,7 +233,6 @@ export default function PricePendingTable({
                                             permissions.moduleKey,
                                             column.key
                                         );
-
 
 
                                     return (
@@ -261,6 +245,9 @@ export default function PricePendingTable({
                                                 ) +
                                                 (pendingUpdate
                                                     ? " external-update-pending"
+                                                    : "") +
+                                                (isManualUpdate
+                                                    ? " manual-update"
                                                     : "")
                                             }
                                         >
@@ -289,13 +276,14 @@ export default function PricePendingTable({
                                                         ? `Atualização externa pendente: ${String(
                                                             pendingUpdate.value ?? ""
                                                         )}`
-                                                        : row[column.key] || ""
+                                                        : isManualUpdate
+                                                            ? `Atualizado manualmente: ${row[column.key] || ""}`
+                                                            : row[column.key] || ""
                                                 }
                                             />
                                         </td>
                                     );
                                 })}
-
 
 
                                 {permissions.canRemoveLaboratory && (
