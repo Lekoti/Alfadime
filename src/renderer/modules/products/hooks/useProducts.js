@@ -58,6 +58,22 @@ export function useProducts(filters = INITIAL_FILTERS) {
     filtersRef.current = filters;
 
 
+    const loadLastSync = useCallback(async () => {
+        try {
+            const result =
+                await window.alfadime?.products?.getLastSync?.();
+
+
+            setLastSync(result?.last_sync_at || null);
+        } catch (lastSyncError) {
+            console.warn(
+                "Erro ao carregar última atualização de Produtos:",
+                lastSyncError
+            );
+        }
+    }, []);
+
+
     const loadProducts = useCallback(async (filtersToLoad = filtersRef.current) => {
         if (loadingRef.current) {
             return;
@@ -182,6 +198,11 @@ export function useProducts(filters = INITIAL_FILTERS) {
 
 
     useEffect(() => {
+        loadLastSync();
+    }, [loadLastSync]);
+
+
+    useEffect(() => {
         return () => {
             if (searchTimerRef.current) {
                 clearTimeout(searchTimerRef.current);
@@ -199,7 +220,7 @@ export function useProducts(filters = INITIAL_FILTERS) {
             await syncProductsExcel();
 
 
-            setLastSync(new Date().toISOString());
+            await loadLastSync();
 
 
             await loadProducts(filtersRef.current);

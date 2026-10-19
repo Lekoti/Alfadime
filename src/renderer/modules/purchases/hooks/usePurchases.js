@@ -51,6 +51,7 @@ export function usePurchases(filters = {}) {
 
 
 
+
     const filtersRef = useRef(filters);
     const requestIdRef = useRef(0);
     const searchTimerRef = useRef(null);
@@ -59,7 +60,27 @@ export function usePurchases(filters = {}) {
 
 
 
+
     filtersRef.current = filters;
+
+
+
+
+    const loadLastSync = useCallback(async () => {
+        try {
+            const result =
+                await window.alfadime?.purchases?.getLastSync?.();
+
+
+            setLastSync(result?.last_sync_at || null);
+        } catch (lastSyncError) {
+            console.warn(
+                "Erro ao carregar última atualização de Compras:",
+                lastSyncError
+            );
+        }
+    }, []);
+
 
 
 
@@ -68,7 +89,9 @@ export function usePurchases(filters = {}) {
 
 
 
+
         requestIdRef.current = requestId;
+
 
 
 
@@ -77,8 +100,10 @@ export function usePurchases(filters = {}) {
 
 
 
+
         try {
             const result = await listPurchaseSuggestions(filtersToLoad);
+
 
 
 
@@ -88,6 +113,7 @@ export function usePurchases(filters = {}) {
             ) {
                 return;
             }
+
 
 
 
@@ -99,12 +125,14 @@ export function usePurchases(filters = {}) {
 
 
 
+
             if (
                 !mountedRef.current ||
                 requestId !== requestIdRef.current
             ) {
                 return;
             }
+
 
 
 
@@ -124,6 +152,7 @@ export function usePurchases(filters = {}) {
 
 
 
+
     const loadFilterOptions = useCallback(async () => {
         try {
             const [company, laboratoryname, effectivecurve] =
@@ -135,9 +164,11 @@ export function usePurchases(filters = {}) {
 
 
 
+
             if (!mountedRef.current) {
                 return;
             }
+
 
 
 
@@ -160,16 +191,30 @@ export function usePurchases(filters = {}) {
 
 
 
+
     const synchronize = useCallback(async () => {
         setSyncing(true);
         setError(null);
 
 
 
+
         try {
             const result = await syncPurchasesCurveExcel();
-            setLastSync(new Date().toISOString());
+
+
+
+
+            await loadLastSync();
+
+
+
+
             await loadSuggestions(filtersRef.current);
+
+
+
+
             return result;
         } catch (syncError) {
             console.error("Erro ao sincronizar Curva Compras:", syncError);
@@ -180,7 +225,11 @@ export function usePurchases(filters = {}) {
         } finally {
             setSyncing(false);
         }
-    }, [loadSuggestions]);
+    }, [
+        loadLastSync,
+        loadSuggestions
+    ]);
+
 
 
 
@@ -189,8 +238,10 @@ export function usePurchases(filters = {}) {
 
 
 
+
         if (!previousFilters) {
             previousFiltersRef.current = filters;
+
 
 
 
@@ -198,8 +249,10 @@ export function usePurchases(filters = {}) {
 
 
 
+
             return undefined;
         }
+
 
 
 
@@ -209,9 +262,11 @@ export function usePurchases(filters = {}) {
 
 
 
+
         if (!filtersChanged) {
             return undefined;
         }
+
 
 
 
@@ -219,8 +274,10 @@ export function usePurchases(filters = {}) {
 
 
 
+
         const searchChanged =
             previousFilters.search !== filters.search;
+
 
 
 
@@ -231,13 +288,16 @@ export function usePurchases(filters = {}) {
 
 
 
+
         if (searchChanged) {
             const scheduledSearch = filters.search;
 
 
 
+
             searchTimerRef.current = setTimeout(() => {
                 searchTimerRef.current = null;
+
 
 
 
@@ -250,11 +310,13 @@ export function usePurchases(filters = {}) {
 
 
 
+
                 loadSuggestions(filtersRef.current);
             }, SEARCH_DELAY_MS);
         } else {
             loadSuggestions(filters);
         }
+
 
 
 
@@ -266,9 +328,18 @@ export function usePurchases(filters = {}) {
 
 
 
+
     useEffect(() => {
         loadFilterOptions();
     }, [loadFilterOptions]);
+
+
+
+
+    useEffect(() => {
+        loadLastSync();
+    }, [loadLastSync]);
+
 
 
 
@@ -276,6 +347,7 @@ export function usePurchases(filters = {}) {
         const unsubscribe = subscribePurchasesChanged(() => {
             loadSuggestions(filtersRef.current);
         });
+
 
 
 
@@ -288,13 +360,16 @@ export function usePurchases(filters = {}) {
 
 
 
+
     useEffect(() => {
         mountedRef.current = true;
 
 
 
+
         return () => {
             mountedRef.current = false;
+
 
 
 
@@ -304,6 +379,7 @@ export function usePurchases(filters = {}) {
             }
         };
     }, []);
+
 
 
 

@@ -22,7 +22,62 @@ const {
     PRODUCTS_EXCEL_PATH
 } = require("./products.config");
 
+const authHandler = require(
+    "../auth/authHandler"
+);
+
+const {
+    getSyncMetadata,
+    setSyncMetadata
+} = require(
+    "../../database/sync-metadata.repository"
+);
+
+const {
+    USER_ROLES
+} = require(
+    "../auth/userRoles.constants"
+);
+
 let registered = false;
+
+
+function getAuthenticatedUser() {
+    return authHandler.getAuthenticatedUser();
+}
+
+
+function canSynchronizeDatabase(user) {
+    const role = String(user?.role || "").toLowerCase();
+
+
+    return [
+        USER_ROLES.CREATOR,
+        USER_ROLES.ADMIN,
+        USER_ROLES.EDITOR
+    ].includes(role);
+}
+
+
+function requireSyncPermission() {
+    const user = getAuthenticatedUser();
+
+
+    if (!user) {
+        throw new Error("Usuário não autenticado.");
+    }
+
+
+    if (!canSynchronizeDatabase(user)) {
+        throw new Error(
+            "Apenas Administradores e Staff podem atualizar o banco de dados."
+        );
+    }
+
+
+    return user;
+}
+
 
 function registerProductsIpc() {
     if (registered) {
@@ -52,16 +107,31 @@ function registerProductsIpc() {
     );
 
     ipcMain.handle(
+        "products:get-last-sync",
+        () => {
+            return getSyncMetadata("products");
+        }
+    );
+
+    ipcMain.handle(
         "products:sync-excel",
         async () => {
             console.log('[PRODUCTS][SYNC] Iniciando sincronizacao...');
             console.log('[PRODUCTS][SYNC] Caminho:', PRODUCTS_EXCEL_PATH);
-            
+
+            const user = requireSyncPermission();
+
             try {
                 const result = synchronizeProductsExcel(
                     PRODUCTS_EXCEL_PATH
                 );
-                
+
+                setSyncMetadata({
+                    moduleKey: "products",
+                    syncedBy: user.username || user.name || "",
+                    source: PRODUCTS_EXCEL_PATH
+                });
+
                 console.log('[PRODUCTS][SYNC] Sucesso:', result);
                 return result;
             } catch (error) {

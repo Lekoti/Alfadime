@@ -2,6 +2,11 @@
 const path = require("node:path");
 const Database = require("better-sqlite3");
 
+const {
+    getDbConfig,
+    getDefaultDatabasePath
+} = require("./products-purchases-db-config.repository");
+
 
 
 function getApp() {
@@ -25,7 +30,6 @@ function getAppUserData() {
     }
 
 
-
     const projectRoot = path.resolve(__dirname, "../../..");
     return path.join(projectRoot, "app-data");
 }
@@ -41,11 +45,19 @@ function getDataDirectory() {
 
 
 
+function getLocalDatabasePath() {
+    return path.join(
+        getDataDirectory(),
+        "alfadime.db"
+    );
+}
+
+
+
 function getDatabasePath() {
     const configuredPath = String(
         process.env.ALFADIME_DB_PATH || ''
     ).trim();
-
 
 
     if (configuredPath) {
@@ -53,10 +65,34 @@ function getDatabasePath() {
     }
 
 
+    try {
+        const config = getDbConfig();
 
-    return path.join(
-        getDataDirectory(),
-        "alfadime.db"
+
+        return String(config?.path || "").trim() ||
+            getDefaultDatabasePath();
+    } catch (configError) {
+        console.error(
+            "[DB] Erro ao ler configuração do banco:",
+            configError
+        );
+
+
+        return getDefaultDatabasePath();
+    }
+}
+
+
+
+function isNetworkDatabasePath(databasePath) {
+    return String(databasePath || "").startsWith("\\\\");
+}
+
+
+
+function getDatabaseDirectory(databasePath) {
+    return path.dirname(
+        String(databasePath || "")
     );
 }
 
@@ -68,11 +104,9 @@ function getUsersDatabaseDirectory() {
     ).trim();
 
 
-
     if (configuredPath) {
         return configuredPath;
     }
-
 
 
     return "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\USUARIOS";
@@ -97,7 +131,6 @@ function getProjectDatabaseDirectory() {
             "database"
         );
     }
-
 
 
     return path.join(
@@ -139,12 +172,78 @@ function ensureDataDirectory() {
     const dataDirectory = getDataDirectory();
 
 
-
     if (!fs.existsSync(dataDirectory)) {
         fs.mkdirSync(dataDirectory, {
             recursive: true
         });
     }
+}
+
+
+
+function ensureDatabaseDirectory(databasePath) {
+    const databaseDirectory = getDatabaseDirectory(databasePath);
+
+
+    if (!fs.existsSync(databaseDirectory)) {
+        throw new Error(
+            `Pasta do banco de dados não está acessível: ${databaseDirectory}`
+        );
+    }
+}
+
+
+
+function migrateLocalDatabaseToNetwork() {
+    const networkDatabasePath = getDatabasePath();
+    const localDatabasePath = getLocalDatabasePath();
+
+
+    if (fs.existsSync(networkDatabasePath)) {
+        return;
+    }
+
+
+    if (!fs.existsSync(localDatabasePath)) {
+        return;
+    }
+
+
+    console.log(
+        '[DB] Migrando banco local para a rede:',
+        networkDatabasePath
+    );
+
+
+    fs.copyFileSync(
+        localDatabasePath,
+        networkDatabasePath
+    );
+
+
+    const localWalPath = `${localDatabasePath}-wal`;
+    const localShmPath = `${localDatabasePath}-shm`;
+
+
+    if (fs.existsSync(localWalPath)) {
+        fs.copyFileSync(
+            localWalPath,
+            `${networkDatabasePath}-wal`
+        );
+    }
+
+
+    if (fs.existsSync(localShmPath)) {
+        fs.copyFileSync(
+            localShmPath,
+            `${networkDatabasePath}-shm`
+        );
+    }
+
+
+    console.log(
+        '[DB] Banco local migrado com sucesso para a rede.'
+    );
 }
 
 
@@ -259,12 +358,10 @@ function runSeeds(database) {
     }
 
 
-
     const {
         seedPricePendingRows
     } = require(seedPath);
     const result = seedPricePendingRows(database);
-
 
 
     console.log(
@@ -282,18 +379,28 @@ let usersDatabase = null;
 
 function initializeDatabase() {
     if (!database) {
-        ensureDataDirectory();
+        const databasePath = getDatabasePath();
 
 
-        console.log('[DB] Database path:', getDatabasePath());
+        ensureDatabaseDirectory(databasePath);
+        migrateLocalDatabaseToNetwork();
+
+
+        console.log('[DB] Database path:', databasePath);
 
 
         database = new Database(
-            getDatabasePath()
+            databasePath
         );
 
 
-        database.pragma("journal_mode = WAL");
+        if (isNetworkDatabasePath(databasePath)) {
+            database.pragma("journal_mode = DELETE");
+        } else {
+            database.pragma("journal_mode = WAL");
+        }
+
+
         database.pragma("foreign_keys = ON");
 
 
@@ -302,11 +409,12 @@ function initializeDatabase() {
             getMigrationsDirectory()
         );
 
+
         runSeeds(database);
 
 
         console.log(
-            `Banco conectado: ${getDatabasePath()}`
+            `Banco conectado: ${databasePath}`
         );
     }
 
@@ -395,6 +503,7 @@ module.exports = {
     getDatabase,
     getUsersDatabase,
     getDatabasePath,
+    getLocalDatabasePath,
     getUsersDatabasePath,
     closeDatabase
 };

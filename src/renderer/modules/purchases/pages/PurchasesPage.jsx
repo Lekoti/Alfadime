@@ -135,8 +135,7 @@ export default function PurchasesPage() {
         pagination,
         loading,
         error,
-        syncing,
-        synchronize,
+        lastSync,
         loadSuggestions
     } = usePurchases({
         ...filters,
@@ -179,36 +178,6 @@ export default function PurchasesPage() {
             ...current,
             page
         }));
-    }
-
-    async function handleSync() {
-        const confirmed = window.confirm(
-            "Atualizar Curva Compras com base na planilha agora? " +
-            "Novos produtos serão incluídos e produtos existentes serão atualizados conforme os dados disponíveis na planilha."
-        );
-
-        if (!confirmed) return;
-
-        try {
-            await synchronize();
-
-            const manualCount = await getPurchaseQuantityOverridesCount();
-
-            if (manualCount > 0) {
-                const removeManual = window.confirm(
-                    `A curva foi atualizada. Existem ${manualCount} quantidade(s) de compra informadas manualmente.\n\n` +
-                    "Deseja remover os valores manuais e voltar a usar a sugestão calculada pela curva?\n\n" +
-                    "Clique em OK para REMOVER ou em Cancelar para MANTER os valores manuais."
-                );
-
-                if (removeManual) {
-                    await clearPurchaseQuantityOverrides();
-                    await loadSuggestions();
-                }
-            }
-        } catch (syncError) {
-            console.error(syncError);
-        }
     }
 
     async function handleQuantityChange(product, quantity) {
@@ -379,15 +348,6 @@ export default function PurchasesPage() {
                                     onColumnOrderChange={handleColumnOrderChange}
                                 />
                             </div>
-
-                            <button
-                                type="button"
-                                className="purchases-panel-action-button primary"
-                                onClick={handleSync}
-                                disabled={syncing}
-                            >
-                                {syncing ? "Atualizando..." : "Atualizar"}
-                            </button>
                         </div>
                     </div>
                 </section>
@@ -417,6 +377,13 @@ export default function PurchasesPage() {
                     </div>
 
                     <div className="purchases-selection-info">
+                        {lastSync && (
+                            <span className="purchases-sync-info">
+                                Última atualização:{" "}
+                                {new Date(lastSync).toLocaleString("pt-BR")}
+                            </span>
+                        )}
+
                         <strong>{selectedIds.length}</strong> selecionados
                         {selectAllFiltered && " (todos os filtrados)"}
                     </div>

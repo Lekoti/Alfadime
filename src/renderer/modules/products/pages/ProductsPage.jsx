@@ -99,11 +99,8 @@ function ProductsPage() {
         products,
         pagination,
         loading,
-        syncing,
         error,
-        syncError,
-        lastSync,
-        synchronize
+        lastSync
     } = useProducts(filters);
 
 
@@ -152,29 +149,6 @@ function ProductsPage() {
                 ? next(columnOrder)
                 : next
         );
-    }
-
-
-    async function handleSync() {
-        const confirmed = window.confirm(
-            "Atualizar Produtos com base na planilha agora?\n\n" +
-            "Cadastros novos serão incluídos e cadastros existentes serão " +
-            "atualizados conforme os dados disponíveis na planilha.\n\n" +
-            "Registros que não estiverem na planilha não serão apagados " +
-            "automaticamente."
-        );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        try {
-            await synchronize();
-        } catch (syncError) {
-            console.error(syncError);
-        }
     }
 
 
@@ -303,18 +277,6 @@ function ProductsPage() {
                             onColumnOrderChange={setColumnOrder}
                             inline
                         />
-
-
-                        <button
-                            type="button"
-                            className="products-panel-action-button"
-                            onClick={handleSync}
-                            disabled={syncing}
-                        >
-                            {syncing
-                                ? "Atualizando..."
-                                : "Atualizar"}
-                        </button>
                     </div>
 
 
@@ -329,13 +291,6 @@ function ProductsPage() {
             {error && (
                 <div className="products-error">
                     <strong>Erro:</strong> {error}
-                </div>
-            )}
-
-
-            {syncError && (
-                <div className="products-error">
-                    <strong>Erro na atualização:</strong> {syncError}
                 </div>
             )}
 
@@ -356,7 +311,7 @@ function ProductsPage() {
 
                     {lastSync && (
                         <span className="products-sync-info">
-                            Última sincronização:{" "}
+                            Última atualização:{" "}
                             {new Date(lastSync).toLocaleString("pt-BR")}
                         </span>
                     )}

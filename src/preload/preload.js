@@ -609,7 +609,10 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
-
+            getLastSync: () =>
+                invoke(
+                    "products:get-last-sync"
+                ),
 
 
 
@@ -1116,9 +1119,33 @@ contextBridge.exposeInMainWorld(
                     filters
                 ),
 
+            getLastSync: () =>
+                invoke(
+                    "purchases:get-last-sync"
+                ),
+
+            getDbConfig: () =>
+                invoke(
+                    "products-purchases:get-db-config"
+                ),
 
 
+            saveDbConfig: (
+                config
+            ) =>
+                invoke(
+                    "products-purchases:save-db-config",
+                    config
+                ),
 
+
+            testConnection: (
+                databasePath
+            ) =>
+                invoke(
+                    "products-purchases:test-connection",
+                    databasePath
+                ),
 
 
             getById: (

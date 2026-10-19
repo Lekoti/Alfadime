@@ -60,6 +60,12 @@ const {
 );
 
 const {
+    registerProductsPurchasesDbConfigIpc
+} = require(
+    "./database/products-purchases-db-config.ipc"
+);
+
+const {
     registerProductAuditIpc
 } = require(
     "./modules/product-audit/product-audit.ipc"
@@ -769,6 +775,8 @@ function registerAllIpc() {
     registerPurchasesIpc(
         ipcMain
     );
+
+        registerProductsPurchasesDbConfigIpc();
 
     registerProductAuditIpc(
         ipcMain
