@@ -5,6 +5,7 @@ const {
     getUnifiedLaboratoryOptions
 } = require("../../utils/laboratory-filter.utils");
 
+
 const BRANCHES = {
     DPR: "DIMEBRAS PR",
     AMS: "ALFAMED MS",
@@ -13,17 +14,21 @@ const BRANCHES = {
     DSC: "DIMEBRAS SC"
 };
 
+
 const MAX_PAGE_SIZE = 10000;
 const RELATED_CHUNK_SIZE = 500;
+
 
 function ensureQuantityOverrideColumn(database) {
     const columns = database
         .prepare("PRAGMA table_info(purchase_curve_products)")
         .all();
 
+
     const exists = columns.some(
         (column) => column.name === "quantity_override"
     );
+
 
     if (!exists) {
         database.exec(
@@ -31,6 +36,26 @@ function ensureQuantityOverrideColumn(database) {
         );
     }
 }
+
+
+function ensureContentHashColumn(database) {
+    const columns = database
+        .prepare("PRAGMA table_info(purchase_curve_products)")
+        .all();
+
+
+    const exists = columns.some(
+        (column) => column.name === "content_hash"
+    );
+
+
+    if (!exists) {
+        database.exec(
+            "ALTER TABLE purchase_curve_products ADD COLUMN content_hash TEXT"
+        );
+    }
+}
+
 
 function getValue(object, ...keys) {
     for (const key of keys) {
@@ -42,18 +67,23 @@ function getValue(object, ...keys) {
         }
     }
 
+
     return null;
 }
+
 
 function normalizeText(value) {
     if (value === null || value === undefined) {
         return null;
     }
 
+
     const text = String(value).trim();
+
 
     return text || null;
 }
+
 
 function normalizeNumber(value, fallback = 0) {
     if (
@@ -64,32 +94,39 @@ function normalizeNumber(value, fallback = 0) {
         return fallback;
     }
 
+
     const number = Number(value);
+
 
     return Number.isFinite(number)
         ? number
         : fallback;
 }
 
+
 function buildWhereClause(filters = {}) {
     let whereClause = "WHERE 1 = 1";
     const params = [];
+
 
     if (filters.company) {
         whereClause += " AND company = ?";
         params.push(String(filters.company));
     }
 
+
     const laboratoryCode = filters.laboratory_code ??
         filters.laboratory ??
         filters.laboratoryname ??
         filters.laboratory_name;
+
 
     if (laboratoryCode) {
         const laboratoryValues = getMatchingGlobalLaboratoryCodes(
             getDatabase(),
             laboratoryCode
         );
+
 
         if (laboratoryValues.length) {
             whereClause += `
@@ -102,18 +139,22 @@ function buildWhereClause(filters = {}) {
                 )
             `;
 
+
             params.push(...laboratoryValues);
         } else {
             whereClause += " AND 1 = 0";
         }
     }
 
+
     const effectiveCurve =
         filters.effective_curve ??
         filters.effectivecurve;
 
+
     if (effectiveCurve) {
         whereClause += " AND effective_curve = ?";
+
 
         params.push(
             String(effectiveCurve)
@@ -122,8 +163,10 @@ function buildWhereClause(filters = {}) {
         );
     }
 
+
     if (filters.search) {
         const search = `%${String(filters.search).trim()}%`;
+
 
         whereClause += `
             AND (
@@ -135,6 +178,7 @@ function buildWhereClause(filters = {}) {
             )
         `;
 
+
         params.push(
             search,
             search,
@@ -144,17 +188,20 @@ function buildWhereClause(filters = {}) {
         );
     }
 
+
     return {
         whereClause,
         params
     };
 }
 
+
 function getRelatedRowsByProductCodes(
     database,
     productCodes
 ) {
     const relatedRows = [];
+
 
     for (
         let index = 0;
@@ -166,9 +213,11 @@ function getRelatedRowsByProductCodes(
             index + RELATED_CHUNK_SIZE
         );
 
+
         const chunkPlaceholders = productCodeChunk
             .map(() => "?")
             .join(", ");
+
 
         const chunkStatement = database.prepare(`
             SELECT
@@ -186,6 +235,7 @@ function getRelatedRowsByProductCodes(
                 AND company IN (?, ?, ?, ?, ?)
         `);
 
+
         relatedRows.push(
             ...chunkStatement.all(
                 ...productCodeChunk,
@@ -198,8 +248,10 @@ function getRelatedRowsByProductCodes(
         );
     }
 
+
     return relatedRows;
 }
+
 
 function buildRelatedRowsByProduct(relatedRows) {
     const branchByCompany = Object.fromEntries(
@@ -210,26 +262,33 @@ function buildRelatedRowsByProduct(relatedRows) {
             ])
     );
 
+
     const relatedByProduct = new Map();
+
 
     for (const row of relatedRows) {
         const productCode = String(row.product_code);
         const branch = branchByCompany[row.company];
 
+
         if (!branch) {
             continue;
         }
+
 
         if (!relatedByProduct.has(productCode)) {
             relatedByProduct.set(productCode, {});
         }
 
+
         relatedByProduct
             .get(productCode)[branch] = row;
     }
 
+
     return relatedByProduct;
 }
+
 
 function decorateCurveRow(
     row,
@@ -239,6 +298,7 @@ function decorateCurveRow(
         String(row.product_code)
     ) || {};
 
+
     const branchPriceValues = Object.values(branchPrices)
         .map((branch) => branch.last_purchase_price)
         .filter((price) =>
@@ -247,7 +307,9 @@ function decorateCurveRow(
             price !== ""
         );
 
+
     let averageCost = row.average_cost;
+
 
     if (
         (averageCost === null ||
@@ -260,9 +322,11 @@ function decorateCurveRow(
             0
         );
 
+
         averageCost =
             sum / branchPriceValues.length;
     }
+
 
     return {
         ...row,
@@ -303,15 +367,20 @@ function decorateCurveRow(
     };
 }
 
+
 function listCurveProducts(filters = {}) {
     const database = getDatabase();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     const {
         whereClause,
         params
     } = buildWhereClause(filters);
+
 
     const pageSize = Math.min(
         Math.max(
@@ -321,10 +390,12 @@ function listCurveProducts(filters = {}) {
         MAX_PAGE_SIZE
     );
 
+
     const page = Math.max(
         Number(filters.page) || 1,
         1
     );
+
 
     const total = database
         .prepare(`
@@ -335,19 +406,23 @@ function listCurveProducts(filters = {}) {
         .get(...params)
         .total;
 
+
     const totalPages = Math.max(
         Math.ceil(total / pageSize),
         1
     );
+
 
     const currentPage = Math.min(
         page,
         totalPages
     );
 
+
     const offset = (
         currentPage - 1
     ) * pageSize;
+
 
     const baseRows = database
         .prepare(`
@@ -368,6 +443,7 @@ function listCurveProducts(filters = {}) {
             offset
         );
 
+
     if (!baseRows.length) {
         return {
             rows: [],
@@ -381,11 +457,13 @@ function listCurveProducts(filters = {}) {
         };
     }
 
+
     const productCodes = [
         ...new Set(
             baseRows.map((row) => String(row.product_code))
         )
     ];
+
 
     const relatedRows =
         getRelatedRowsByProductCodes(
@@ -393,10 +471,12 @@ function listCurveProducts(filters = {}) {
             productCodes
         );
 
+
     const relatedByProduct =
         buildRelatedRowsByProduct(
             relatedRows
         );
+
 
     const rows = baseRows.map(
         (row) =>
@@ -405,6 +485,7 @@ function listCurveProducts(filters = {}) {
                 relatedByProduct
             )
     );
+
 
     return {
         rows,
@@ -418,15 +499,20 @@ function listCurveProducts(filters = {}) {
     };
 }
 
+
 function listAllCurveProducts(filters = {}) {
     const database = getDatabase();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     const {
         whereClause,
         params
     } = buildWhereClause(filters);
+
 
     const baseRows = database
         .prepare(`
@@ -441,9 +527,11 @@ function listAllCurveProducts(filters = {}) {
         `)
         .all(...params);
 
+
     if (!baseRows.length) {
         return [];
     }
+
 
     const productCodes = [
         ...new Set(
@@ -451,16 +539,19 @@ function listAllCurveProducts(filters = {}) {
         )
     ];
 
+
     const relatedRows =
         getRelatedRowsByProductCodes(
             database,
             productCodes
         );
 
+
     const relatedByProduct =
         buildRelatedRowsByProduct(
             relatedRows
         );
+
 
     return baseRows.map(
         (row) =>
@@ -470,6 +561,7 @@ function listAllCurveProducts(filters = {}) {
             )
     );
 }
+
 
 function getFilterOptions(field) {
     const fieldMap = {
@@ -496,11 +588,14 @@ function getFilterOptions(field) {
         updatedat: "updated_at"
     };
 
+
     const actualField = fieldMap[field] || field;
+
 
     if (actualField === "laboratory_name") {
         return getUnifiedLaboratoryOptions(getDatabase());
     }
+
 
     return getDatabase()
         .prepare(`
@@ -514,15 +609,20 @@ function getFilterOptions(field) {
         .map((row) => row.value);
 }
 
+
 function upsertCurveProducts(products, source = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     database.exec("CREATE INDEX IF NOT EXISTS idx_product_catalog_branch_code ON product_catalog(branch, code)");
     database.exec("CREATE INDEX IF NOT EXISTS idx_product_catalog_branch_ean ON product_catalog(branch, ean)");
     database.exec("CREATE INDEX IF NOT EXISTS idx_purchase_curve_company_code ON purchase_curve_products(company, product_code)");
+
 
     console.log("Carregando produtos em memória...");
     const loadStart = Date.now();
@@ -531,13 +631,16 @@ function upsertCurveProducts(products, source = {}) {
         FROM product_catalog
     `).all();
 
+
     const productByBranchCode = new Map();
     const productByBranchEan = new Map();
+
 
     for (const product of allProducts) {
         const branch = String(product.branch || "").trim();
         const code = String(product.code || "").trim();
         const ean = String(product.ean || "").trim();
+
 
         if (code && code !== "null") {
             productByBranchCode.set(
@@ -545,6 +648,7 @@ function upsertCurveProducts(products, source = {}) {
                 product
             );
         }
+
 
         if (
             ean &&
@@ -558,11 +662,14 @@ function upsertCurveProducts(products, source = {}) {
         }
     }
 
+
     const loadTime = ((Date.now() - loadStart) / 1000).toFixed(2);
+
 
     console.log(
         `Produtos carregados: ${allProducts.length} em ${loadTime}s`
     );
+
 
     const columns = [
         "id", "company", "product_code", "barcode", "description",
@@ -577,8 +684,23 @@ function upsertCurveProducts(products, source = {}) {
         "jan_quantity", "feb_quantity", "mar_quantity", "apr_quantity",
         "may_quantity", "jun_quantity", "jul_quantity", "aug_quantity",
         "sep_quantity", "oct_quantity", "nov_quantity", "dec_quantity",
-        "source_file_name", "imported_at", "created_at", "updated_at"
+        "source_file_name", "imported_at", "created_at", "updated_at",
+        "content_hash"
     ];
+
+
+    const hashColumns = columns.filter(
+        (column) =>
+            ![
+                "id",
+                "source_file_name",
+                "imported_at",
+                "created_at",
+                "updated_at",
+                "content_hash"
+            ].includes(column)
+    );
+
 
     const updateColumns = columns.filter(
         (column) =>
@@ -587,9 +709,11 @@ function upsertCurveProducts(products, source = {}) {
                 "company",
                 "product_code",
                 "created_at",
-                "quantity_override"
+                "quantity_override",
+                "content_hash"
             ].includes(column)
     );
+
 
     const insertCurve = database.prepare(`
         INSERT INTO purchase_curve_products (
@@ -598,16 +722,19 @@ function upsertCurveProducts(products, source = {}) {
             ${columns.map(() => "?").join(", ")}
         )
         ON CONFLICT(company, product_code)
-        DO UPDATE SET ${updateColumns.map((column) => `${column} = excluded.${column}`).join(", ")}
+        DO UPDATE SET ${updateColumns.map((column) => `${column} = excluded.${column}`).join(", ")},
+            content_hash = excluded.content_hash
     `);
 
+
     const findExisting = database.prepare(`
-        SELECT id
+        SELECT id, content_hash
         FROM purchase_curve_products
         WHERE company = ?
             AND product_code = ?
         LIMIT 1
     `);
+
 
     const insertProductPurchaseCurve = database.prepare(`
         INSERT OR REPLACE INTO product_purchase_curve (
@@ -623,13 +750,16 @@ function upsertCurveProducts(products, source = {}) {
         )
     `);
 
+
     let inserted = 0;
     let updated = 0;
+    let unchanged = 0;
     let curveInserted = 0;
     let linkedByCode = 0;
     let linkedByEan = 0;
     let notLinked = 0;
     let invalidRows = 0;
+
 
     const process = database.transaction((items) => {
         for (const product of items) {
@@ -637,27 +767,33 @@ function upsertCurveProducts(products, source = {}) {
                 getValue(product, "company", "empresa", "branch", "filial")
             );
 
+
             const productCode = normalizeText(
                 getValue(product, "product_code", "productCode", "cod_prod", "codProd", "code")
             );
 
+
             const barcode = normalizeText(
                 getValue(product, "barcode", "bar_code", "cod_barras", "codBarras", "ean")
             );
+
 
             if (!company || !productCode) {
                 invalidRows += 1;
                 continue;
             }
 
+
             let productRow = productByBranchCode.get(
                 `${company}|${productCode}`
             );
+
 
             if (!productRow && barcode) {
                 productRow = productByBranchEan.get(
                     `${company}|${barcode}`
                 );
+
 
                 if (productRow) {
                     linkedByEan += 1;
@@ -666,15 +802,18 @@ function upsertCurveProducts(products, source = {}) {
                 linkedByCode += 1;
             }
 
+
             if (!productRow) {
                 notLinked += 1;
                 continue;
             }
 
+
             const existing = findExisting.get(
                 company,
                 productCode
             );
+
 
             const row = {
                 id: existing?.id || crypto.randomUUID(),
@@ -719,17 +858,44 @@ function upsertCurveProducts(products, source = {}) {
                 updated_at: now
             };
 
+
+            const contentHash = crypto
+                .createHash("sha256")
+                .update(
+                    JSON.stringify(
+                        hashColumns.map(
+                            (column) => row[column]
+                        )
+                    )
+                )
+                .digest("hex");
+
+
+            row.content_hash = contentHash;
+
+
+            if (
+                existing &&
+                existing.content_hash === contentHash
+            ) {
+                unchanged += 1;
+                continue;
+            }
+
+
             insertCurve.run(
                 ...columns.map(
                     (column) => row[column]
                 )
             );
 
+
             if (existing) {
                 updated += 1;
             } else {
                 inserted += 1;
             }
+
 
             insertProductPurchaseCurve.run({
                 product_id: productRow.id,
@@ -753,15 +919,19 @@ function upsertCurveProducts(products, source = {}) {
                 updated_at: now
             });
 
+
             curveInserted += 1;
         }
     });
 
+
     process(products);
+
 
     return {
         inserted,
         updated,
+        unchanged,
         curveInserted,
         linkedByCode,
         linkedByEan,
@@ -770,9 +940,11 @@ function upsertCurveProducts(products, source = {}) {
     };
 }
 
+
 function createImportHistory(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
     const item = {
         id: crypto.randomUUID(),
@@ -805,6 +977,7 @@ function createImportHistory(data = {}) {
         created_at: now,
         started_at: now
     };
+
 
     database
         .prepare(`
@@ -846,8 +1019,10 @@ function createImportHistory(data = {}) {
             item.created_at
         );
 
+
     return item;
 }
+
 
 function finishImportHistory(id, data = {}) {
     getDatabase()
@@ -875,10 +1050,14 @@ function finishImportHistory(id, data = {}) {
         );
 }
 
+
 function getPurchaseSuggestionsByIds(selectedIds) {
     const database = getDatabase();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     if (
         !Array.isArray(selectedIds) ||
@@ -887,9 +1066,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         return [];
     }
 
+
     const placeholders = selectedIds
         .map(() => "?")
         .join(", ");
+
 
     const rows = database
         .prepare(`
@@ -903,9 +1084,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         `)
         .all(...selectedIds);
 
+
     if (!rows.length) {
         return [];
     }
+
 
     const productCodes = [
         ...new Set(
@@ -913,16 +1096,19 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         )
     ];
 
+
     const relatedRows =
         getRelatedRowsByProductCodes(
             database,
             productCodes
         );
 
+
     const relatedByProduct =
         buildRelatedRowsByProduct(
             relatedRows
         );
+
 
     return rows.map(
         (row) =>
@@ -933,10 +1119,14 @@ function getPurchaseSuggestionsByIds(selectedIds) {
     );
 }
 
+
 function setQuantityOverride(id, quantity) {
     const database = getDatabase();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     const value =
         quantity === null ||
@@ -944,6 +1134,7 @@ function setQuantityOverride(id, quantity) {
         quantity === ""
             ? null
             : Number(quantity);
+
 
     database
         .prepare(`
@@ -953,16 +1144,21 @@ function setQuantityOverride(id, quantity) {
         `)
         .run(value, id);
 
+
     return {
         id,
         quantity: value
     };
 }
 
+
 function getQuantityOverridesCount() {
     const database = getDatabase();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     return database
         .prepare(`
@@ -974,10 +1170,14 @@ function getQuantityOverridesCount() {
         .total;
 }
 
+
 function clearQuantityOverrides() {
     const database = getDatabase();
 
+
     ensureQuantityOverrideColumn(database);
+    ensureContentHashColumn(database);
+
 
     const result = database
         .prepare(`
@@ -987,10 +1187,12 @@ function clearQuantityOverrides() {
         `)
         .run();
 
+
     return {
         removed: result.changes
     };
 }
+
 
 module.exports = {
     BRANCHES,
