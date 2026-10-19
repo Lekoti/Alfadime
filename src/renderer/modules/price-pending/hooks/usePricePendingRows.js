@@ -509,6 +509,17 @@ export default function usePricePendingRows({
             }
 
 
+            const activeElement = document.activeElement;
+
+
+            if (
+                activeElement instanceof HTMLInputElement &&
+                activeElement.closest(".price-pending-table")
+            ) {
+                return;
+            }
+
+
             loadRows({ silent: true });
         }, 20000);
 
@@ -525,6 +536,7 @@ export default function usePricePendingRows({
 
     return {
         allRows,
+        setAllRows,
         loading,
         saving,
         savingCell,

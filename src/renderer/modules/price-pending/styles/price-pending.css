@@ -680,6 +680,12 @@
 
 
 
+.price-pending-table td.editable-cell {
+    position: relative;
+}
+
+
+
 .price-pending-table .group-env_precos {
     background: #f1f6fb;
 }
@@ -786,6 +792,38 @@
     background-color: #e5e7eb !important;
     border-color: #b7bdc5 !important;
     color: #1f2937 !important;
+}
+
+
+
+.accept-external-update-button {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    display: grid;
+    width: 14px;
+    height: 14px;
+    place-items: center;
+    border: 0;
+    border-radius: 3px;
+    background: #23527c;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 8px;
+    line-height: 1;
+}
+
+
+
+.accept-external-update-button:hover {
+    background: #173a56;
+}
+
+
+
+.accept-external-update-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 

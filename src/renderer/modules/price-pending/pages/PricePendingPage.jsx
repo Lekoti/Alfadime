@@ -330,16 +330,19 @@ export default function PricePendingPage() {
                 </div>
 
 
+
                 <div className="price-pending-summary-item pending">
                     <span>Preços pendentes</span>
                     <strong>{summary.pricesPending}</strong>
                 </div>
 
 
+
                 <div className="price-pending-summary-item">
                     <span>Pendências atualizadas</span>
                     <strong>{summary.pendingUpdated}</strong>
                 </div>
+
 
 
                 <div className="price-pending-summary-item pending">

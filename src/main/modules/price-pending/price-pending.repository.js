@@ -5,7 +5,6 @@ const {
 );
 
 
-
 const {
     getDatabase: getLocalDatabase
 } = require(
@@ -13,11 +12,9 @@ const {
 );
 
 
-
 const crypto = require(
     "node:crypto"
 );
-
 
 
 const {
@@ -25,7 +22,6 @@ const {
 } = require(
     "../../utils/validation.utils"
 );
-
 
 
 const EDITABLE_COLUMNS = [
@@ -54,14 +50,12 @@ const EDITABLE_COLUMNS = [
 ];
 
 
-
 const EXTERNAL_COLUMNS =
     EDITABLE_COLUMNS.filter(
         (column) =>
             column !== "laboratory" &&
             column !== "observation"
     );
-
 
 
 const VALID_BRANCHES = [
@@ -73,10 +67,8 @@ const VALID_BRANCHES = [
 ];
 
 
-
 let industryGlobalCodeMapCache =
     null;
-
 
 
 function parseJsonObject(value) {
@@ -91,11 +83,9 @@ function parseJsonObject(value) {
 }
 
 
-
 function stringifyJsonObject(value) {
     return JSON.stringify(value && typeof value === "object" && !Array.isArray(value) ? value : {});
 }
-
 
 
 function normalizeLaboratoryName(value) {
@@ -108,14 +98,12 @@ function normalizeLaboratoryName(value) {
 }
 
 
-
 function normalizeDatabaseText(value) {
     return normalizeLaboratoryName(value)
         .replace(/^#\s*/, "")
         .replace(/(?:\s*-\s*|\s+)\d+\s*$/, "")
         .trim();
 }
-
 
 
 function normalizeGlobalLaboratoryName(value) {
@@ -129,12 +117,10 @@ function normalizeGlobalLaboratoryName(value) {
 }
 
 
-
 function normalizeBranch(value) {
     const branch = String(value || "").trim().toUpperCase();
     return VALID_BRANCHES.includes(branch) ? branch : "";
 }
-
 
 
 function isUpdatedPeriod(value, now = new Date()) {
@@ -153,7 +139,6 @@ function isUpdatedPeriod(value, now = new Date()) {
 }
 
 
-
 function hasTable(database, tableName) {
     const result = database.prepare(`
         SELECT name
@@ -165,7 +150,6 @@ function hasTable(database, tableName) {
 
     return Boolean(result);
 }
-
 
 
 function getIndustryGlobalCodeMap(options = {}) {
@@ -220,7 +204,6 @@ function getIndustryGlobalCodeMap(options = {}) {
 }
 
 
-
 function getIndustryGlobalCode(database, laboratory, codeMap = getIndustryGlobalCodeMap()) {
     const normalizedLaboratory = normalizeDatabaseText(laboratory);
     if (!normalizedLaboratory) return "";
@@ -228,13 +211,11 @@ function getIndustryGlobalCode(database, laboratory, codeMap = getIndustryGlobal
 }
 
 
-
 function getIndustryGlobalCodeByLaboratory(laboratory) {
     const codeMap = getIndustryGlobalCodeMap();
     const key = normalizeGlobalLaboratoryName(laboratory);
     return codeMap.get(key) || "";
 }
-
 
 
 function decorateRow(database, row, codeMap) {
@@ -247,13 +228,11 @@ function decorateRow(database, row, codeMap) {
 }
 
 
-
 function getBranchColumn(prefix, branch) {
     const normalizedBranch = normalizeBranch(branch);
     if (!normalizedBranch) throw new Error(`Filial inválida: ${branch}`);
     return `${prefix}_${normalizedBranch.toLowerCase()}`;
 }
-
 
 
 function getPricePendingValues(laboratory, branch) {
@@ -293,7 +272,6 @@ function getPricePendingValues(laboratory, branch) {
 }
 
 
-
 function getPricePendingStatus(laboratory, branch, now = new Date()) {
     const values = getPricePendingValues(laboratory, branch);
     const pricesUpdated = isUpdatedPeriod(values.pricesValue, now);
@@ -304,7 +282,6 @@ function getPricePendingStatus(laboratory, branch, now = new Date()) {
     if (pricesUpdated && !pendingUpdated) return "Precisa atualizar pendências";
     return "Precisa atualizar preços e pendências";
 }
-
 
 
 function getPricePendingStatusMap(now = new Date()) {
@@ -347,7 +324,6 @@ function getPricePendingStatusMap(now = new Date()) {
 }
 
 
-
 function listRows() {
     const database = getPricePendingDatabase();
     const rows = database.prepare(`
@@ -362,7 +338,6 @@ function listRows() {
 }
 
 
-
 function getRowById(id) {
     const database = getPricePendingDatabase();
     const row = database.prepare(`
@@ -374,7 +349,6 @@ function getRowById(id) {
 
     return decorateRow(database, row, getIndustryGlobalCodeMap());
 }
-
 
 
 function createRow(data = {}) {
@@ -427,7 +401,6 @@ function createRow(data = {}) {
 
     return getRowById(row.id);
 }
-
 
 
 function updateCell(id, column, value) {
@@ -483,7 +456,6 @@ function updateCell(id, column, value) {
     if (result.changes === 0) throw new Error("Registro não encontrado para atualização.");
     return getRowById(id);
 }
-
 
 
 function applyExternalCellUpdate({ id, column, value, fileName = "", fileMtimeMs = null }) {
@@ -558,6 +530,87 @@ function applyExternalCellUpdate({ id, column, value, fileName = "", fileMtimeMs
 }
 
 
+function acceptExternalCellUpdate({ id, column }) {
+    if (!EXTERNAL_COLUMNS.includes(column)) {
+        throw new Error(`Coluna externa não permitida: ${column}`);
+    }
+
+    const database = getPricePendingDatabase();
+    const now = new Date().toISOString();
+
+    const row = database.prepare(`
+        SELECT
+            id,
+            laboratory,
+            observation,
+            manual_cells,
+            pending_external_updates,
+            "${column}" AS current_value
+        FROM price_pending_rows
+        WHERE id = ? AND active = 1
+        LIMIT 1
+    `).get(id);
+
+    if (!row) {
+        throw new Error("Registro não encontrado para aceitar atualização.");
+    }
+
+    const pendingUpdates = parseJsonObject(row.pending_external_updates);
+    const pendingUpdate = pendingUpdates[column];
+
+    if (!pendingUpdate) {
+        return getRowById(id);
+    }
+
+    const manualCells = parseJsonObject(row.manual_cells);
+    const currentValue = String(row.current_value ?? "").trim();
+    const observation = String(row.observation ?? "").toUpperCase();
+
+    const isProtectedManualCell =
+        currentValue === "NAO TRABALHA" ||
+        observation.includes("INDUSTRIA DESATIVADA");
+
+    delete pendingUpdates[column];
+
+    if (isProtectedManualCell) {
+        database.prepare(`
+            UPDATE price_pending_rows
+            SET pending_external_updates = ?,
+                external_updated_at = ?,
+                updated_at = ?
+            WHERE id = ? AND active = 1
+        `).run(
+            stringifyJsonObject(pendingUpdates),
+            now,
+            now,
+            id
+        );
+
+        return getRowById(id);
+    }
+
+    delete manualCells[column];
+
+    database.prepare(`
+        UPDATE price_pending_rows
+        SET "${column}" = ?,
+            manual_cells = ?,
+            pending_external_updates = ?,
+            external_updated_at = ?,
+            updated_at = ?
+        WHERE id = ? AND active = 1
+    `).run(
+        String(pendingUpdate.value ?? ""),
+        stringifyJsonObject(manualCells),
+        stringifyJsonObject(pendingUpdates),
+        now,
+        now,
+        id
+    );
+
+    return getRowById(id);
+}
+
 
 function removeRow(id) {
     const database = getPricePendingDatabase();
@@ -572,7 +625,6 @@ function removeRow(id) {
 
     return { success: true, id };
 }
-
 
 
 function getEmailReceiptColumn(type, branch) {
@@ -593,7 +645,6 @@ function getEmailReceiptColumn(type, branch) {
 }
 
 
-
 function formatEmailReceiptDate(dateValue = new Date()) {
     const date = new Date(dateValue);
     if (Number.isNaN(date.getTime())) throw new Error("Data inválida para atualização.");
@@ -604,7 +655,6 @@ function formatEmailReceiptDate(dateValue = new Date()) {
 
     return `${day}/${month}/${year}`;
 }
-
 
 
 function updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new Date() }) {
@@ -699,12 +749,12 @@ function updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new 
 }
 
 
-
 module.exports = {
     listRows,
     createRow,
     updateCell,
     applyExternalCellUpdate,
+    acceptExternalCellUpdate,
     removeRow,
     getRowById,
     EDITABLE_COLUMNS,
