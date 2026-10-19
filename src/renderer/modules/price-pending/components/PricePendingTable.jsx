@@ -21,7 +21,8 @@ export default function PricePendingTable({
     onScroll,
     onUpdateValue,
     onSaveCell,
-    onRemoveLaboratory
+    onRemoveLaboratory,
+    onAcceptExternalUpdate
 }) {
     const safeRows = Array.isArray(rows) ? rows : [];
 
@@ -227,6 +228,12 @@ export default function PricePendingTable({
                                     );
 
 
+                                    const canAcceptExternalUpdate = Boolean(
+                                        pendingUpdate &&
+                                        permissions.canEditValues
+                                    );
+
+
                                     const canEditColumn =
                                         permissions.canEditValues &&
                                         permissions.canEditFunction(
@@ -281,6 +288,26 @@ export default function PricePendingTable({
                                                             : row[column.key] || ""
                                                 }
                                             />
+
+
+                                            {canAcceptExternalUpdate && (
+                                                <button
+                                                    type="button"
+                                                    className="accept-external-update-button"
+                                                    disabled={savingCell !== null}
+                                                    onClick={() =>
+                                                        onAcceptExternalUpdate({
+                                                            id: row.id,
+                                                            column: column.key
+                                                        })
+                                                    }
+                                                    title={`Aceitar atualização externa: ${String(
+                                                        pendingUpdate.value ?? ""
+                                                    )}`}
+                                                >
+                                                    ✓
+                                                </button>
+                                            )}
                                         </td>
                                     );
                                 })}

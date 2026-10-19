@@ -90,6 +90,14 @@ function registerPricePendingIpc() {
     });
 
 
+    ipcMain.handle("price-pending:accept-external-update", (event, payload = {}) => {
+        return repository.acceptExternalCellUpdate({
+            id: payload.id,
+            column: payload.column
+        });
+    });
+
+
     ipcMain.handle("price-pending:export", (event, options = {}) => {
         const {
             laboratory,

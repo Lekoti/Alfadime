@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 
+
 import PricePendingToolbar from "../components/PricePendingToolbar";
 import PricePendingFilters from "../components/PricePendingFilters";
 import PricePendingTable from "../components/PricePendingTable";
@@ -8,16 +9,20 @@ import PricePendingIgnoredFilesModal from "../components/PricePendingIgnoredFile
 import ExportExcelModal from "../../../shared/components/ExportExcelModal";
 
 
+
 import usePricePendingPermissions from "../hooks/usePricePendingPermissions";
 import usePricePendingFilters from "../hooks/usePricePendingFilters";
 import usePricePendingRows from "../hooks/usePricePendingRows";
+
 
 
 import { PRICE_PENDING_EXPORT_COLUMNS } from "../constants/price-pending.constants";
 import { isUpdatedPeriod } from "../utils/price-pending.utils";
 
 
+
 import "../styles/price-pending.css";
+
 
 
 function buildSummary(rows, visibleColumnsList) {
@@ -26,20 +31,25 @@ function buildSummary(rows, visibleColumnsList) {
         ? visibleColumnsList
         : [];
 
+
     const priceColumns = safeColumns.filter(
         (column) => column.group === "precos_ok"
     );
+
 
     const pendingColumns = safeColumns.filter(
         (column) => column.group === "pendencias_ok"
     );
 
+
     const countUpdated = (columns) => {
         let updated = 0;
+
 
         safeRows.forEach((row) => {
             columns.forEach((column) => {
                 const value = row[column.key];
+
 
                 if (
                     String(value ?? "").trim() !== "" &&
@@ -50,13 +60,16 @@ function buildSummary(rows, visibleColumnsList) {
             });
         });
 
+
         return updated;
     };
+
 
     const pricesUpdated = countUpdated(priceColumns);
     const pendingUpdated = countUpdated(pendingColumns);
     const pricesTotal = safeRows.length * priceColumns.length;
     const pendingTotal = safeRows.length * pendingColumns.length;
+
 
     return {
         pricesUpdated,
@@ -67,24 +80,30 @@ function buildSummary(rows, visibleColumnsList) {
 }
 
 
+
 export default function PricePendingPage() {
     const permissions = usePricePendingPermissions();
+
 
     const filters = usePricePendingFilters({
         permissions
     });
+
 
     const rowsState = usePricePendingRows({
         permissions,
         enabled: !permissions.isLoadingPermissions
     });
 
+
     const [newLaboratory, setNewLaboratory] = useState("");
     const [showIgnoredModal, setShowIgnoredModal] = useState(false);
     const [exportModalOpen, setExportModalOpen] = useState(false);
 
+
     const tableWrapperRef = useRef(null);
     const scrollTimerRef = useRef(null);
+
 
     const rows = useMemo(
         () => filters.filterRows(rowsState.allRows),
@@ -94,6 +113,7 @@ export default function PricePendingPage() {
         ]
     );
 
+
     const summary = useMemo(
         () => buildSummary(rows, filters.visibleColumnsList),
         [
@@ -101,6 +121,7 @@ export default function PricePendingPage() {
             filters.visibleColumnsList
         ]
     );
+
 
 
     useEffect(() => {
@@ -112,6 +133,7 @@ export default function PricePendingPage() {
         }
 
 
+
         tableWrapperRef.current.scrollTop =
             filters.tableScrollTop;
     }, [
@@ -120,8 +142,10 @@ export default function PricePendingPage() {
     ]);
 
 
+
     function handleTableScroll(event) {
         const nextScrollTop = event.currentTarget.scrollTop;
+
 
 
         if (scrollTimerRef.current) {
@@ -129,10 +153,49 @@ export default function PricePendingPage() {
         }
 
 
+
         scrollTimerRef.current = setTimeout(() => {
             filters.setTableScrollTop(nextScrollTop);
         }, 300);
     }
+
+
+
+    async function handleAcceptExternalUpdate({ id, column }) {
+        try {
+            rowsState.setError("");
+            rowsState.setSuccess("");
+
+
+            const updatedRow =
+                await window.alfadime.pricePending.acceptExternalUpdate({
+                    id,
+                    column
+                });
+
+
+            if (updatedRow && updatedRow.id === id) {
+                rowsState.setAllRows((currentRows) => {
+                    return currentRows.map((currentRow) => {
+                        return currentRow.id === updatedRow.id
+                            ? updatedRow
+                            : currentRow;
+                    });
+                });
+            }
+
+
+            rowsState.setSuccess("Atualização externa aceita.");
+        } catch (acceptError) {
+            console.error(acceptError);
+
+
+            rowsState.setError(
+                "Não foi possível aceitar a atualização externa."
+            );
+        }
+    }
+
 
 
     async function handleExport(selectedColumns) {
@@ -144,9 +207,11 @@ export default function PricePendingPage() {
         }
 
 
+
         const fileName = `precos-pendencias-${new Date()
             .toISOString()
             .slice(0, 10)}.xlsx`;
+
 
 
         const {
@@ -167,11 +232,13 @@ export default function PricePendingPage() {
         );
 
 
+
         if (canceled || !filePath) {
             return {
                 cancelled: true
             };
         }
+
 
 
         const result =
@@ -184,13 +251,16 @@ export default function PricePendingPage() {
             });
 
 
+
         rowsState.setSuccess(
             `Exportado com sucesso: ${result.filePath}`
         );
 
 
+
         return result;
     }
+
 
 
     if (
@@ -205,6 +275,7 @@ export default function PricePendingPage() {
             </main>
         );
     }
+
 
 
     return (
@@ -224,6 +295,7 @@ export default function PricePendingPage() {
                 onRefresh={rowsState.refreshRows}
                 onShowIgnoredFiles={() => setShowIgnoredModal(true)}
             />
+
 
 
             {filters.filtersPanelOpen && (
@@ -250,27 +322,32 @@ export default function PricePendingPage() {
             )}
 
 
+
             <div className="price-pending-summary">
                 <div className="price-pending-summary-item">
                     <span>Preços atualizados</span>
                     <strong>{summary.pricesUpdated}</strong>
                 </div>
 
+
                 <div className="price-pending-summary-item pending">
                     <span>Preços pendentes</span>
                     <strong>{summary.pricesPending}</strong>
                 </div>
+
 
                 <div className="price-pending-summary-item">
                     <span>Pendências atualizadas</span>
                     <strong>{summary.pendingUpdated}</strong>
                 </div>
 
+
                 <div className="price-pending-summary-item pending">
                     <span>Pendências pendentes</span>
                     <strong>{summary.pendingPending}</strong>
                 </div>
             </div>
+
 
 
             {rowsState.error && (
@@ -280,11 +357,13 @@ export default function PricePendingPage() {
             )}
 
 
+
             {rowsState.success && (
                 <div className="price-pending-success">
                     {rowsState.success}
                 </div>
             )}
+
 
 
             {rowsState.readOnly && (
@@ -299,6 +378,7 @@ export default function PricePendingPage() {
                     </button>
                 </div>
             )}
+
 
 
             <PricePendingTable
@@ -316,7 +396,9 @@ export default function PricePendingPage() {
                 onUpdateValue={rowsState.updateLocalValue}
                 onSaveCell={rowsState.saveCell}
                 onRemoveLaboratory={rowsState.removeLaboratory}
+                onAcceptExternalUpdate={handleAcceptExternalUpdate}
             />
+
 
 
             <PricePendingIgnoredFilesModal
@@ -324,6 +406,7 @@ export default function PricePendingPage() {
                 files={rowsState.ignoredFiles}
                 onClose={() => setShowIgnoredModal(false)}
             />
+
 
 
             <ExportExcelModal
