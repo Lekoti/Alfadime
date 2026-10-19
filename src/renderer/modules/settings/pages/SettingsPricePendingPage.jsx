@@ -1,10 +1,19 @@
 ﻿import { useEffect, useState } from "react";
 
 
+import { useAuthContext } from "../../auth/context/AuthContext";
 import "../styles/settings.css";
 
 
 function SettingsPricePendingPage() {
+    const { user, isAdmin, isCreator } = useAuthContext();
+    const canForceRefresh = Boolean(
+        isAdmin ||
+        isCreator ||
+        String(user?.role || "").toLowerCase() === "staff"
+    );
+
+
     const [dbMode, setDbMode] = useState("local");
     const [dbPath, setDbPath] = useState("");
     const [defaultDbPath, setDefaultDbPath] = useState("");
@@ -22,6 +31,8 @@ function SettingsPricePendingPage() {
     const [foldersSaving, setFoldersSaving] = useState(false);
     const [foldersSavedMessage, setFoldersSavedMessage] = useState("");
     const [foldersSavedError, setFoldersSavedError] = useState("");
+    const [forcingRefresh, setForcingRefresh] = useState(false);
+    const [forceResult, setForceResult] = useState(null);
 
 
     useEffect(() => {
@@ -198,6 +209,46 @@ function SettingsPricePendingPage() {
             );
         } finally {
             setFoldersSaving(false);
+        }
+    }
+
+
+    async function handleForceRefresh() {
+        const confirmed = window.confirm(
+            "Forçar atualização de Preços e Pendências?\n\n" +
+            "Todos os arquivos das pastas configuradas serão lidos novamente, " +
+            "inclusive os que já foram processados."
+        );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        setForcingRefresh(true);
+        setForceResult(null);
+
+
+        try {
+            const result =
+                await window.alfadime?.pricePending?.forceRefresh?.();
+
+
+            setForceResult(result || {
+                success: false,
+                message: "Não foi possível forçar a atualização."
+            });
+        } catch (error) {
+            console.error(error);
+
+
+            setForceResult({
+                success: false,
+                message: error?.message || "Não foi possível forçar a atualização."
+            });
+        } finally {
+            setForcingRefresh(false);
         }
     }
 
@@ -399,6 +450,37 @@ function SettingsPricePendingPage() {
                                 {foldersSavedError}
                             </p>
                         ) : null}
+
+
+                        {canForceRefresh && (
+                            <>
+                                <div className="settings-db-actions">
+                                    <button
+                                        type="button"
+                                        className="settings-db-button settings-db-button-primary"
+                                        disabled={forcingRefresh}
+                                        onClick={handleForceRefresh}
+                                    >
+                                        {forcingRefresh ? "Forçando atualização..." : "Forçar atualização"}
+                                    </button>
+                                </div>
+
+
+                                {forceResult ? (
+                                    <p
+                                        className={
+                                            forceResult.success
+                                                ? "settings-db-message settings-db-message-success"
+                                                : "settings-db-message settings-db-message-error"
+                                        }
+                                    >
+                                        {forceResult.success
+                                            ? `Atualização forçada concluída. ${forceResult.processed || 0} arquivo(s) processado(s), ${forceResult.failures || 0} falha(s).`
+                                            : forceResult.message}
+                                    </p>
+                                ) : null}
+                            </>
+                        )}
                     </>
                 )}
             </section>

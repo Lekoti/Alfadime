@@ -29,6 +29,12 @@ const {
 } = require("./price-pending-folders-config.repository");
 
 
+const {
+    refreshFromFolders,
+    forceRefreshFromFolders
+} = require("./price-pending-file-monitor.service");
+
+
 const path = require("node:path");
 
 
@@ -75,14 +81,12 @@ function registerPricePendingIpc() {
 
 
     ipcMain.handle("price-pending:refresh", async () => {
-        const {
-            refreshFromFolders
-        } = require(
-            "./price-pending-file-monitor.service"
-        );
-
-
         return refreshFromFolders();
+    });
+
+
+    ipcMain.handle("price-pending:force-refresh", async () => {
+        return forceRefreshFromFolders();
     });
 
 
@@ -166,18 +170,15 @@ function registerPricePendingIpc() {
     });
 
 
-
     ipcMain.handle("price-pending:save-folders-config", (event, config = {}) => {
         const prices = String(config.prices || DEFAULT_FOLDERS.prices).trim();
         const pending = String(config.pending || DEFAULT_FOLDERS.pending).trim();
-
 
 
         saveFoldersConfig({
             prices,
             pending
         });
-
 
 
         return getFoldersConfig();

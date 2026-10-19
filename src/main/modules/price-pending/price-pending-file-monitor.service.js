@@ -2,19 +2,23 @@
 const path = require("node:path");
 const crypto = require("node:crypto");
 
+
 const {
     listRows,
     applyExternalCellUpdate
 } = require("./price-pending.repository");
 
+
 const {
     getPricePendingDatabase
 } = require("./price-pending.database");
+
 
 const {
     getFoldersConfig,
     DEFAULT_FOLDERS
 } = require("./price-pending-folders-config.repository");
+
 
 function getFolders() {
     try {
@@ -25,9 +29,11 @@ function getFolders() {
             error.message
         );
 
+
         return DEFAULT_FOLDERS;
     }
 }
+
 
 const BRANCHES = [
     "DPR",
@@ -36,6 +42,7 @@ const BRANCHES = [
     "DMS",
     "DSC"
 ];
+
 
 const FILE_MONTHS = {
     JANEIRO: 1,
@@ -52,11 +59,14 @@ const FILE_MONTHS = {
     DEZEMBRO: 12
 };
 
+
 const REFRESH_LOCK_KEY =
     "price-pending-manual-refresh";
 
+
 const REFRESH_LOCK_DURATION_MS =
     5 * 60 * 1000;
+
 
 function normalize(value) {
     return String(value || "")
@@ -68,8 +78,10 @@ function normalize(value) {
         .trim();
 }
 
+
 function getFileType(fileName) {
     const normalizedName = normalize(fileName);
+
 
     if (
         normalizedName.includes("PRECOS") ||
@@ -78,6 +90,7 @@ function getFileType(fileName) {
         return "prices";
     }
 
+
     if (
         normalizedName.includes("PENDENCIAS") ||
         normalizedName.includes("PENDENCIA")
@@ -85,55 +98,69 @@ function getFileType(fileName) {
         return "pending";
     }
 
+
     return null;
 }
 
-function getBranch(fileName) {
+
+function getBranches(fileName) {
     const words = normalize(fileName).split(" ");
 
-    return BRANCHES.find((branch) => {
+
+    return BRANCHES.filter((branch) => {
         return words.includes(branch);
-    }) || null;
+    });
 }
+
 
 function getFileMonth(fileName) {
     const normalizedName = normalize(fileName);
     const words = normalizedName.split(" ");
+
 
     const monthEntry = Object.entries(FILE_MONTHS)
         .find(([monthName]) => {
             return words.includes(monthName);
         });
 
+
     return monthEntry
         ? Number(monthEntry[1])
         : null;
 }
 
+
 function getFileYear(fileName, fileMtimeMs) {
     const normalizedName = normalize(fileName);
+
 
     const yearMatch = normalizedName.match(
         /(?:^|[^0-9])(20[0-9]{2})(?:$|[^0-9])/
     );
 
+
     if (yearMatch) {
         return Number(yearMatch[1]);
     }
 
+
     const fileDate = new Date(Number(fileMtimeMs));
+
 
     if (Number.isNaN(fileDate.getTime())) {
         throw new Error(
             "Data de modificação do arquivo inválida."
         );
     }
+
 
     return new Date().getFullYear();
 }
 
+
 function getFileDateParts(fileName, fileMtimeMs) {
     const fileDate = new Date(Number(fileMtimeMs));
+
 
     if (Number.isNaN(fileDate.getTime())) {
         throw new Error(
@@ -141,7 +168,9 @@ function getFileDateParts(fileName, fileMtimeMs) {
         );
     }
 
+
     const month = getFileMonth(fileName);
+
 
     if (!month) {
         throw new Error(
@@ -149,14 +178,17 @@ function getFileDateParts(fileName, fileMtimeMs) {
         );
     }
 
+
     const day = fileDate.getDate();
     const year = getFileYear(
         fileName,
         fileMtimeMs
     );
 
+
     const formattedDay = String(day).padStart(2, "0");
     const formattedMonth = String(month).padStart(2, "0");
+
 
     return {
         day,
@@ -166,6 +198,7 @@ function getFileDateParts(fileName, fileMtimeMs) {
             `${formattedDay}/${formattedMonth}/${year}`
     };
 }
+
 
 function formatFileModificationDate(
     fileName,
@@ -177,6 +210,7 @@ function formatFileModificationDate(
     ).value;
 }
 
+
 function getLaboratoryName(row) {
     return normalize(row.laboratory)
         .replace(/^#\s*/, "")
@@ -184,27 +218,34 @@ function getLaboratoryName(row) {
         .trim();
 }
 
+
 function findMatchingRows(fileName) {
     const normalizedFileName = normalize(fileName);
     const rows = listRows();
 
+
     return rows.filter((row) => {
         const laboratoryName = getLaboratoryName(row);
+
 
         return laboratoryName &&
             normalizedFileName.includes(laboratoryName);
     });
 }
 
-function getColumns(type, branch) {
-    const branches = branch
-        ? [branch]
+
+function getColumns(type, branches) {
+    const targetBranches = Array.isArray(branches) && branches.length
+        ? branches
         : BRANCHES;
+
 
     const columns = [];
 
-    for (const currentBranch of branches) {
+
+    for (const currentBranch of targetBranches) {
         const suffix = currentBranch.toLowerCase();
+
 
         if (type === "prices") {
             columns.push(
@@ -212,6 +253,7 @@ function getColumns(type, branch) {
                 `precos_ok_${suffix}`
             );
         }
+
 
         if (type === "pending") {
             columns.push(
@@ -221,8 +263,10 @@ function getColumns(type, branch) {
         }
     }
 
+
     return columns;
 }
+
 
 function ensureRefreshControlTables(database) {
     database.exec(`
@@ -240,9 +284,11 @@ function ensureRefreshControlTables(database) {
             updated_at TEXT NOT NULL
         );
 
+
         CREATE INDEX IF NOT EXISTS
         idx_price_pending_processed_files_signature
         ON price_pending_processed_files (signature);
+
 
         CREATE TABLE IF NOT EXISTS price_pending_refresh_locks (
             lock_key TEXT PRIMARY KEY,
@@ -253,9 +299,11 @@ function ensureRefreshControlTables(database) {
             updated_at TEXT NOT NULL
         );
 
+
         CREATE INDEX IF NOT EXISTS
         idx_price_pending_refresh_locks_expires_at
         ON price_pending_refresh_locks (expires_at);
+
 
         CREATE TABLE IF NOT EXISTS price_pending_updates (
             id TEXT PRIMARY KEY,
@@ -271,14 +319,17 @@ function ensureRefreshControlTables(database) {
             created_at TEXT NOT NULL
         );
 
+
         CREATE INDEX IF NOT EXISTS
         idx_price_pending_updates_started_at
         ON price_pending_updates (started_at);
     `);
 }
 
+
 function getFileSignature(filePath) {
     const stats = fs.statSync(filePath);
+
 
     return {
         fileSize: stats.size,
@@ -288,12 +339,14 @@ function getFileSignature(filePath) {
     };
 }
 
+
 function listExcelFiles(folderPath) {
     if (!fs.existsSync(folderPath)) {
         throw new Error(
             `Pasta não encontrada: ${folderPath}`
         );
     }
+
 
     return fs
         .readdirSync(folderPath, {
@@ -309,8 +362,10 @@ function listExcelFiles(folderPath) {
                 entry.name
             );
 
+
             const signature =
                 getFileSignature(filePath);
+
 
             return {
                 name: entry.name,
@@ -319,6 +374,7 @@ function listExcelFiles(folderPath) {
             };
         });
 }
+
 
 function getProcessedFile(database, filePath) {
     return database
@@ -333,17 +389,20 @@ function getProcessedFile(database, filePath) {
         .get(filePath);
 }
 
+
 function wasFileAlreadyProcessed(database, file) {
     const saved = getProcessedFile(
         database,
         file.path
     );
 
+
     return Boolean(
         saved &&
         saved.signature === file.signature
     );
 }
+
 
 function saveProcessedFile(
     database,
@@ -353,10 +412,12 @@ function saveProcessedFile(
 ) {
     const now = new Date().toISOString();
 
+
     const existing = getProcessedFile(
         database,
         file.path
     );
+
 
     if (existing) {
         database
@@ -385,8 +446,10 @@ function saveProcessedFile(
                 file.path
             );
 
+
         return;
     }
+
 
     database
         .prepare(`
@@ -419,13 +482,16 @@ function saveProcessedFile(
         );
 }
 
+
 function acquireRefreshLock(database, ownerId) {
     const now = new Date();
     const nowIso = now.toISOString();
 
+
     const expiresAt = new Date(
         now.getTime() + REFRESH_LOCK_DURATION_MS
     ).toISOString();
+
 
     database
         .prepare(`
@@ -433,6 +499,7 @@ function acquireRefreshLock(database, ownerId) {
             WHERE expires_at <= ?
         `)
         .run(nowIso);
+
 
     const existingLock = database
         .prepare(`
@@ -447,12 +514,14 @@ function acquireRefreshLock(database, ownerId) {
         `)
         .get(REFRESH_LOCK_KEY);
 
+
     if (existingLock) {
         return {
             acquired: false,
             lock: existingLock
         };
     }
+
 
     database
         .prepare(`
@@ -474,11 +543,13 @@ function acquireRefreshLock(database, ownerId) {
             nowIso
         );
 
+
     return {
         acquired: true,
         expiresAt
     };
 }
+
 
 function releaseRefreshLock(database, ownerId) {
     database
@@ -493,14 +564,17 @@ function releaseRefreshLock(database, ownerId) {
         );
 }
 
+
 function appOwnerName() {
     return process.env.COMPUTERNAME ||
         process.env.HOSTNAME ||
         "computador";
 }
 
+
 function processCurrentFile(file, expectedType) {
     const fileType = getFileType(file.name);
+
 
     if (fileType !== expectedType) {
         return {
@@ -510,7 +584,9 @@ function processCurrentFile(file, expectedType) {
         };
     }
 
+
     const rows = findMatchingRows(file.name);
+
 
     if (!rows.length) {
         return {
@@ -520,16 +596,19 @@ function processCurrentFile(file, expectedType) {
         };
     }
 
-    const branch = getBranch(file.name);
+
+    const branches = getBranches(file.name);
     const columns = getColumns(
         fileType,
-        branch
+        branches
     );
+
 
     const fileDate = getFileDateParts(
         file.name,
         file.fileMtimeMs
     );
+
 
     for (const row of rows) {
         for (const column of columns) {
@@ -543,11 +622,12 @@ function processCurrentFile(file, expectedType) {
         }
     }
 
+
     return {
         processed: true,
         fileName: file.name,
         type: fileType,
-        branch,
+        branches,
         value: fileDate.value,
         fileDate,
         fileMtimeMs: file.fileMtimeMs,
@@ -556,16 +636,20 @@ function processCurrentFile(file, expectedType) {
     };
 }
 
+
 function refreshFromFolders() {
     const database = getPricePendingDatabase();
     const ownerId = crypto.randomUUID();
 
+
     ensureRefreshControlTables(database);
+
 
     const lockResult = acquireRefreshLock(
         database,
         ownerId
     );
+
 
     if (!lockResult.acquired) {
         const expiresAt = lockResult.lock?.expires_at
@@ -573,6 +657,7 @@ function refreshFromFolders() {
                 lockResult.lock.expires_at
             ).toLocaleTimeString("pt-BR")
             : "em breve";
+
 
         return {
             success: false,
@@ -588,14 +673,17 @@ function refreshFromFolders() {
         };
     }
 
+
     try {
         const priceFiles = listExcelFiles(
             getFolders().prices
         );
 
+
         const pendingFiles = listExcelFiles(
             getFolders().pending
         );
+
 
         const allFiles = [
             ...priceFiles.map((file) => {
@@ -612,11 +700,13 @@ function refreshFromFolders() {
             })
         ];
 
+
         const results = [];
         let newFiles = 0;
         let changedFiles = 0;
         let alreadyProcessed = 0;
         let failures = 0;
+
 
         for (const file of allFiles) {
             const previous = getProcessedFile(
@@ -624,8 +714,10 @@ function refreshFromFolders() {
                 file.path
             );
 
+
             if (wasFileAlreadyProcessed(database, file)) {
                 alreadyProcessed += 1;
+
 
                 results.push({
                     processed: false,
@@ -633,8 +725,10 @@ function refreshFromFolders() {
                     reason: "ja_processado"
                 });
 
+
                 continue;
             }
+
 
             if (previous) {
                 changedFiles += 1;
@@ -642,13 +736,16 @@ function refreshFromFolders() {
                 newFiles += 1;
             }
 
+
             try {
                 const result = processCurrentFile(
                     file,
                     file.expectedType
                 );
 
+
                 results.push(result);
+
 
                 if (result.processed) {
                     saveProcessedFile(
@@ -660,6 +757,7 @@ function refreshFromFolders() {
                 }
             } catch (error) {
                 failures += 1;
+
 
                 results.push({
                     processed: false,
@@ -673,13 +771,16 @@ function refreshFromFolders() {
             }
         }
 
+
         const processed = results.filter((item) => {
             return item.processed;
         });
 
+
         const ignored = results.filter((item) => {
             return !item.processed;
         });
+
 
         return {
             success: true,
@@ -702,12 +803,30 @@ function refreshFromFolders() {
     }
 }
 
+
+function forceRefreshFromFolders() {
+    const database = getPricePendingDatabase();
+
+
+    ensureRefreshControlTables(database);
+
+
+    database
+        .prepare("DELETE FROM price_pending_processed_files")
+        .run();
+
+
+    return refreshFromFolders();
+}
+
+
 class PricePendingFileMonitor {
     start() {
         console.log(
             "Monitor automático de Preços e Pendências desativado."
         );
     }
+
 
     stop() {
         console.log(
@@ -716,8 +835,10 @@ class PricePendingFileMonitor {
     }
 }
 
+
 module.exports = {
     PricePendingFileMonitor,
     getFolders,
-    refreshFromFolders
+    refreshFromFolders,
+    forceRefreshFromFolders
 };
