@@ -66,6 +66,17 @@ function runGitCommand(gitArguments) {
 
 async function publishRelease(currentUser) {
     try {
+        const { app } = require("electron");
+
+
+        if (app?.isPackaged) {
+            return {
+                success: false,
+                error: "A publicação de atualizações está disponível apenas no ambiente de desenvolvimento."
+            };
+        }
+
+
         if (
             !currentUser ||
             currentUser.role !== USER_ROLES.CREATOR
