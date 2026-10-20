@@ -2,42 +2,41 @@
 const path = require("node:path");
 const Database = require("better-sqlite3");
 
+
 const {
     getDatabase: getLocalDatabase
 } = require("../../database/connection");
 
-const {
-    getDbConfig
-} = require("./price-pending-db-config.repository");
 
 const DEFAULT_SHARED_DATABASE_PATH =
-    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\PRECOS E PENDENCIAS\\BANCO DE DADOS\\precos-pendencias-teste.db";
+    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\BANCO DE DADOS\\precos-pendencias.db";
+
 
 const SHARED_DB_BUSY_TIMEOUT_MS = 10000;
+
 
 let sharedDatabase = null;
 let sharedDatabasePath = null;
 
-function getEffectiveConfig() {
-    const config = getDbConfig();
 
+function getEffectiveConfig() {
     return {
-        mode: config?.mode === "shared"
-            ? "shared"
-            : "local",
-        path: String(config?.path || "").trim() ||
-            DEFAULT_SHARED_DATABASE_PATH
+        mode: "shared",
+        path: DEFAULT_SHARED_DATABASE_PATH
     };
 }
+
 
 function isSharedMode() {
     return getEffectiveConfig().mode === "shared";
 }
 
+
 function openSharedDatabase(databasePath) {
     const databaseDirectory = path.dirname(
         databasePath
     );
+
 
     if (!fs.existsSync(databaseDirectory)) {
         throw new Error(
@@ -45,13 +44,16 @@ function openSharedDatabase(databasePath) {
         );
     }
 
+
     if (!fs.existsSync(databasePath)) {
         throw new Error(
             `Banco compartilhado nao encontrado: ${databasePath}`
         );
     }
 
+
     const database = new Database(databasePath);
+
 
     database.pragma("journal_mode = DELETE");
     database.pragma("synchronous = FULL");
@@ -60,12 +62,15 @@ function openSharedDatabase(databasePath) {
         `busy_timeout = ${SHARED_DB_BUSY_TIMEOUT_MS}`
     );
 
+
     return database;
 }
+
 
 function getSharedDatabase() {
     const { path: databasePath } =
         getEffectiveConfig();
+
 
     if (
         sharedDatabase &&
@@ -74,24 +79,30 @@ function getSharedDatabase() {
         return sharedDatabase;
     }
 
+
     if (sharedDatabase) {
         sharedDatabase.close();
         sharedDatabase = null;
     }
 
+
     sharedDatabase = openSharedDatabase(
         databasePath
     );
 
+
     sharedDatabasePath = databasePath;
+
 
     console.log(
         "[Precos e Pendencias] Usando banco compartilhado:",
         databasePath
     );
 
+
     return sharedDatabase;
 }
+
 
 const REQUIRED_ROW_COLUMNS = [
     {
@@ -112,14 +123,18 @@ const REQUIRED_ROW_COLUMNS = [
     }
 ];
 
+
 const ensuredDatabases = new WeakSet();
+
 
 function ensurePricePendingSchema(database) {
     if (ensuredDatabases.has(database)) {
         return [];
     }
 
+
     const addedColumns = [];
+
 
     const rowsTable = database
         .prepare(`
@@ -129,6 +144,7 @@ function ensurePricePendingSchema(database) {
               AND name = 'price_pending_rows'
         `)
         .get();
+
 
     if (rowsTable) {
         const existingColumns = new Set(
@@ -140,18 +156,22 @@ function ensurePricePendingSchema(database) {
                 .map((column) => column.name)
         );
 
+
         for (const column of REQUIRED_ROW_COLUMNS) {
             if (existingColumns.has(column.name)) {
                 continue;
             }
 
+
             database.exec(
                 `ALTER TABLE price_pending_rows ADD COLUMN ${column.name} ${column.definition}`
             );
 
+
             addedColumns.push(column.name);
         }
     }
+
 
     database.exec(`
         CREATE TABLE IF NOT EXISTS price_pending_processed_files (
@@ -168,9 +188,11 @@ function ensurePricePendingSchema(database) {
             updated_at TEXT NOT NULL
         );
 
+
         CREATE INDEX IF NOT EXISTS
         idx_price_pending_processed_files_signature
         ON price_pending_processed_files (signature);
+
 
         CREATE TABLE IF NOT EXISTS price_pending_refresh_locks (
             lock_key TEXT PRIMARY KEY,
@@ -181,14 +203,17 @@ function ensurePricePendingSchema(database) {
             updated_at TEXT NOT NULL
         );
 
+
         CREATE INDEX IF NOT EXISTS
         idx_price_pending_refresh_locks_expires_at
         ON price_pending_refresh_locks (expires_at);
     `);
 
+
     if (rowsTable) {
         ensuredDatabases.add(database);
     }
+
 
     if (addedColumns.length > 0) {
         console.log(
@@ -197,18 +222,23 @@ function ensurePricePendingSchema(database) {
         );
     }
 
+
     return addedColumns;
 }
+
 
 function getPricePendingDatabase() {
     const database = isSharedMode()
         ? getSharedDatabase()
         : getLocalDatabase();
 
+
     ensurePricePendingSchema(database);
+
 
     return database;
 }
+
 
 function closePricePendingDatabase() {
     if (sharedDatabase) {
@@ -218,23 +248,28 @@ function closePricePendingDatabase() {
     }
 }
 
+
 function testSharedConnection(customPath) {
     const databasePath = String(
         customPath || ""
     ).trim() || getEffectiveConfig().path;
 
+
     let testDatabase = null;
+
 
     try {
         testDatabase = openSharedDatabase(
             databasePath
         );
 
+
         const row = testDatabase
             .prepare(
                 "SELECT COUNT(*) AS total FROM price_pending_rows"
             )
             .get();
+
 
         return {
             success: true,
@@ -254,6 +289,7 @@ function testSharedConnection(customPath) {
         }
     }
 }
+
 
 module.exports = {
     isSharedMode,

@@ -3,6 +3,7 @@ const usersHandler = require("./usersHandler");
 
 
 
+
 function registerUsersIpc(ipcMain, getAuthenticatedUser) {
     console.log(
         "[USERS] Registrando handlers IPC de usuários"
@@ -10,12 +11,16 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
 
 
 
+
     ipcMain.handle(
         "users:list",
         () => {
-            return usersHandler.listUsers();
+            return usersHandler.listUsers(
+                getAuthenticatedUser()
+            );
         }
     );
+
 
 
 
@@ -28,6 +33,7 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
             );
         }
     );
+
 
 
 
@@ -44,6 +50,7 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
 
 
 
+
     ipcMain.handle(
         "users:delete",
         (_event, id) => {
@@ -53,6 +60,7 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
             );
         }
     );
+
 
 
 
@@ -69,12 +77,14 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
 
 
 
+
     ipcMain.handle(
         "users:list-permissions",
         () => {
             return usersHandler.listPermissions();
         }
     );
+
 
 
 
@@ -89,10 +99,12 @@ function registerUsersIpc(ipcMain, getAuthenticatedUser) {
 
 
 
+
     console.log(
         "[USERS] Handlers IPC registrados com sucesso"
     );
 }
+
 
 
 

@@ -1,4 +1,4 @@
-const apiClient = require("./apiClient");
+const usersDatabaseService = require("./usersDatabaseService");
 
 const {
     USER_ROLES
@@ -10,49 +10,35 @@ const path = require("node:path");
 
 const PROTECTED_CREATOR_USERNAME = "sLekoti";
 
-function listUsers() {
-    return apiClient.get("/users");
+function listUsers(currentUser) {
+    return usersDatabaseService.listUsers(currentUser);
 }
 
 function createUser(data, currentUser) {
-    return apiClient.post("/users", {
-        data,
-        currentUser
-    });
+    return usersDatabaseService.createUser(data, currentUser);
 }
 
 function updateUser(id, data, currentUser) {
-    return apiClient.put("/users", {
-        id,
-        data,
-        currentUser
-    });
+    return usersDatabaseService.updateUser(id, data, currentUser);
 }
 
 function deleteUser(id, currentUser) {
-    return apiClient.del("/users", {
-        id,
-        currentUser
-    });
+    return usersDatabaseService.deleteUser(id, currentUser);
 }
 
 function setUserActive(id, isActive, currentUser) {
-    return apiClient.patch("/users/active", {
-        id,
-        isActive,
-        currentUser
-    });
+    return usersDatabaseService.setUserActive(id, isActive, currentUser);
 }
 
 function listPermissions() {
-    return apiClient.get("/permissions/legacy");
+    return usersDatabaseService.listPermissions();
 }
 
-function runGitCommand(arguments) {
+function runGitCommand(gitArguments) {
     return new Promise((resolve, reject) => {
         execFile(
             "git",
-            arguments,
+            gitArguments,
             {
                 cwd: process.cwd(),
                 windowsHide: true,

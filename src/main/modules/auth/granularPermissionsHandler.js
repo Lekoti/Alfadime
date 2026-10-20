@@ -1,39 +1,27 @@
-const apiClient = require("./apiClient");
+const granularPermissionsDatabaseService = require("./granularPermissionsDatabaseService");
 
 function listModules() {
-    return apiClient.get("/permissions/modules");
+    return granularPermissionsDatabaseService.listModules();
 }
 
 function listFunctions(moduleKey) {
-    return apiClient.get(
-        `/permissions/functions?moduleKey=${encodeURIComponent(moduleKey)}`
-    );
+    return granularPermissionsDatabaseService.listFunctions(moduleKey);
 }
 
 function getPermissionsForUser(userId) {
-    return apiClient.get(
-        `/permissions/user?userId=${encodeURIComponent(userId)}`
-    );
+    return granularPermissionsDatabaseService.getPermissionsForUser(userId);
 }
 
 function getPermissionsForRole(role) {
-    return apiClient.get(
-        `/permissions/role?role=${encodeURIComponent(role)}`
-    );
+    return granularPermissionsDatabaseService.getPermissionsForRole(role);
 }
 
 function savePermissions(payload, currentUser) {
-    return apiClient.post("/permissions/save", {
-        payload,
-        currentUser
-    });
+    return granularPermissionsDatabaseService.savePermissions(payload, currentUser);
 }
 
 function clearUserOverrides(userId, currentUser) {
-    return apiClient.post("/permissions/clear-overrides", {
-        userId,
-        currentUser
-    });
+    return granularPermissionsDatabaseService.clearUserOverrides(userId, currentUser);
 }
 
 module.exports = {

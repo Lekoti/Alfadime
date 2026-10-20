@@ -1,8 +1,10 @@
 const crypto = require("node:crypto");
 
+
 const {
     getDatabase
 } = require("../../database/connection");
+
 
 
 
@@ -11,36 +13,20 @@ const SETTING_KEY =
 
 
 
+
 const DEFAULT_SHARED_DATABASE_PATH =
-    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\CONTATOS\\contatos.db";
+    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\BANCO DE DADOS\\contatos.db";
+
 
 
 
 function getDbConfig() {
-    const database = getDatabase();
-
-    const row =
-        database
-            .prepare(`
-                SELECT setting_value
-                FROM settings
-                WHERE setting_key = ?
-                LIMIT 1
-            `)
-            .get(SETTING_KEY);
-
-    if (!row?.setting_value) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(
-            row.setting_value
-        );
-    } catch {
-        return null;
-    }
+    return {
+        mode: "shared",
+        path: DEFAULT_SHARED_DATABASE_PATH
+    };
 }
+
 
 
 
@@ -50,6 +36,7 @@ function saveDbConfig({
 }) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
     const value =
         JSON.stringify({
@@ -62,6 +49,7 @@ function saveDbConfig({
                 DEFAULT_SHARED_DATABASE_PATH
         });
 
+
     const existing =
         database
             .prepare(`
@@ -71,6 +59,7 @@ function saveDbConfig({
                 LIMIT 1
             `)
             .get(SETTING_KEY);
+
 
     if (existing) {
         database
@@ -105,8 +94,10 @@ function saveDbConfig({
             );
     }
 
+
     return getDbConfig();
 }
+
 
 
 
@@ -114,15 +105,18 @@ function ensureDefaultDbConfig() {
     const existing =
         getDbConfig();
 
+
     if (existing) {
         return existing;
     }
+
 
     return saveDbConfig({
         mode: "shared",
         path: DEFAULT_SHARED_DATABASE_PATH
     });
 }
+
 
 
 

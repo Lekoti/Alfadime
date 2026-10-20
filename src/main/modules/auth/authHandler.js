@@ -1,32 +1,43 @@
-const apiClient = require("./apiClient");
+const authDatabaseService = require("./authDatabaseService");
 
+const crypto = require("node:crypto");
+const os = require("node:os");
 
 const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000;
 
+function getComputerId() {
+    const uniqueString = [
+        os.hostname(),
+        os.platform(),
+        os.arch()
+    ].join("-");
+
+    return crypto
+        .createHash("sha256")
+        .update(uniqueString)
+        .digest("hex")
+        .substring(0, 16);
+}
 
 class AuthHandler {
     constructor() {
         this.currentSession = null;
-        this.computerId = apiClient.getComputerId();
+        this.computerId = getComputerId();
         this.heartbeatTimer = null;
     }
 
-
     getComputerName() {
-        return apiClient.getComputerName();
+        return os.hostname();
     }
-
 
     startHeartbeat() {
         this.stopHeartbeat();
-
 
         this.heartbeatTimer = setInterval(async () => {
             if (!this.currentSession) {
                 this.stopHeartbeat();
                 return;
             }
-
 
             try {
                 await this.updateLastAccessHandler();
@@ -38,13 +49,10 @@ class AuthHandler {
             }
         }, HEARTBEAT_INTERVAL_MS);
 
-
-        // Não mantém o processo aberto apenas por causa do heartbeat.
         if (this.heartbeatTimer.unref) {
             this.heartbeatTimer.unref();
         }
     }
-
 
     stopHeartbeat() {
         if (this.heartbeatTimer) {
@@ -53,9 +61,8 @@ class AuthHandler {
         }
     }
 
-
     async login(username, password, isPersistent = false) {
-        const result = await apiClient.post("/auth/login", {
+        const result = await authDatabaseService.login({
             username,
             password,
             isPersistent,
@@ -63,84 +70,74 @@ class AuthHandler {
             computerName: this.getComputerName()
         });
 
-
-        if (result?.success && result.data?.token) {
-            apiClient.setAuthToken(result.data.token);
+        if (result?.success && result.data) {
             this.currentSession = result.data;
             this.startHeartbeat();
         }
 
-
         return result;
     }
-
 
     async register(payload) {
-        return apiClient.post("/auth/register", payload);
+        return authDatabaseService.register(payload);
     }
-
 
     async logout() {
-        const result = await apiClient.post("/auth/logout", {});
+        const currentUser = this.getAuthenticatedUser();
 
+        const result = await authDatabaseService.logout(
+            currentUser?.id,
+            this.computerId
+        );
 
         this.stopHeartbeat();
-        apiClient.setAuthToken(null);
         this.currentSession = null;
 
-
         return result;
     }
-
 
     async getCurrentSession() {
-        const result = await apiClient.get(
-            `/auth/session?computerId=${encodeURIComponent(this.computerId)}`
+        const result = await authDatabaseService.getCurrentSession(
+            this.computerId
         );
 
-
-        if (result?.success && result.data?.token) {
-            apiClient.setAuthToken(result.data.token);
+        if (result?.success && result.data) {
             this.currentSession = result.data;
             this.startHeartbeat();
         }
 
-
         return result;
     }
-
 
     async validateSession() {
-        const result = await apiClient.get(
-            `/auth/session/validate?computerId=${encodeURIComponent(this.computerId)}`
+        const result = await authDatabaseService.validateSession(
+            this.computerId
         );
 
-
-        if (result?.success && result.data?.token) {
-            apiClient.setAuthToken(result.data.token);
+        if (result?.success && result.data) {
             this.currentSession = result.data;
             this.startHeartbeat();
         }
 
-
         return result;
     }
 
-
     async updateLastAccessHandler() {
-        return apiClient.post("/auth/session/last-access", {});
-    }
+        const currentUser = this.getAuthenticatedUser();
 
+        return authDatabaseService.updateLastAccessHandler(
+            currentUser?.id,
+            this.computerId
+        );
+    }
 
     getAuthenticatedUser() {
         return this.currentSession?.user || null;
     }
 
-
     getComputerId() {
         return this.computerId;
     }
 }
-
 
 module.exports = new AuthHandler();
