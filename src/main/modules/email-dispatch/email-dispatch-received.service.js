@@ -1973,15 +1973,3 @@ module.exports = {
     // Exportação temporária para testar uma única UID IMAP.
     processRawImapMessage
 };
-
-
-
-
-
-
-
-
-
-
-
-

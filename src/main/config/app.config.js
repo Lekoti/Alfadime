@@ -7,10 +7,13 @@
  */
 
 
+
 const path = require('node:path');
 
 
+
 // ==================== DADOS DO USUÁRIO ====================
+
 
 
 function getAppUserData() {
@@ -23,15 +26,27 @@ function getAppUserData() {
         // Electron não disponível ou app não inicializado
     }
 
+
     // Fallback: usar pasta do projeto
     const projectRoot = path.resolve(__dirname, '../../..');
     return path.join(projectRoot, 'app-data');
 }
 
 
+
+// ==================== ARQUIVOS DE E-MAIL ====================
+
+
+
+const EMAIL_NETWORK_BASE_PATH =
+    '\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\EMAIL';
+
+
+
 function getEmailDataPath() {
-    return path.join(getAppUserData(), 'email');
+    return EMAIL_NETWORK_BASE_PATH;
 }
+
 
 
 function getEmailAttachmentsPath() {
@@ -39,9 +54,11 @@ function getEmailAttachmentsPath() {
 }
 
 
+
 function getEmailDownloadsPath() {
     return path.join(getEmailDataPath(), 'downloads');
 }
+
 
 
 function getPendingProcessedPath() {
@@ -49,16 +66,20 @@ function getPendingProcessedPath() {
 }
 
 
+
 // ==================== CONFIGURAÇÕES DE REDE ====================
 // Altere estes valores conforme o ambiente do cliente.
+
 
 
 const NETWORK_CONFIG = {
     // Servidor de arquivos
     FILE_SERVER: '\\\\10.0.0.20',
 
+
     // Pastas compartilhadas
     PURCHASES_FOLDER: '\\Compras\\1.COMPRAS',
+
 
     // Subpastas específicas
     PRICES_SUBFOLDER: '\\PRECOS SUBIDOS SIRIUS\\PRECOS ATUALIZADOS',
@@ -66,7 +87,9 @@ const NETWORK_CONFIG = {
 };
 
 
+
 // ==================== CAMINHOS DERIVADOS ====================
+
 
 
 const DESTINATION_FOLDERS = {
@@ -75,27 +98,35 @@ const DESTINATION_FOLDERS = {
 };
 
 
+
 // ==================== CONFIGURAÇÕES DE E-MAIL ====================
+
 
 
 const EMAIL_CONFIG = {
     // Intervalo entre envios (ms)
     SEND_INTERVAL_MS: 2000,
 
+
     // Intervalo de verificação IMAP (ms)
     IMAP_POLL_INTERVAL_MS: 60000,
+
 
     // Timeout de conexão (ms)
     CONNECTION_TIMEOUT_MS: 30000,
 
+
     // Pasta de anexos enviados
     ATTACHMENTS_PATH: getEmailAttachmentsPath(),
+
 
     // Pasta de downloads (respostas)
     DOWNLOADS_PATH: getEmailDownloadsPath(),
 
+
     // Pasta de pendências processadas
     PENDING_PROCESSED_PATH: getPendingProcessedPath(),
+
 
     // Padrões de nome de arquivo para respostas
     FILE_NAME_PATTERNS: {
@@ -103,12 +134,15 @@ const EMAIL_CONFIG = {
         PENDING: 'PENDENCIAS - {{laboratorio}} - {{mes}}-{{ano}}.xlsx'
     },
 
+
     // Pastas de destino (serão sobrescritas pelas configurações de rede)
     DESTINATION_FOLDERS: DESTINATION_FOLDERS
 };
 
 
+
 // ==================== CONFIGURAÇÕES DE COMPRAS ====================
+
 
 
 const PURCHASES_CONFIG = {
@@ -123,6 +157,7 @@ const PURCHASES_CONFIG = {
         G: 30
     },
 
+
     // Filiais
     BRANCHES: {
         DPR: 'DIMEBRAS PR',
@@ -134,7 +169,9 @@ const PURCHASES_CONFIG = {
 };
 
 
+
 // ==================== EXPORTAÇÕES ====================
+
 
 
 module.exports = {
@@ -144,6 +181,7 @@ module.exports = {
     getEmailAttachmentsPath,
     getEmailDownloadsPath,
     getPendingProcessedPath,
+
 
     // Configurações
     NETWORK_CONFIG,

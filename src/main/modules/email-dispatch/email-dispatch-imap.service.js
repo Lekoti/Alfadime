@@ -3,28 +3,38 @@ const { simpleParser } = require('mailparser');
 const fs = require('node:fs');
 const path = require('node:path');
 
+
 const repository = require('./email-dispatch.repository');
 
+
 const {
-    EMAIL_FILE_TYPE,
     EMAIL_CONFIG,
     getEmailDownloadsPath
 } = require('./email-dispatch.config');
+
+const {
+    EMAIL_FILE_TYPE
+} = require('./email-dispatch.constants');
+
 const {
     toSafeNumber
 } = require('../../utils/validation.utils');
+
 
 function extractCampaignCodeFromSubject(subject) {
     if (!subject || typeof subject !== 'string') {
         return null;
     }
 
+
     const match = subject.match(/\[ALF-([A-Z0-9]{6})\]/i);
+
 
     return match
         ? 'ALF-' + String(match[1]).toUpperCase()
         : null;
 }
+
 
 function normalizeMessageId(value) {
     return String(value || '')
@@ -33,10 +43,12 @@ function normalizeMessageId(value) {
         .toLowerCase();
 }
 
+
 function extractMessageIds(value) {
     if (!value) {
         return [];
     }
+
 
     if (Array.isArray(value)) {
         return value
@@ -44,8 +56,10 @@ function extractMessageIds(value) {
             .filter(Boolean);
     }
 
+
     const text = String(value);
     const bracketed = text.match(/<[^>]+>/g) || [];
+
 
     if (bracketed.length > 0) {
         return bracketed
@@ -53,11 +67,13 @@ function extractMessageIds(value) {
             .filter(Boolean);
     }
 
+
     return text
         .split(/\s+/)
         .map(normalizeMessageId)
         .filter(Boolean);
 }
+
 
 function findCampaignByCodeOrMessageId(
     campaignCode,
@@ -67,6 +83,7 @@ function findCampaignByCodeOrMessageId(
     const database =
         require('../../database/connection').getDatabase();
 
+
     if (campaignCode) {
         const campaign = database.prepare(`
             SELECT *
@@ -75,19 +92,23 @@ function findCampaignByCodeOrMessageId(
             LIMIT 1
         `).get(String(campaignCode).toUpperCase());
 
+
         if (campaign) {
             return campaign;
         }
     }
+
 
     const messageIds = [
         ...extractMessageIds(inReplyTo),
         ...extractMessageIds(references)
     ];
 
+
     if (messageIds.length === 0) {
         return null;
     }
+
 
     const sentEmails = database.prepare(`
         SELECT campaign_id, sent_message_id
@@ -95,14 +116,17 @@ function findCampaignByCodeOrMessageId(
         WHERE sent_message_id IS NOT NULL
     `).all();
 
+
     for (const messageId of messageIds) {
         const sentEmail = sentEmails.find((item) => {
             return normalizeMessageId(item.sent_message_id) === messageId;
         });
 
+
         if (!sentEmail?.campaign_id) {
             continue;
         }
+
 
         const campaign = database.prepare(`
             SELECT *
@@ -111,13 +135,16 @@ function findCampaignByCodeOrMessageId(
             LIMIT 1
         `).get(sentEmail.campaign_id);
 
+
         if (campaign) {
             return campaign;
         }
     }
 
+
     return null;
 }
+
 
 function getConfigValue(config, names, fallback = '') {
     for (const name of names) {
@@ -131,8 +158,10 @@ function getConfigValue(config, names, fallback = '') {
         }
     }
 
+
     return fallback;
 }
+
 
 function getText(config, names, fallback = '') {
     return String(
@@ -140,10 +169,12 @@ function getText(config, names, fallback = '') {
     ).trim();
 }
 
+
 function getNumber(config, names, fallback = 0) {
     const value = getConfigValue(config, names, fallback);
     return toSafeNumber(value, fallback);
 }
+
 
 function normalizeImapConfig(sourceConfig = {}) {
     return {
@@ -152,6 +183,7 @@ function normalizeImapConfig(sourceConfig = {}) {
             'imap_user'
         ]),
 
+
         password: getText(sourceConfig, [
             'imappasswordencrypted',
             'imap_password_encrypted',
@@ -159,20 +191,24 @@ function normalizeImapConfig(sourceConfig = {}) {
             'imap_password'
         ]),
 
+
         host: getText(sourceConfig, [
             'imaphost',
             'imap_host'
         ]),
+
 
         port: getNumber(sourceConfig, [
             'imapport',
             'imap_port'
         ], 993),
 
+
         secureMode: getText(sourceConfig, [
             'imapsecure',
             'imap_secure'
         ], 'tls'),
+
 
         fromEmail: getText(sourceConfig, [
             'fromemail',
@@ -181,18 +217,22 @@ function normalizeImapConfig(sourceConfig = {}) {
     };
 }
 
+
 function validateImapConfig(config) {
     if (!config.host) {
         throw new Error('Informe o IMAP Host.');
     }
 
+
     if (!config.port) {
         throw new Error('Informe a IMAP Porta.');
     }
 
+
     if (!config.user) {
         throw new Error('Informe o IMAP Usuário.');
     }
+
 
     if (!config.password) {
         throw new Error(
@@ -201,10 +241,13 @@ function validateImapConfig(config) {
     }
 }
 
+
 function getImapConfig(sourceConfig) {
     const config = normalizeImapConfig(sourceConfig);
 
+
     validateImapConfig(config);
+
 
     return {
         user: config.user,
@@ -224,16 +267,20 @@ function getImapConfig(sourceConfig) {
     };
 }
 
+
 function searchCriteria(sourceConfig) {
     const config = normalizeImapConfig(sourceConfig);
     const criteria = [];
+
 
     if (config.fromEmail) {
         criteria.push(['TO', config.fromEmail]);
     }
 
+
     return criteria;
 }
+
 
 async function processIncomingEmails(config, campaign) {
     const imap = new Imap(getImapConfig(config));
@@ -241,26 +288,32 @@ async function processIncomingEmails(config, campaign) {
     const details = [];
     const processingPromises = [];
 
+
     await new Promise((resolve, reject) => {
         let settled = false;
+
 
         function finish() {
             if (settled) {
                 return;
             }
 
+
             settled = true;
             resolve();
         }
+
 
         function fail(error) {
             if (settled) {
                 return;
             }
 
+
             settled = true;
             reject(error);
         }
+
 
         imap.once('ready', () => {
             imap.openBox('INBOX', false, (openError) => {
@@ -268,6 +321,7 @@ async function processIncomingEmails(config, campaign) {
                     fail(openError);
                     return;
                 }
+
 
                 imap.search(
                     searchCriteria(config),
@@ -277,19 +331,23 @@ async function processIncomingEmails(config, campaign) {
                             return;
                         }
 
+
                         if (!results || !results.length) {
                             imap.end();
                             finish();
                             return;
                         }
 
+
                         const fetch = imap.fetch(results, {
                             bodies: '',
                             markSeen: false
                         });
 
+
                         fetch.on('message', (message, sequenceNumber) => {
                             let messageBuffer = Buffer.alloc(0);
+
 
                             message.on('body', (stream) => {
                                 stream.on('data', (chunk) => {
@@ -300,12 +358,14 @@ async function processIncomingEmails(config, campaign) {
                                 });
                             });
 
+
                             message.once('end', () => {
                                 const task = (async () => {
                                     try {
                                         const parsed = await simpleParser(
                                             messageBuffer
                                         );
+
 
                                         const result =
                                             await processEmailMessage(
@@ -314,10 +374,12 @@ async function processIncomingEmails(config, campaign) {
                                                 campaign
                                             );
 
+
                                         if (result?.processed) {
                                             processed.push(result);
                                             details.push(result);
                                         }
+
 
                                         if (result?.handled) {
                                             imap.addFlags(
@@ -341,11 +403,14 @@ async function processIncomingEmails(config, campaign) {
                                     }
                                 })();
 
+
                                 processingPromises.push(task);
                             });
                         });
 
+
                         fetch.once('error', fail);
+
 
                         fetch.once('end', async () => {
                             try {
@@ -362,9 +427,11 @@ async function processIncomingEmails(config, campaign) {
             });
         });
 
+
         imap.once('error', fail);
         imap.connect();
     });
+
 
     return {
         processed: processed.length,
@@ -372,13 +439,16 @@ async function processIncomingEmails(config, campaign) {
     };
 }
 
+
 async function processEmailMessage(parsed, config, requestedCampaign) {
     const campaignCode = extractCampaignCodeFromSubject(
         parsed.subject
     );
 
+
     const inReplyTo = parsed.inReplyTo || null;
     const references = parsed.references || null;
+
 
     const linkedCampaign = findCampaignByCodeOrMessageId(
         campaignCode,
@@ -386,11 +456,13 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         references
     );
 
+
     if (!linkedCampaign) {
         console.log(
             '[EMAIL][IGNORADO] Sem campanha vinculada:',
             parsed.subject || '(sem assunto)'
         );
+
 
         return {
             handled: true,
@@ -399,6 +471,7 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
             reason: 'Sem campanha vinculada'
         };
     }
+
 
     if (
         requestedCampaign?.id &&
@@ -409,6 +482,7 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
             linkedCampaign.id
         );
 
+
         return {
             handled: false,
             processed: false,
@@ -417,11 +491,13 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         };
     }
 
+
     if (!parsed.attachments || !parsed.attachments.length) {
         console.log(
             '[EMAIL][VINCULADO] Sem anexos:',
             parsed.subject || '(sem assunto)'
         );
+
 
         return {
             handled: true,
@@ -433,6 +509,7 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         };
     }
 
+
     console.log(
         '[EMAIL][VINCULADO] Campanha:',
         linkedCampaign.id,
@@ -442,19 +519,23 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         parsed.subject || '(sem assunto)'
     );
 
+
     const attachment = parsed.attachments[0];
     const originalFileName = attachment.filename || 'anexo.xlsx';
+
 
     const fileType = detectFileType(
         originalFileName,
         parsed.subject
     );
 
+
     if (!fileType) {
         console.log(
             '[EMAIL][IGNORADO] Tipo não identificado:',
             originalFileName
         );
+
 
         return {
             handled: true,
@@ -466,14 +547,17 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         };
     }
 
+
     const laboratory = extractLaboratory(
         originalFileName,
         parsed.subject
     );
 
+
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = String(now.getFullYear());
+
 
     const finalFileName = buildFinalFileName(
         fileType,
@@ -482,36 +566,47 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         year
     );
 
+
     const downloadsPath = getEmailDownloadsPath();
 
+
     ensureDirectoryExists(downloadsPath);
+
 
     const temporaryPath = path.join(
         downloadsPath,
         finalFileName
     );
 
+
     await saveAttachment(attachment, temporaryPath);
+
 
     const destinationFolder = getDestinationFolder(fileType);
 
+
     ensureDirectoryExists(destinationFolder);
+
 
     const finalPath = path.join(
         destinationFolder,
         finalFileName
     );
 
+
     if (fs.existsSync(finalPath)) {
         fs.unlinkSync(finalPath);
     }
 
+
     fs.copyFileSync(temporaryPath, finalPath);
+
 
     const recipient = findRecipientByFrom(
         linkedCampaign,
         parsed.from
     );
+
 
     if (recipient) {
         repository.updateEmailRecipientStatus(
@@ -519,6 +614,7 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
             'replied'
         );
     }
+
 
     const response = repository.createProcessedResponse({
         campaign_id: linkedCampaign.id,
@@ -534,6 +630,7 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         file_path_final: finalPath
     });
 
+
     console.log(
         '[EMAIL][PROCESSADO] ' +
         originalFileName +
@@ -542,6 +639,7 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
         ' | Campanha: ' +
         linkedCampaign.id
     );
+
 
     return {
         handled: true,
@@ -555,15 +653,18 @@ async function processEmailMessage(parsed, config, requestedCampaign) {
     };
 }
 
+
 function detectFileType(fileName, subject) {
     const text = `${fileName || ''} ${subject || ''}`
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toUpperCase();
 
+
     if (text.includes('PRECO') || text.includes('PRECOS')) {
         return EMAIL_FILE_TYPE.PRICES;
     }
+
 
     if (
         text.includes('PENDENCIA') ||
@@ -572,19 +673,24 @@ function detectFileType(fileName, subject) {
         return EMAIL_FILE_TYPE.PENDING;
     }
 
+
     return null;
 }
 
+
 function extractLaboratory(fileName, subject) {
     const text = `${fileName || ''} ${subject || ''}`;
+
 
     const explicitMatch = text.match(
         /(?:LABORATORIO|LAB)[:\-\s]+([A-Z0-9][A-Z0-9_-]{2,20})/i
     );
 
+
     if (explicitMatch?.[1]) {
         return explicitMatch[1].trim().toUpperCase();
     }
+
 
     const validLaboratories = [
         'ACHE',
@@ -607,10 +713,12 @@ function extractLaboratory(fileName, subject) {
         'ZODIAC'
     ];
 
+
     const normalized = text
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toUpperCase();
+
 
     for (const laboratory of validLaboratories) {
         if (normalized.includes(laboratory)) {
@@ -618,13 +726,16 @@ function extractLaboratory(fileName, subject) {
         }
     }
 
+
     return 'DESCONHECIDO';
 }
+
 
 function buildFinalFileName(fileType, laboratory, month, year) {
     const pattern = fileType === EMAIL_FILE_TYPE.PRICES
         ? EMAIL_CONFIG.FILE_NAME_PATTERNS.PRICES
         : EMAIL_CONFIG.FILE_NAME_PATTERNS.PENDING;
+
 
     return pattern
         .replace('{{laboratorio}}', laboratory)
@@ -632,11 +743,13 @@ function buildFinalFileName(fileType, laboratory, month, year) {
         .replace('{{ano}}', year);
 }
 
+
 function getDestinationFolder(fileType) {
     return fileType === EMAIL_FILE_TYPE.PRICES
         ? EMAIL_CONFIG.DESTINATION_FOLDERS.PRICES
         : EMAIL_CONFIG.DESTINATION_FOLDERS.PENDING;
 }
+
 
 function ensureDirectoryExists(directoryPath) {
     if (!fs.existsSync(directoryPath)) {
@@ -646,56 +759,70 @@ function ensureDirectoryExists(directoryPath) {
     }
 }
 
+
 async function saveAttachment(attachment, filePath) {
     if (!attachment?.content) {
         throw new Error('Anexo de e-mail sem conteúdo.');
     }
 
+
     const content = Buffer.isBuffer(attachment.content)
         ? attachment.content
         : Buffer.from(attachment.content);
 
+
     await fs.promises.writeFile(filePath, content);
 }
+
 
 function getAddressText(from) {
     if (!from) {
         return '';
     }
 
+
     if (Array.isArray(from.value) && from.value[0]) {
         return from.value[0].address || '';
     }
 
+
     if (from.address) {
         return from.address;
     }
+
 
     if (typeof from.text === 'string') {
         const match = from.text.match(
             /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
         );
 
+
         return match?.[0] || from.text;
     }
 
+
     return '';
 }
+
 
 function findRecipientByFrom(campaign, from) {
     if (!campaign?.id || !from) {
         return null;
     }
 
+
     const sender = getAddressText(from).toLowerCase();
+
 
     if (!sender || !sender.includes('@')) {
         return null;
     }
 
+
     const recipients = repository.listEmailRecipients(
         campaign.id
     );
+
 
     return recipients.find((recipient) => {
         return String(recipient.email || '')
@@ -704,14 +831,17 @@ function findRecipientByFrom(campaign, from) {
     }) || null;
 }
 
+
 async function testImapConnection(sourceConfig) {
     try {
         const normalized = normalizeImapConfig(sourceConfig);
         const imap = new Imap(getImapConfig(sourceConfig));
 
+
         return await new Promise((resolve) => {
             imap.once('ready', () => {
                 imap.end();
+
 
                 resolve({
                     success: true,
@@ -725,6 +855,7 @@ async function testImapConnection(sourceConfig) {
                 });
             });
 
+
             imap.once('error', (error) => {
                 resolve({
                     success: false,
@@ -733,6 +864,7 @@ async function testImapConnection(sourceConfig) {
                         'Falha desconhecida no IMAP.'
                 });
             });
+
 
             imap.connect();
         });
@@ -745,6 +877,7 @@ async function testImapConnection(sourceConfig) {
         };
     }
 }
+
 
 module.exports = {
     processIncomingEmails,

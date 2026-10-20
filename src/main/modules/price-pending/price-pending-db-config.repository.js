@@ -1,10 +1,22 @@
+const crypto = require("node:crypto");
+
 const {
     getDatabase
 } = require("../../database/connection");
 
 const SETTING_KEY = "price_pending_db_config";
 
-function getDbConfig() {
+const DEFAULT_SHARED_DATABASE_PATH =
+    "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\BANCO DE DADOS\\precos-pendencias.db";
+
+function getCentralizedConfig() {
+    return {
+        mode: "shared",
+        path: DEFAULT_SHARED_DATABASE_PATH
+    };
+}
+
+function getStoredDbConfig() {
     const database = getDatabase();
 
     const row = database
@@ -16,7 +28,7 @@ function getDbConfig() {
         `)
         .get(SETTING_KEY);
 
-    if (!row || !row.setting_value) {
+    if (!row?.setting_value) {
         return null;
     }
 
@@ -27,14 +39,30 @@ function getDbConfig() {
     }
 }
 
-function saveDbConfig({ mode, path }) {
+function isCentralizedConfig(config) {
+    return Boolean(
+        config &&
+        config.mode === "shared" &&
+        config.path === DEFAULT_SHARED_DATABASE_PATH
+    );
+}
+
+function getDbConfig() {
+    const existing = getStoredDbConfig();
+
+    if (!isCentralizedConfig(existing)) {
+        return saveDbConfig();
+    }
+
+    return getCentralizedConfig();
+}
+
+function saveDbConfig(_config = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
-    const value = JSON.stringify({
-        mode,
-        path
-    });
+    const config = getCentralizedConfig();
+    const value = JSON.stringify(config);
 
     const existing = database
         .prepare(`
@@ -53,7 +81,11 @@ function saveDbConfig({ mode, path }) {
                     updated_at = ?
                 WHERE setting_key = ?
             `)
-            .run(value, now, SETTING_KEY);
+            .run(
+                value,
+                now,
+                SETTING_KEY
+            );
     } else {
         database
             .prepare(`
@@ -66,7 +98,7 @@ function saveDbConfig({ mode, path }) {
                 ) VALUES (?, ?, ?, ?, ?)
             `)
             .run(
-                require("node:crypto").randomUUID(),
+                crypto.randomUUID(),
                 SETTING_KEY,
                 value,
                 now,
@@ -74,6 +106,10 @@ function saveDbConfig({ mode, path }) {
             );
     }
 
+    return config;
+}
+
+function ensureDefaultDbConfig(_defaultSharedPath) {
     return getDbConfig();
 }
 
@@ -82,16 +118,3 @@ module.exports = {
     saveDbConfig,
     ensureDefaultDbConfig
 };
-
-function ensureDefaultDbConfig(defaultSharedPath) {
-    const existing = getDbConfig();
-
-    if (existing) {
-        return existing;
-    }
-
-    return saveDbConfig({
-        mode: "shared",
-        path: defaultSharedPath
-    });
-}
