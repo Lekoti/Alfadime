@@ -1,7 +1,0 @@
-﻿"Arquivo","Nome","TamanhoBytes"
-"src\renderer\modules\product-audit\components\AuditMultiSelect.jsx","AuditMultiSelect.jsx","3086"
-"src\renderer\modules\product-audit\components\CorrectionFormModal.jsx","CorrectionFormModal.jsx","7224"
-"src\renderer\modules\product-corrections\constants\corrections-export.constants.js","corrections-export.constants.js","1377"
-"src\renderer\modules\purchases\components\PurchasesMenu.jsx","PurchasesMenu.jsx","732"
-"src\renderer\modules\purchases\pages\PurchaseCurveImportPage.jsx","PurchaseCurveImportPage.jsx","5857"
-"src\renderer\shared\components\ExportExcelButton.jsx","ExportExcelButton.jsx","332"
