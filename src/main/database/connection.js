@@ -2,10 +2,12 @@
 const path = require("node:path");
 const Database = require("better-sqlite3");
 
+
 const {
     requireNetworkAccess,
     NETWORK_PATHS
 } = require("../services/network-status.service");
+
 
 
 
@@ -23,15 +25,18 @@ function getApp() {
 
 
 
+
 function getDatabasePath() {
     return "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\BANCO DE DADOS\\alfadime.db";
 }
 
 
 
+
 function isNetworkDatabasePath(databasePath) {
     return String(databasePath || "").startsWith("\\\\");
 }
+
 
 
 
@@ -43,9 +48,11 @@ function getDatabaseDirectory(databasePath) {
 
 
 
+
 function getUsersDatabaseDirectory() {
     return "\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\BANCO DE DADOS";
 }
+
 
 
 
@@ -55,6 +62,7 @@ function getUsersDatabasePath() {
         "alfadime-users.db"
     );
 }
+
 
 
 
@@ -68,11 +76,13 @@ function getProjectDatabaseDirectory() {
     }
 
 
+
     return path.join(
         __dirname,
         "../../../database"
     );
 }
+
 
 
 
@@ -85,12 +95,14 @@ function getMigrationsDirectory() {
 
 
 
+
 function getUserMigrationsDirectory() {
     return path.join(
         getProjectDatabaseDirectory(),
         "user-migrations"
     );
 }
+
 
 
 
@@ -103,8 +115,10 @@ function getSeedsDirectory() {
 
 
 
+
 function ensureDatabaseDirectory(databasePath) {
     const databaseDirectory = getDatabaseDirectory(databasePath);
+
 
 
     if (!fs.existsSync(databaseDirectory)) {
@@ -116,9 +130,11 @@ function ensureDatabaseDirectory(databasePath) {
 
 
 
+
 function runMigrations(database, migrationsDirectory) {
     console.log('[MIGRATIONS] Directory:', migrationsDirectory);
     console.log('[MIGRATIONS] Exists:', fs.existsSync(migrationsDirectory));
+
 
 
     if (!fs.existsSync(migrationsDirectory)) {
@@ -126,6 +142,7 @@ function runMigrations(database, migrationsDirectory) {
             `Diretório de migrations não encontrado: ${migrationsDirectory}`
         );
     }
+
 
 
     database.exec(`
@@ -137,13 +154,16 @@ function runMigrations(database, migrationsDirectory) {
     `);
 
 
+
     const migrationFiles = fs
         .readdirSync(migrationsDirectory)
         .filter((file) => file.endsWith(".sql"))
         .sort();
 
 
+
     console.log('[MIGRATIONS] Files found:', migrationFiles);
+
 
 
     for (const filename of migrationFiles) {
@@ -157,13 +177,16 @@ function runMigrations(database, migrationsDirectory) {
             .get(filename);
 
 
+
         if (alreadyExecuted) {
             console.log('[MIGRATIONS] Already executed:', filename);
             continue;
         }
 
 
+
         console.log('[MIGRATIONS] Executing:', filename);
+
 
 
         const migrationPath = path.join(
@@ -172,14 +195,17 @@ function runMigrations(database, migrationsDirectory) {
         );
 
 
+
         const migrationSql = fs.readFileSync(
             migrationPath,
             "utf8"
         );
 
 
+
         const executeMigration = database.transaction(() => {
             database.exec(migrationSql);
+
 
 
             database
@@ -196,7 +222,9 @@ function runMigrations(database, migrationsDirectory) {
         });
 
 
+
         executeMigration();
+
 
 
         console.log(
@@ -207,11 +235,13 @@ function runMigrations(database, migrationsDirectory) {
 
 
 
+
 function runSeeds(database) {
     const seedPath = path.join(
         getSeedsDirectory(),
         "price-pending-seed.js"
     );
+
 
 
     if (!fs.existsSync(seedPath)) {
@@ -220,14 +250,17 @@ function runSeeds(database) {
         );
 
 
+
         return;
     }
+
 
 
     const {
         seedPricePendingRows
     } = require(seedPath);
     const result = seedPricePendingRows(database);
+
 
 
     console.log(
@@ -238,8 +271,10 @@ function runSeeds(database) {
 
 
 
+
 let database = null;
 let usersDatabase = null;
+
 
 
 
@@ -248,20 +283,21 @@ function initializeDatabase() {
         const databasePath = getDatabasePath();
 
 
+
         requireNetworkAccess([
             NETWORK_PATHS.DATABASE
         ]);
 
 
+
         ensureDatabaseDirectory(databasePath);
 
-
-        console.log('[DB] Database path:', databasePath);
 
 
         database = new Database(
             databasePath
         );
+
 
 
         if (isNetworkDatabasePath(databasePath)) {
@@ -271,7 +307,9 @@ function initializeDatabase() {
         }
 
 
+
         database.pragma("foreign_keys = ON");
+
 
 
         runMigrations(
@@ -280,17 +318,21 @@ function initializeDatabase() {
         );
 
 
+
         runSeeds(database);
 
 
+
         console.log(
-            `Banco conectado: ${databasePath}`
+            "Banco conectado."
         );
     }
 
 
+
     return database;
 }
+
 
 
 
@@ -300,13 +342,16 @@ function initializeUsersDatabase() {
     }
 
 
+
     requireNetworkAccess([
         NETWORK_PATHS.DATABASE
     ]);
 
 
+
     const usersDatabasePath =
         getUsersDatabasePath();
+
 
 
     if (!fs.existsSync(getUsersDatabaseDirectory())) {
@@ -316,19 +361,16 @@ function initializeUsersDatabase() {
     }
 
 
-    console.log(
-        '[USERS DB] Database path:',
-        usersDatabasePath
-    );
-
 
     usersDatabase = new Database(
         usersDatabasePath
     );
 
 
+
     usersDatabase.pragma("journal_mode = DELETE");
     usersDatabase.pragma("foreign_keys = ON");
+
 
 
     runMigrations(
@@ -337,13 +379,16 @@ function initializeUsersDatabase() {
     );
 
 
+
     console.log(
-        `Banco de usuários conectado: ${usersDatabasePath}`
+        "Banco de usuários conectado."
     );
+
 
 
     return usersDatabase;
 }
+
 
 
 
@@ -353,9 +398,11 @@ function getDatabase() {
 
 
 
+
 function getUsersDatabase() {
     return initializeUsersDatabase();
 }
+
 
 
 
@@ -366,11 +413,13 @@ function closeDatabase() {
     }
 
 
+
     if (usersDatabase) {
         usersDatabase.close();
         usersDatabase = null;
     }
 }
+
 
 
 
