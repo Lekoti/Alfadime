@@ -2,12 +2,15 @@
 const os = require("node:os");
 
 
+
 const {
     getUsersDatabase
 } = require("../../database/connection");
 
 
+
 const granularPermissionsDatabaseService = require("./granularPermissionsDatabaseService");
+
 
 
 const {
@@ -15,22 +18,16 @@ const {
 } = require("./userRoles.constants");
 
 
-const API_SECRET = process.env.ALFADIME_API_SECRET;
-
-if (!API_SECRET) {
-    throw new Error(
-        "ALFADIME_API_SECRET não está configurada. Configure a variável antes de iniciar o aplicativo."
-    );
-}
-
 
 function normalizeText(value) {
     return String(value || "").trim();
 }
 
 
+
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
+
 
 
     const hash = crypto
@@ -38,8 +35,10 @@ function hashPassword(password) {
         .toString("hex");
 
 
+
     return `${salt}:${hash}`;
 }
+
 
 
 function verifyPassword(password, storedHash) {
@@ -48,16 +47,18 @@ function verifyPassword(password, storedHash) {
     }
 
 
-    const [salt, hash] = String(storedHash).split(":");
 
+    const [salt, hash] = String(storedHash).split(":");
 
     if (!salt || !hash) {
         return false;
     }
 
 
+
     const candidate = crypto.scryptSync(password, salt, 64);
     const stored = Buffer.from(hash, "hex");
+
 
 
     if (candidate.length !== stored.length) {
@@ -65,71 +66,10 @@ function verifyPassword(password, storedHash) {
     }
 
 
+
     return crypto.timingSafeEqual(candidate, stored);
 }
 
-
-function createToken(user, computerId) {
-    const payload = JSON.stringify({
-        userId: user.id,
-        username: user.username,
-        role: user.role,
-        computerId,
-        exp: Date.now() + (12 * 60 * 60 * 1000)
-    });
-
-
-    const data = Buffer.from(payload).toString("base64url");
-    const signature = crypto
-        .createHmac("sha256", API_SECRET)
-        .update(data)
-        .digest("base64url");
-
-
-    return `${data}.${signature}`;
-}
-
-
-function verifyToken(token) {
-    try {
-        const [data, signature] = String(token || "").split(".");
-
-
-        if (!data || !signature) {
-            return null;
-        }
-
-
-        const expected = crypto
-            .createHmac("sha256", API_SECRET)
-            .update(data)
-            .digest("base64url");
-
-
-        const a = Buffer.from(signature);
-        const b = Buffer.from(expected);
-
-
-        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-            return null;
-        }
-
-
-        const payload = JSON.parse(
-            Buffer.from(data, "base64url").toString("utf8")
-        );
-
-
-        if (!payload.exp || payload.exp < Date.now()) {
-            return null;
-        }
-
-
-        return payload;
-    } catch {
-        return null;
-    }
-}
 
 
 function getUserByUsername(username) {
@@ -144,6 +84,7 @@ function getUserByUsername(username) {
 }
 
 
+
 async function getUserPermissions(user) {
     if (
         user.role === USER_ROLES.CREATOR ||
@@ -152,6 +93,7 @@ async function getUserPermissions(user) {
         const result = await granularPermissionsDatabaseService.getPermissionsForRole(
             user.role
         );
+
 
 
         if (result?.success) {
@@ -168,13 +110,16 @@ async function getUserPermissions(user) {
     }
 
 
+
     const result = await granularPermissionsDatabaseService.getPermissionsForUser(
         user.id
     );
 
 
+
     return result?.success ? result.data.modules : [];
 }
+
 
 
 function buildSession(user, permissions, computerId) {
@@ -192,9 +137,11 @@ function buildSession(user, permissions, computerId) {
 }
 
 
+
 function createOrUpdateSession(userId, computerId, computerName, isPersistent) {
     const database = getUsersDatabase();
     const now = new Date().toISOString();
+
 
 
     database
@@ -225,8 +172,10 @@ function createOrUpdateSession(userId, computerId, computerName, isPersistent) {
 }
 
 
+
 function updateUserLastLogin(userId) {
     const now = new Date().toISOString();
+
 
 
     getUsersDatabase()
@@ -240,6 +189,7 @@ function updateUserLastLogin(userId) {
 }
 
 
+
 function updateLastAccess(userId, computerId) {
     getUsersDatabase()
         .prepare(`
@@ -250,6 +200,7 @@ function updateLastAccess(userId, computerId) {
         `)
         .run(new Date().toISOString(), userId, computerId);
 }
+
 
 
 function getSessionByComputer(computerId) {
@@ -274,6 +225,7 @@ function getSessionByComputer(computerId) {
 }
 
 
+
 async function login(payload) {
     try {
         const username = normalizeText(payload.username);
@@ -283,9 +235,11 @@ async function login(payload) {
         const isPersistent = Boolean(payload.isPersistent);
 
 
+
         if (!computerId) {
             return { success: false, error: "Computador não identificado." };
         }
+
 
 
         if (!username) {
@@ -293,17 +247,21 @@ async function login(payload) {
         }
 
 
+
         if (!password) {
             return { success: false, error: "Informe a senha." };
         }
 
 
+
         const user = getUserByUsername(username);
+
 
 
         if (!user || !user.is_active) {
             return { success: false, error: "Usuário ou senha inválidos." };
         }
+
 
 
         if (!user.password_hash) {
@@ -315,7 +273,9 @@ async function login(payload) {
             }
 
 
+
             const newPasswordHash = hashPassword(password);
+
 
 
             getUsersDatabase()
@@ -328,8 +288,10 @@ async function login(payload) {
                 .run(newPasswordHash, new Date().toISOString(), user.id);
 
 
+
             user.password_hash = newPasswordHash;
         }
+
 
 
         if (!verifyPassword(password, user.password_hash)) {
@@ -337,7 +299,9 @@ async function login(payload) {
         }
 
 
+
         const permissions = await getUserPermissions(user);
+
 
 
         createOrUpdateSession(
@@ -348,19 +312,21 @@ async function login(payload) {
         );
 
 
+
         updateUserLastLogin(user.id);
         updateLastAccess(user.id, computerId);
+
 
 
         return {
             success: true,
             data: {
-                ...buildSession(user, permissions, computerId),
-                token: createToken(user, computerId)
+                ...buildSession(user, permissions, computerId)
             }
         };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao fazer login:", error);
+
 
 
         return {
@@ -371,6 +337,7 @@ async function login(payload) {
 }
 
 
+
 function register(payload) {
     try {
         const username = normalizeText(payload.username);
@@ -378,14 +345,17 @@ function register(payload) {
         const password = String(payload.password || "");
 
 
+
         if (!username) {
             return { success: false, error: "Informe o nome de usuário." };
         }
 
 
+
         if (!displayName) {
             return { success: false, error: "Informe o nome de exibição." };
         }
+
 
 
         if (password.length < 6) {
@@ -396,6 +366,7 @@ function register(payload) {
         }
 
 
+
         if (getUserByUsername(username)) {
             return {
                 success: false,
@@ -404,7 +375,9 @@ function register(payload) {
         }
 
 
+
         const now = new Date().toISOString();
+
 
 
         getUsersDatabase()
@@ -431,12 +404,14 @@ function register(payload) {
             );
 
 
+
         return {
             success: true,
             data: { username }
         };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao criar conta:", error);
+
 
 
         return {
@@ -447,14 +422,17 @@ function register(payload) {
 }
 
 
+
 async function getCurrentSession(computerId) {
     try {
         const session = getSessionByComputer(computerId);
 
 
+
         if (!session) {
             return { success: true, data: null };
         }
+
 
 
         const permissions = await getUserPermissions({
@@ -463,7 +441,9 @@ async function getCurrentSession(computerId) {
         });
 
 
+
         updateLastAccess(session.user_id, computerId);
+
 
 
         return {
@@ -479,19 +459,12 @@ async function getCurrentSession(computerId) {
                     },
                     permissions,
                     computerId
-                ),
-                token: createToken(
-                    {
-                        id: session.user_id,
-                        username: session.username,
-                        role: session.role
-                    },
-                    computerId
                 )
             }
         };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao recuperar sessão:", error);
+
 
 
         return {
@@ -502,8 +475,10 @@ async function getCurrentSession(computerId) {
 }
 
 
+
 async function validateSession(computerId) {
     const result = await getCurrentSession(computerId);
+
 
 
     if (!result.success || !result.data) {
@@ -511,8 +486,10 @@ async function validateSession(computerId) {
     }
 
 
+
     return result;
 }
+
 
 
 function logout(userId, computerId) {
@@ -528,9 +505,11 @@ function logout(userId, computerId) {
         }
 
 
+
         return { success: true };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao sair:", error);
+
 
 
         return {
@@ -541,6 +520,7 @@ function logout(userId, computerId) {
 }
 
 
+
 function updateLastAccessHandler(userId, computerId) {
     try {
         if (userId && computerId) {
@@ -548,9 +528,11 @@ function updateLastAccessHandler(userId, computerId) {
         }
 
 
+
         return { success: true };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao atualizar acesso:", error);
+
 
 
         return {
@@ -561,12 +543,12 @@ function updateLastAccessHandler(userId, computerId) {
 }
 
 
+
 module.exports = {
     login,
     register,
     getCurrentSession,
     validateSession,
     logout,
-    updateLastAccessHandler,
-    verifyToken
+    updateLastAccessHandler
 };
