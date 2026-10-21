@@ -1,53 +1,73 @@
 ﻿const crypto = require("node:crypto");
 const os = require("node:os");
 
+
 const {
     getUsersDatabase
 } = require("../../database/connection");
 
+
 const granularPermissionsDatabaseService = require("./granularPermissionsDatabaseService");
+
 
 const {
     USER_ROLES
 } = require("./userRoles.constants");
 
-const API_SECRET = process.env.ALFADIME_API_SECRET ||
-    "alfadime-local-secret-change-me";
+
+const API_SECRET = process.env.ALFADIME_API_SECRET;
+
+if (!API_SECRET) {
+    throw new Error(
+        "ALFADIME_API_SECRET não está configurada. Configure a variável antes de iniciar o aplicativo."
+    );
+}
+
 
 function normalizeText(value) {
     return String(value || "").trim();
 }
 
+
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
+
 
     const hash = crypto
         .scryptSync(password, salt, 64)
         .toString("hex");
 
+
     return `${salt}:${hash}`;
 }
+
 
 function verifyPassword(password, storedHash) {
     if (!storedHash) {
         return false;
     }
 
+
     const [salt, hash] = String(storedHash).split(":");
+
 
     if (!salt || !hash) {
         return false;
     }
 
+
     const candidate = crypto.scryptSync(password, salt, 64);
     const stored = Buffer.from(hash, "hex");
+
 
     if (candidate.length !== stored.length) {
         return false;
     }
 
+
     return crypto.timingSafeEqual(candidate, stored);
 }
+
 
 function createToken(user, computerId) {
     const payload = JSON.stringify({
@@ -58,48 +78,59 @@ function createToken(user, computerId) {
         exp: Date.now() + (12 * 60 * 60 * 1000)
     });
 
+
     const data = Buffer.from(payload).toString("base64url");
     const signature = crypto
         .createHmac("sha256", API_SECRET)
         .update(data)
         .digest("base64url");
 
+
     return `${data}.${signature}`;
 }
+
 
 function verifyToken(token) {
     try {
         const [data, signature] = String(token || "").split(".");
 
+
         if (!data || !signature) {
             return null;
         }
+
 
         const expected = crypto
             .createHmac("sha256", API_SECRET)
             .update(data)
             .digest("base64url");
 
+
         const a = Buffer.from(signature);
         const b = Buffer.from(expected);
+
 
         if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
             return null;
         }
 
+
         const payload = JSON.parse(
             Buffer.from(data, "base64url").toString("utf8")
         );
 
+
         if (!payload.exp || payload.exp < Date.now()) {
             return null;
         }
+
 
         return payload;
     } catch {
         return null;
     }
 }
+
 
 function getUserByUsername(username) {
     return getUsersDatabase()
@@ -112,6 +143,7 @@ function getUserByUsername(username) {
         .get(normalizeText(username));
 }
 
+
 async function getUserPermissions(user) {
     if (
         user.role === USER_ROLES.CREATOR ||
@@ -120,6 +152,7 @@ async function getUserPermissions(user) {
         const result = await granularPermissionsDatabaseService.getPermissionsForRole(
             user.role
         );
+
 
         if (result?.success) {
             return result.data.modules.map((module) => ({
@@ -134,12 +167,15 @@ async function getUserPermissions(user) {
         }
     }
 
+
     const result = await granularPermissionsDatabaseService.getPermissionsForUser(
         user.id
     );
 
+
     return result?.success ? result.data.modules : [];
 }
+
 
 function buildSession(user, permissions, computerId) {
     return {
@@ -155,9 +191,11 @@ function buildSession(user, permissions, computerId) {
     };
 }
 
+
 function createOrUpdateSession(userId, computerId, computerName, isPersistent) {
     const database = getUsersDatabase();
     const now = new Date().toISOString();
+
 
     database
         .prepare(`
@@ -186,8 +224,10 @@ function createOrUpdateSession(userId, computerId, computerName, isPersistent) {
         );
 }
 
+
 function updateUserLastLogin(userId) {
     const now = new Date().toISOString();
+
 
     getUsersDatabase()
         .prepare(`
@@ -199,6 +239,7 @@ function updateUserLastLogin(userId) {
         .run(now, now, userId);
 }
 
+
 function updateLastAccess(userId, computerId) {
     getUsersDatabase()
         .prepare(`
@@ -209,6 +250,7 @@ function updateLastAccess(userId, computerId) {
         `)
         .run(new Date().toISOString(), userId, computerId);
 }
+
 
 function getSessionByComputer(computerId) {
     return getUsersDatabase()
@@ -231,6 +273,7 @@ function getSessionByComputer(computerId) {
         .get(computerId);
 }
 
+
 async function login(payload) {
     try {
         const username = normalizeText(payload.username);
@@ -239,23 +282,29 @@ async function login(payload) {
         const computerName = normalizeText(payload.computerName);
         const isPersistent = Boolean(payload.isPersistent);
 
+
         if (!computerId) {
             return { success: false, error: "Computador não identificado." };
         }
+
 
         if (!username) {
             return { success: false, error: "Informe o nome de usuário." };
         }
 
+
         if (!password) {
             return { success: false, error: "Informe a senha." };
         }
 
+
         const user = getUserByUsername(username);
+
 
         if (!user || !user.is_active) {
             return { success: false, error: "Usuário ou senha inválidos." };
         }
+
 
         if (!user.password_hash) {
             if (password.length < 6) {
@@ -265,7 +314,9 @@ async function login(payload) {
                 };
             }
 
+
             const newPasswordHash = hashPassword(password);
+
 
             getUsersDatabase()
                 .prepare(`
@@ -276,14 +327,18 @@ async function login(payload) {
                 `)
                 .run(newPasswordHash, new Date().toISOString(), user.id);
 
+
             user.password_hash = newPasswordHash;
         }
+
 
         if (!verifyPassword(password, user.password_hash)) {
             return { success: false, error: "Usuário ou senha inválidos." };
         }
 
+
         const permissions = await getUserPermissions(user);
+
 
         createOrUpdateSession(
             user.id,
@@ -292,8 +347,10 @@ async function login(payload) {
             isPersistent
         );
 
+
         updateUserLastLogin(user.id);
         updateLastAccess(user.id, computerId);
+
 
         return {
             success: true,
@@ -305,6 +362,7 @@ async function login(payload) {
     } catch (error) {
         console.error("[AUTH][DB] Erro ao fazer login:", error);
 
+
         return {
             success: false,
             error: error?.message || "Não foi possível realizar o login."
@@ -312,19 +370,23 @@ async function login(payload) {
     }
 }
 
+
 function register(payload) {
     try {
         const username = normalizeText(payload.username);
         const displayName = normalizeText(payload.displayName);
         const password = String(payload.password || "");
 
+
         if (!username) {
             return { success: false, error: "Informe o nome de usuário." };
         }
 
+
         if (!displayName) {
             return { success: false, error: "Informe o nome de exibição." };
         }
+
 
         if (password.length < 6) {
             return {
@@ -333,6 +395,7 @@ function register(payload) {
             };
         }
 
+
         if (getUserByUsername(username)) {
             return {
                 success: false,
@@ -340,7 +403,9 @@ function register(payload) {
             };
         }
 
+
         const now = new Date().toISOString();
+
 
         getUsersDatabase()
             .prepare(`
@@ -365,12 +430,14 @@ function register(payload) {
                 now
             );
 
+
         return {
             success: true,
             data: { username }
         };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao criar conta:", error);
+
 
         return {
             success: false,
@@ -379,20 +446,25 @@ function register(payload) {
     }
 }
 
+
 async function getCurrentSession(computerId) {
     try {
         const session = getSessionByComputer(computerId);
 
+
         if (!session) {
             return { success: true, data: null };
         }
+
 
         const permissions = await getUserPermissions({
             id: session.user_id,
             role: session.role
         });
 
+
         updateLastAccess(session.user_id, computerId);
+
 
         return {
             success: true,
@@ -421,6 +493,7 @@ async function getCurrentSession(computerId) {
     } catch (error) {
         console.error("[AUTH][DB] Erro ao recuperar sessão:", error);
 
+
         return {
             success: false,
             error: error?.message || "Não foi possível recuperar a sessão."
@@ -428,15 +501,19 @@ async function getCurrentSession(computerId) {
     }
 }
 
+
 async function validateSession(computerId) {
     const result = await getCurrentSession(computerId);
+
 
     if (!result.success || !result.data) {
         return { success: false, error: "Nenhuma sessão ativa." };
     }
 
+
     return result;
 }
+
 
 function logout(userId, computerId) {
     try {
@@ -450,9 +527,11 @@ function logout(userId, computerId) {
                 .run(userId, computerId);
         }
 
+
         return { success: true };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao sair:", error);
+
 
         return {
             success: false,
@@ -461,15 +540,18 @@ function logout(userId, computerId) {
     }
 }
 
+
 function updateLastAccessHandler(userId, computerId) {
     try {
         if (userId && computerId) {
             updateLastAccess(userId, computerId);
         }
 
+
         return { success: true };
     } catch (error) {
         console.error("[AUTH][DB] Erro ao atualizar acesso:", error);
+
 
         return {
             success: false,
@@ -477,6 +559,7 @@ function updateLastAccessHandler(userId, computerId) {
         };
     }
 }
+
 
 module.exports = {
     login,
