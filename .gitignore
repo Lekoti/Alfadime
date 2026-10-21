@@ -187,3 +187,5 @@ server/data/*.db
 server/data/*.db-shm
 server/data/*.db-wal
 app-data/
+# Alfadime - analises e backups locais
+output/
