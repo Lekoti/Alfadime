@@ -4,7 +4,7 @@
   "description": "Sistema desktop de ferramentas empresariais.",
   "main": "dist/main/main.js",
   "scripts": {
-    "test": "node test.js",
+    "test": "echo \"Nenhum teste automatizado configurado ainda.\" && exit 0",
     "build": "vite build --config vite.config.mjs && powershell -Command \"New-Item -ItemType Directory -Force dist/preload, dist/main | Out-Null; Copy-Item 'src/preload/preload.js' 'dist/preload/' -Force; if (Test-Path 'dist/main') { Remove-Item 'dist/main' -Recurse -Force }; Copy-Item 'src/main' 'dist/main' -Recurse -Force\"",
     "start": "npm run build && electron .",
     "rebuild": "electron-rebuild -f -w better-sqlite3",

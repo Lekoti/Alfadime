@@ -15,8 +15,10 @@ const {
 
 
 
+
 const PURCHASES_CURVE_EXCEL_PATH =
     '\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\CURVA COMPRAS\\CURVA COMPRAS.xlsx';
+
 
 
 
@@ -26,8 +28,10 @@ function getAuthenticatedUser() {
 }
 
 
+
 function canSynchronizeDatabase(user) {
     const role = String(user?.role || '').toLowerCase();
+
 
 
     return [
@@ -38,13 +42,16 @@ function canSynchronizeDatabase(user) {
 }
 
 
+
 function requireSyncPermission() {
     const user = getAuthenticatedUser();
+
 
 
     if (!user) {
         throw new Error('Usuário não autenticado.');
     }
+
 
 
     if (!canSynchronizeDatabase(user)) {
@@ -54,8 +61,10 @@ function requireSyncPermission() {
     }
 
 
+
     return user;
 }
+
 
 
 
@@ -66,9 +75,11 @@ function registerPurchasesIpc() {
     });
 
 
+
     ipcMain.handle('purchases:get-filter-options', async (event, field) => {
         return await purchasesService.getPurchaseFilterOptions(field);
     });
+
 
 
     ipcMain.handle('purchases:get-last-sync', () => {
@@ -76,19 +87,23 @@ function registerPurchasesIpc() {
     });
 
 
+
     ipcMain.handle('purchases:sync-curve-excel', async () => {
         const user = requireSyncPermission();
+
 
         try {
             const result = await synchronizePurchasesCurveExcel(
                 PURCHASES_CURVE_EXCEL_PATH
             );
 
+
             setSyncMetadata({
                 moduleKey: 'purchases',
                 syncedBy: user.username || user.name || '',
                 source: PURCHASES_CURVE_EXCEL_PATH
             });
+
 
             return result;
         } catch (syncError) {
@@ -97,22 +112,21 @@ function registerPurchasesIpc() {
                 syncError.message
             );
 
+
             throw syncError;
         }
     });
 
-
-    ipcMain.handle('purchases:changed', async () => {
-        // Evento de mudança
-    });
 
 
     ipcMain.handle('purchases:set-quantity-override', async (event, payload) => {
         const { id, quantity } = payload || {};
 
 
+
         return await purchasesService.setQuantityOverride(id, quantity);
     });
+
 
 
     ipcMain.handle('purchases:get-quantity-overrides-count', async () => {
@@ -120,9 +134,11 @@ function registerPurchasesIpc() {
     });
 
 
+
     ipcMain.handle('purchases:clear-quantity-overrides', async () => {
         return await purchasesService.clearQuantityOverrides();
     });
+
 
 
     ipcMain.handle('purchases:export-excel', async (event, payload) => {
@@ -137,11 +153,13 @@ function registerPurchasesIpc() {
 
 
 
+
         if (selectAllFiltered) {
             const allRows = await purchasesService.getAllCurveProducts(filters);
             const selectedIdsFromFilters = Array.isArray(allRows)
                 ? allRows.map((row) => row.id)
                 : [];
+
 
 
 
@@ -154,6 +172,7 @@ function registerPurchasesIpc() {
         }
 
 
+
         if (Array.isArray(selectedIds) && selectedIds.length > 0) {
             return await exportService.exportStandardExcel(selectedIds, {
                 visibleColumns,
@@ -163,9 +182,11 @@ function registerPurchasesIpc() {
         }
 
 
+
         throw new Error('Nenhum produto selecionado para exportar.');
     });
 }
+
 
 
 
