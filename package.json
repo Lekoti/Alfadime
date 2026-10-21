@@ -1,6 +1,6 @@
 {
   "name": "alfadime",
-  "version": "10.6.22",
+  "version": "10.6.23",
   "description": "Sistema desktop de ferramentas empresariais.",
   "main": "dist/main/main.js",
   "scripts": {
