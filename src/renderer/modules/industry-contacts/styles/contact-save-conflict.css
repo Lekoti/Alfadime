@@ -1,0 +1,22 @@
+.contact-save-conflict-overlay {
+    position: fixed; inset: 0; z-index: 1200; display: flex;
+    align-items: center; justify-content: center; padding: 20px;
+    background: rgb(20 31 44 / 42%); box-sizing: border-box;
+}
+.contact-save-conflict-panel {
+    width: min(100%, 760px); max-height: calc(100vh - 40px);
+    overflow-y: auto; box-sizing: border-box; border: 1px solid #d5dbe3;
+    border-radius: 8px; padding: 16px; background: #fff; color: #45515e;
+    font-family: inherit; font-size: 11px; box-shadow: 0 10px 30px rgb(31 41 55 / 18%);
+}
+.contact-save-conflict-panel header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.contact-save-conflict-panel h2 { margin: 0; color: #263241; font-size: 16px; }
+.contact-save-conflict-panel p { margin: 8px 0 12px; line-height: 1.5; }
+.contact-save-conflict-incoming { padding: 12px; border: 1px solid #d5dbe3; border-radius: 6px; background: #f5f8fb; overflow-wrap: anywhere; }
+.contact-save-conflict-incoming p { margin: 5px 0 0; }
+.contact-save-conflict-list { display: grid; gap: 8px; max-height: 300px; overflow-y: auto; }
+.contact-save-conflict-row { display: flex; align-items: flex-start; gap: 10px; border: 1px solid #d5dbe3; border-radius: 6px; padding: 10px; cursor: pointer; }
+.contact-save-conflict-row > span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.contact-save-conflict-row small { color: #345d82; }
+.contact-save-conflict-panel footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 560px) { .contact-save-conflict-overlay { padding: 10px; } .contact-save-conflict-panel { max-height: calc(100vh - 20px); } .contact-save-conflict-panel footer button { flex: 1 1 100%; } }

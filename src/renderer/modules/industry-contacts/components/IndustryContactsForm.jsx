@@ -93,7 +93,7 @@ export default function IndustryContactsForm({
                                 </label>
                             ))}
                         </div>
-                        <p>Será adicionado um contato por filial. Outros contatos da mesma indústria serão preservados.</p>
+                        <p>Se houver telefone ou e-mail correspondente, você poderá escolher atualizar os contatos ou criar novos.</p>
                     </fieldset>
                 )}
                 <label className="industry-contacts-notes-field">Observações

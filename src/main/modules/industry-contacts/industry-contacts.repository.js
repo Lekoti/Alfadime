@@ -174,6 +174,40 @@ function assertDistinctContact(data, branch, ignoreId = null) {
 }
 
 
+function normalizeContactPhone(value) {
+    return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeContactEmail(value) {
+    return String(value || "").trim().toLowerCase();
+}
+
+function getContactSaveMatches(data, branches) {
+    const key = normalizeLaboratoryKey(data.laboratory_key || data.laboratory_name);
+    const phone = normalizeContactPhone(data.phone);
+    const email = normalizeContactEmail(data.email);
+    const matches = [];
+    for (const branch of branches) {
+        const rows = getDatabase().prepare(
+            "SELECT * FROM industry_contacts WHERE laboratory_key = ? AND branch = ? ORDER BY id"
+        ).all(key, branch);
+        for (const row of rows) {
+            const matchedFields = [];
+            if (phone && normalizeContactPhone(row.phone) === phone) matchedFields.push("Telefone");
+            if (email && normalizeContactEmail(row.email) === email) matchedFields.push("E-mail");
+            if (matchedFields.length) matches.push({ ...row, matched_fields: matchedFields });
+        }
+    }
+    return matches;
+}
+
+function contactSaveSignature(data, branches, matches) {
+    return crypto.createHash("sha256").update(JSON.stringify({
+        key: normalizeLaboratoryKey(data.laboratory_key || data.laboratory_name),
+        branches, matches
+    })).digest("hex");
+}
+
 function saveContact(data = {}) {
     const allowed = ["DPR", "AMS", "DMT", "DMS", "DSC"];
     return getDatabase().transaction(() => {
@@ -197,36 +231,67 @@ function saveContact(data = {}) {
         if (!branches.length || branches.some((branch) => !allowed.includes(branch))) {
             throw new Error("Selecione pelo menos uma filial válida.");
         }
-        if (mode === "single") {
-            assertDistinctContact(data, branches[0]);
-            return saveSingleContact({ ...data, branch: branches[0] });
+        const matches = getContactSaveMatches(data, branches);
+        const signature = contactSaveSignature(data, branches, matches);
+        const resolution = data.conflict_resolution;
+        if (matches.length && (!resolution || resolution.signature !== signature)) {
+            return {
+                confirmation_required: true,
+                conflicts: matches,
+                signature,
+                requested_branches: branches,
+                notice: resolution
+                    ? "Os cadastros mudaram desde a consulta. Revise novamente antes de confirmar."
+                    : "Há contatos com telefone ou e-mail correspondente. Nenhum dado foi gravado."
+            };
+        }
+        if (resolution && resolution.signature !== signature) {
+            return {
+                confirmation_required: true,
+                conflicts: matches,
+                signature,
+                requested_branches: branches,
+                notice: "Os cadastros mudaram. Confirme novamente a operação."
+            };
+        }
+        if (resolution && !["create", "update"].includes(resolution.action)) {
+            throw new Error("Escolha atualizar os contatos selecionados ou criar novos.");
+        }
+        const selectedIds = new Set(Array.isArray(resolution?.contact_ids) ? resolution.contact_ids : []);
+        if (resolution?.action === "update") {
+            if ([...selectedIds].some((id) => !matches.some((item) => item.id === id))) {
+                throw new Error("A seleção contém um contato que não corresponde à prévia.");
+            }
+            for (const branch of branches) {
+                const candidates = matches.filter((item) => item.branch === branch);
+                if (candidates.length && !candidates.some((item) => selectedIds.has(item.id))) {
+                    throw new Error("Selecione pelo menos um contato para atualizar na filial " + branch + ".");
+                }
+            }
         }
         const created = [];
-        const existing = [];
-        const createdBranches = [];
-        const skippedBranches = [];
+        const updated = [];
+        const skipped = [];
         for (const branch of branches) {
-            const identical = findIdenticalContact(data, branch);
-            if (identical) {
-                existing.push(identical);
-                skippedBranches.push(branch);
+            const candidates = matches.filter((item) => item.branch === branch);
+            if (resolution?.action === "update" && candidates.length) {
+                for (const contact of candidates.filter((item) => selectedIds.has(item.id))) {
+                    updated.push(saveSingleContact({ ...contact, ...data, id: contact.id, branch,
+                        service_region: data.service_region === undefined ? contact.service_region : data.service_region }));
+                }
                 continue;
             }
-            created.push(saveSingleContact({ ...data, branch }));
-            createdBranches.push(branch);
+            if (!resolution) {
+                const identical = findIdenticalContact(data, branch);
+                if (identical) { skipped.push(identical); continue; }
+            }
+            created.push(saveSingleContact({ ...data, id: undefined, branch }));
         }
-        const message = created.length
-            ? `${created.length} cadastro(s) criado(s) em ${createdBranches.join(", ")}. ` +
-                (existing.length ? `${existing.length} já existente(s), mantido(s) em ${skippedBranches.join(", ")}.` : "Nenhum cadastro existente foi alterado.")
-            : `O contato já existe em todas as ${branches.length} filiais selecionadas. Nenhum cadastro foi criado ou alterado.`;
         return {
-            ...(created[0] || existing[0]),
+            ...(created[0] || updated[0] || skipped[0]),
             save_summary: {
-                created: created.length,
-                skipped: existing.length,
-                created_branches: createdBranches,
-                skipped_branches: skippedBranches,
-                message
+                created: created.length, updated: updated.length, skipped: skipped.length,
+                message: `${created.length} cadastro(s) criado(s), ${updated.length} atualizado(s) e ${skipped.length} já existente(s), mantido(s).`
             }
         };
     }).immediate();

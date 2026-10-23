@@ -1,3 +1,4 @@
+import ContactSaveConflictModal from "../components/ContactSaveConflictModal";
 import {
     useEffect,
     useMemo,
@@ -620,6 +621,38 @@ function IndustryContactsPage() {
     }
 
 
+    const [saveConflictRequest, setSaveConflictRequest] = useState(null);
+    const saveConflictResolver = useRef(null);
+    const saveConflictSequence = useRef(0);
+
+    useEffect(() => () => {
+        saveConflictResolver.current?.(null);
+        saveConflictResolver.current = null;
+    }, []);
+
+    function resolveSaveConflict(choice) {
+        const resolve = saveConflictResolver.current;
+        saveConflictResolver.current = null;
+        setSaveConflictRequest(null);
+        resolve?.(choice);
+    }
+
+    async function saveWithConflictConfirmation(data) {
+        const snapshot = { ...data, branches: Array.isArray(data.branches) ? [...data.branches] : [] };
+        let result = await saveIndustryContact(snapshot);
+        while (result?.confirmation_required) {
+            const choice = await new Promise((resolve) => {
+                saveConflictResolver.current = resolve;
+                saveConflictSequence.current += 1;
+                setSaveConflictRequest({ data: snapshot, preview: result, sequence: saveConflictSequence.current });
+            });
+            if (!choice) return null;
+            result = await saveIndustryContact({ ...snapshot, conflict_resolution: choice });
+        }
+        return result;
+    }
+
+
     async function handleSubmit(
         event
     ) {
@@ -645,13 +678,12 @@ function IndustryContactsPage() {
 
         try {
             const result =
-                await saveIndustryContact(
-                    form
-                );
+                await saveWithConflictConfirmation(form);
 
 
-            const savedContact =
-                result?.contact;
+            if (!result) return;
+
+            const savedContact = result?.contact;
 
 
             if (savedContact) {
@@ -1211,6 +1243,10 @@ function IndustryContactsPage() {
 
     return (
         <main className="industry-contacts-page">
+            {saveConflictRequest && (
+                <ContactSaveConflictModal key={saveConflictRequest.sequence}
+                    request={saveConflictRequest} onResolve={resolveSaveConflict} />
+            )}
             <header className="industry-contacts-header">
                 <h1>
                     Contatos

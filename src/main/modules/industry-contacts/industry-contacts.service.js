@@ -224,6 +224,7 @@ function listLaboratories() {
 
 function saveContact(data = {}) {
     const savedContact = repository.saveContact(data);
+    if (savedContact?.confirmation_required) return savedContact;
     const contact = enrichRow({ ...savedContact, has_contact: 1, source_contact: 1 }, {
         pricePendingStatusMap: buildPricePendingStatusMap(),
         industryGlobalCodeMap: buildIndustryGlobalCodeMap()
