@@ -1,4 +1,5 @@
-﻿require("dotenv").config();
+require("dotenv").config();
+
 
 const {
     app,
@@ -8,9 +9,11 @@ const {
 } = require("electron");
 
 
+
 const path = require(
     "node:path"
 );
+
 
 
 const {
@@ -18,6 +21,7 @@ const {
 } = require(
     "electron-updater"
 );
+
 
 
 const {
@@ -29,11 +33,21 @@ const {
 );
 
 
+
+const {
+    closeLocalDatabase
+} = require(
+    "./database/local-connection"
+);
+
+
+
 const {
     registerPricePendingIpc
 } = require(
     "./modules/price-pending/price-pending.ipc"
 );
+
 
 
 const {
@@ -43,11 +57,13 @@ const {
 );
 
 
+
 const {
     registerIndustryContactsIpc
 } = require(
     "./modules/industry-contacts/industry-contacts.ipc"
 );
+
 
 
 const {
@@ -57,11 +73,13 @@ const {
 );
 
 
+
 const {
     registerNotificationsIpc
 } = require(
     "./modules/notifications/notifications.ipc"
 );
+
 
 
 const {
@@ -71,11 +89,13 @@ const {
 );
 
 
+
 const {
     registerPurchasesIpc
 } = require(
     "./modules/purchases/purchases.ipc"
 );
+
 
 
 const {
@@ -85,11 +105,13 @@ const {
 );
 
 
+
 const {
     registerProductAuditIpc
 } = require(
     "./modules/product-audit/product-audit.ipc"
 );
+
 
 
 const {
@@ -99,11 +121,13 @@ const {
 );
 
 
+
 const {
     registerEmailDispatchIpc
 } = require(
     "./modules/email-dispatch/email-dispatch.ipc"
 );
+
 
 
 const {
@@ -113,11 +137,13 @@ const {
 );
 
 
+
 const {
     registerAuthIpc
 } = require(
     "./modules/auth/auth.ipc"
 );
+
 
 
 const {
@@ -127,6 +153,7 @@ const {
 );
 
 
+
 const {
     registerGranularPermissionsIpc
 } = require(
@@ -134,15 +161,18 @@ const {
 );
 
 
+
 const authHandler = require(
     "./modules/auth/authHandler"
 );
+
 
 
 let mainWindow = null;
 let appIpcRegistered = false;
 let updaterConfigured = false;
 let updateDownloaded = false;
+
 
 
 
@@ -156,10 +186,12 @@ function logStartup(
             : "";
 
 
+
     console.log(
         `[STARTUP] ${new Date().toISOString()} | ${step}${suffix}`
     );
 }
+
 
 
 
@@ -177,10 +209,12 @@ function showStartupError(
             );
 
 
+
     console.error(
         title,
         message
     );
+
 
 
     if (
@@ -192,6 +226,7 @@ function showStartupError(
         );
     }
 }
+
 
 
 
@@ -207,6 +242,7 @@ function sendUpdateStatus(
     }
 
 
+
     mainWindow.webContents.send(
         "app:update-status",
         {
@@ -220,6 +256,7 @@ function sendUpdateStatus(
 
 
 
+
 function configureAutoUpdater() {
     if (
         updaterConfigured
@@ -228,16 +265,20 @@ function configureAutoUpdater() {
     }
 
 
+
     updaterConfigured =
         true;
+
 
 
     autoUpdater.autoDownload =
         false;
 
 
+
     autoUpdater.autoInstallOnAppQuit =
         true;
+
 
 
     autoUpdater.on(
@@ -248,11 +289,13 @@ function configureAutoUpdater() {
             );
 
 
+
             sendUpdateStatus(
                 "checking"
             );
         }
     );
+
 
 
     autoUpdater.on(
@@ -262,6 +305,7 @@ function configureAutoUpdater() {
                 "Atualização disponível",
                 info.version
             );
+
 
 
             sendUpdateStatus(
@@ -275,6 +319,7 @@ function configureAutoUpdater() {
     );
 
 
+
     autoUpdater.on(
         "update-not-available",
         (info) => {
@@ -283,11 +328,13 @@ function configureAutoUpdater() {
             );
 
 
+
             sendUpdateStatus(
                 "not-available"
             );
         }
     );
+
 
 
     autoUpdater.on(
@@ -311,6 +358,7 @@ function configureAutoUpdater() {
     );
 
 
+
     autoUpdater.on(
         "update-downloaded",
         (info) => {
@@ -318,10 +366,12 @@ function configureAutoUpdater() {
                 true;
 
 
+
             logStartup(
                 "Atualização baixada",
                 info.version
             );
+
 
 
             sendUpdateStatus(
@@ -335,6 +385,7 @@ function configureAutoUpdater() {
     );
 
 
+
     autoUpdater.on(
         "error",
         (error) => {
@@ -342,6 +393,7 @@ function configureAutoUpdater() {
                 "[UPDATER] Erro:",
                 error
             );
+
 
 
             sendUpdateStatus(
@@ -358,6 +410,7 @@ function configureAutoUpdater() {
 
 
 
+
 async function checkForUpdates() {
     if (
         !app.isPackaged
@@ -371,6 +424,7 @@ async function checkForUpdates() {
         );
 
 
+
         return {
             success: false,
             reason:
@@ -379,12 +433,15 @@ async function checkForUpdates() {
     }
 
 
+
     configureAutoUpdater();
+
 
 
     try {
         const result =
             await autoUpdater.checkForUpdates();
+
 
 
         return {
@@ -403,6 +460,7 @@ async function checkForUpdates() {
         );
 
 
+
         return {
             success: false,
             error:
@@ -411,6 +469,7 @@ async function checkForUpdates() {
         };
     }
 }
+
 
 
 
@@ -426,7 +485,9 @@ function downloadUpdate() {
     }
 
 
+
     configureAutoUpdater();
+
 
 
     return autoUpdater
@@ -444,6 +505,7 @@ function downloadUpdate() {
                 );
 
 
+
                 return {
                     success: false,
                     error:
@@ -453,6 +515,7 @@ function downloadUpdate() {
             }
         );
 }
+
 
 
 
@@ -468,6 +531,7 @@ function installUpdate() {
     }
 
 
+
     setImmediate(
         () => {
             autoUpdater.quitAndInstall(
@@ -478,10 +542,12 @@ function installUpdate() {
     );
 
 
+
     return {
         success: true
     };
 }
+
 
 
 
@@ -497,6 +563,7 @@ process.on(
 
 
 
+
 process.on(
     "unhandledRejection",
     (error) => {
@@ -509,6 +576,7 @@ process.on(
 
 
 
+
 function registerAppIpc() {
     if (
         appIpcRegistered
@@ -517,8 +585,10 @@ function registerAppIpc() {
     }
 
 
+
     appIpcRegistered =
         true;
+
 
 
     ipcMain.handle(
@@ -529,6 +599,7 @@ function registerAppIpc() {
     );
 
 
+
     ipcMain.handle(
         "app:get-open-at-login",
         () => {
@@ -537,6 +608,7 @@ function registerAppIpc() {
                 .openAtLogin;
         }
     );
+
 
 
     ipcMain.handle(
@@ -553,11 +625,13 @@ function registerAppIpc() {
             });
 
 
+
             return app
                 .getLoginItemSettings()
                 .openAtLogin;
         }
     );
+
 
 
     ipcMain.handle(
@@ -568,12 +642,14 @@ function registerAppIpc() {
     );
 
 
+
     ipcMain.handle(
         "app:download-update",
         () => {
             return downloadUpdate();
         }
     );
+
 
 
     ipcMain.handle(
@@ -584,12 +660,14 @@ function registerAppIpc() {
     );
 
 
+
     ipcMain.handle(
         "app:is-update-downloaded",
         () => {
             return updateDownloaded;
         }
     );
+
 
 
     ipcMain.handle(
@@ -608,11 +686,13 @@ function registerAppIpc() {
 
 
 
+
 ipcMain.handle(
     "debug:get-db-path",
     () => {
         const dbPath =
             getDatabasePath();
+
 
 
         console.log(
@@ -621,9 +701,11 @@ ipcMain.handle(
         );
 
 
+
         return dbPath;
     }
 );
+
 
 
 
@@ -633,11 +715,13 @@ async function createMainWindow() {
     );
 
 
+
     const appIconPath =
         path.join(
             process.resourcesPath,
             "Alfadime.ico"
         );
+
 
 
     mainWindow =
@@ -661,6 +745,7 @@ async function createMainWindow() {
         });
 
 
+
     if (
         process.platform ===
         "win32"
@@ -673,12 +758,14 @@ async function createMainWindow() {
     }
 
 
+
     mainWindow.on(
         "closed",
         () => {
             mainWindow = null;
         }
     );
+
 
 
     mainWindow.webContents.on(
@@ -701,6 +788,7 @@ async function createMainWindow() {
     );
 
 
+
     mainWindow.webContents.on(
         "render-process-gone",
         (
@@ -715,6 +803,7 @@ async function createMainWindow() {
     );
 
 
+
     mainWindow.webContents.once(
         "did-finish-load",
         () => {
@@ -723,11 +812,13 @@ async function createMainWindow() {
             );
 
 
+
             if (
                 mainWindow &&
                 !mainWindow.isDestroyed()
             ) {
                 mainWindow.show();
+
 
 
                 setTimeout(
@@ -741,6 +832,7 @@ async function createMainWindow() {
     );
 
 
+
     const isDev =
         process.env.VITE_DEV_SERVER_URL ||
         process.env.NODE_ENV ===
@@ -748,6 +840,7 @@ async function createMainWindow() {
         process.argv.includes(
             "--dev"
         );
+
 
 
     if (
@@ -760,13 +853,16 @@ async function createMainWindow() {
         );
 
 
+
         await mainWindow.loadURL(
             process.env.VITE_DEV_SERVER_URL
         );
 
 
+
         return;
     }
+
 
 
     const indexPath =
@@ -776,16 +872,19 @@ async function createMainWindow() {
         );
 
 
+
     logStartup(
         "Carregando renderer de produção",
         indexPath
     );
 
 
+
     await mainWindow.loadFile(
         indexPath
     );
 }
+
 
 
 
@@ -796,7 +895,9 @@ function initializeLocalServices() {
         );
 
 
+
         getDatabase();
+
 
 
 
@@ -807,6 +908,7 @@ function initializeLocalServices() {
         );
 
 
+
         const {
             ensureDefaultDbConfig
         } = require(
@@ -814,9 +916,11 @@ function initializeLocalServices() {
         );
 
 
+
         ensureDefaultDbConfig(
             DEFAULT_SHARED_DATABASE_PATH
         );
+
 
 
         logStartup(
@@ -834,18 +938,22 @@ function initializeLocalServices() {
 
 
 
+
 function registerAllIpc() {
     logStartup(
         "Registrando canais IPC"
     );
 
 
+
     registerAppIpc();
+
 
 
     registerAuthIpc(
         ipcMain
     );
+
 
 
     registerUsersIpc(
@@ -854,10 +962,12 @@ function registerAllIpc() {
     );
 
 
+
     registerGranularPermissionsIpc(
         ipcMain,
         () => authHandler.getAuthenticatedUser()
     );
+
 
 
     registerPricePendingIpc(
@@ -865,9 +975,11 @@ function registerAllIpc() {
     );
 
 
+
     registerProductsIpc(
         ipcMain
     );
+
 
 
     registerIndustryContactsIpc(
@@ -875,7 +987,9 @@ function registerAllIpc() {
     );
 
 
+
     registerContactsChargeIpc();
+
 
 
     registerNotificationsIpc(
@@ -883,9 +997,11 @@ function registerAllIpc() {
     );
 
 
+
     registerProductCorrectionsIpc(
         ipcMain
     );
+
 
 
     registerPurchasesIpc(
@@ -893,7 +1009,9 @@ function registerAllIpc() {
     );
 
 
+
         registerProductsPurchasesDbConfigIpc();
+
 
 
     registerProductAuditIpc(
@@ -901,9 +1019,11 @@ function registerAllIpc() {
     );
 
 
+
     registerExportIpc(
         ipcMain
     );
+
 
 
     registerEmailDispatchIpc(
@@ -911,9 +1031,11 @@ function registerAllIpc() {
     );
 
 
+
     registerEmailReceivedIpc(
         ipcMain
     );
+
 
 
     logStartup(
@@ -923,9 +1045,11 @@ function registerAllIpc() {
 
 
 
+
 async function startAlfadime() {
     const startedAt =
         Date.now();
+
 
 
     try {
@@ -934,11 +1058,14 @@ async function startAlfadime() {
         );
 
 
+
         initializeLocalServices();
         registerAllIpc();
 
 
+
         await createMainWindow();
+
 
 
         logStartup(
@@ -954,12 +1081,14 @@ async function startAlfadime() {
         );
 
 
+
         showStartupError(
             "Não foi possível iniciar o Alfadime",
             error
         );
     }
 }
+
 
 
 
@@ -974,9 +1103,11 @@ if (
 
 
 
+
 app.whenReady().then(
     startAlfadime
 );
+
 
 
 
@@ -988,9 +1119,15 @@ app.on(
         );
 
 
+
         closeDatabase();
+
+
+
+        closeLocalDatabase();
     }
 );
+
 
 
 

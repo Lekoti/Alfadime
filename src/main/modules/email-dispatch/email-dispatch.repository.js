@@ -1,11 +1,15 @@
 /**
  * Repository do módulo de e-mail.
  * Responsável por todas as operações no banco de dados.
+ *
+ * SMTP/IMAP ficam no banco local por usuário.
+ * Campanhas, destinatários, anexos e histórico permanecem no banco de rede.
  */
 
 
 const crypto = require('node:crypto');
 const { getDatabase } = require('../../database/connection');
+const { getLocalDatabase } = require('../../database/local-connection');
 const { isValidEmail, toSafeNumber } = require('../../utils/validation.utils');
 
 
@@ -14,23 +18,16 @@ const { isValidEmail, toSafeNumber } = require('../../utils/validation.utils');
 
 function getConfigInputValue(data, names, fallback = '') {
     for (const name of names) {
-        if (
-            data &&
-            data[name] !== undefined &&
-            data[name] !== null
-        ) {
+        if (data && data[name] !== undefined && data[name] !== null) {
             return data[name];
         }
     }
-
     return fallback;
 }
 
 
 function getConfigInputText(data, names, fallback = '') {
-    return String(
-        getConfigInputValue(data, names, fallback) || ''
-    ).trim();
+    return String(getConfigInputValue(data, names, fallback) || '').trim();
 }
 
 
@@ -57,102 +54,32 @@ function normalizeEmailConfigInput(data = {}, existing = null) {
 
     return {
         name: getConfigInputText(data, ['name']),
-
-        smtp_host: getConfigInputText(data, [
-            'smtp_host',
-            'smtp_host'
-        ]),
-
-        smtp_port: getConfigInputNumber(data, [
-            'smtp_port',
-            'smtp_port'
-        ], 587),
-
-        smtp_secure: getConfigInputText(data, [
-            'smtp_secure',
-            'smtp_secure'
-        ], 'starttls') || 'starttls',
-
-        smtp_user: getConfigInputText(data, [
-            'smtp_user',
-            'smtp_user'
-        ]),
-
-        smtp_password_encrypted:
-            smtpPassword ||
-            getConfigInputText(existing, [
-                'smtp_password_encrypted',
-                'smtp_password_encrypted'
-            ]),
-
-        imap_host: getConfigInputText(data, [
-            'imap_host',
-            'imap_host'
-        ]),
-
-        imap_port: getConfigInputNumber(data, [
-            'imap_port',
-            'imap_port'
-        ], 993),
-
-        imap_secure: getConfigInputText(data, [
-            'imap_secure',
-            'imap_secure'
-        ], 'tls') || 'tls',
-
-        imap_user: getConfigInputText(data, [
-            'imap_user',
-            'imap_user'
-        ]),
-
-        imap_password_encrypted:
-            imapPassword ||
-            getConfigInputText(existing, [
-                'imap_password_encrypted',
-                'imap_password_encrypted'
-            ]),
-
-        from_name: getConfigInputText(data, [
-            'from_name',
-            'from_name'
-        ]),
-
-        from_email: getConfigInputText(data, [
-            'from_email',
-            'from_email'
-        ]),
-
-        reply_to_email:
-            getConfigInputText(data, [
-                'reply_to_email',
-                'reply_to_email'
-            ]) || null
+        smtp_host: getConfigInputText(data, ['smtp_host', 'smtp_host']),
+        smtp_port: getConfigInputNumber(data, ['smtp_port', 'smtp_port'], 587),
+        smtp_secure: getConfigInputText(data, ['smtp_secure', 'smtp_secure'], 'starttls') || 'starttls',
+        smtp_user: getConfigInputText(data, ['smtp_user', 'smtp_user']),
+        smtp_password_encrypted: smtpPassword || getConfigInputText(existing, ['smtp_password_encrypted', 'smtp_password_encrypted']),
+        imap_host: getConfigInputText(data, ['imap_host', 'imap_host']),
+        imap_port: getConfigInputNumber(data, ['imap_port', 'imap_port'], 993),
+        imap_secure: getConfigInputText(data, ['imap_secure', 'imap_secure'], 'tls') || 'tls',
+        imap_user: getConfigInputText(data, ['imap_user', 'imap_user']),
+        imap_password_encrypted: imapPassword || getConfigInputText(existing, ['imap_password_encrypted', 'imap_password_encrypted']),
+        from_name: getConfigInputText(data, ['from_name', 'from_name']),
+        from_email: getConfigInputText(data, ['from_email', 'from_email']),
+        reply_to_email: getConfigInputText(data, ['reply_to_email', 'reply_to_email']) || null
     };
 }
 
 
 function listEmailConfigs() {
-    const database = getDatabase();
+    const database = getLocalDatabase();
 
     return database.prepare(`
         SELECT
-            id,
-            name,
-            smtp_host,
-            smtp_port,
-            smtp_secure,
-            smtp_user,
-            smtp_password_encrypted,
-            imap_host,
-            imap_port,
-            imap_secure,
-            imap_user,
-            imap_password_encrypted,
-            from_name,
-            from_email,
-            reply_to_email,
-            created_at,
-            updated_at
+            id, name, smtp_host, smtp_port, smtp_secure, smtp_user,
+            smtp_password_encrypted, imap_host, imap_port, imap_secure,
+            imap_user, imap_password_encrypted, from_name, from_email,
+            reply_to_email, created_at, updated_at
         FROM email_configs
         ORDER BY name ASC
     `).all();
@@ -160,7 +87,7 @@ function listEmailConfigs() {
 
 
 function getEmailConfigById(id) {
-    const database = getDatabase();
+    const database = getLocalDatabase();
 
     return database.prepare(`
         SELECT *
@@ -171,8 +98,78 @@ function getEmailConfigById(id) {
 }
 
 
-function createEmailConfig(data = {}) {
+function syncNetworkEmailConfigStub(config) {
     const database = getDatabase();
+    const now = new Date().toISOString();
+
+    const existing = database.prepare(`
+        SELECT id, created_at
+        FROM email_configs
+        WHERE id = ?
+        LIMIT 1
+    `).get(config.id);
+
+    const stub = {
+        id: config.id,
+        name: config.name || 'Configuração local',
+        smtp_host: config.smtp_host || 'local',
+        smtp_port: config.smtp_port || 587,
+        smtp_secure: config.smtp_secure || 'starttls',
+        smtp_user: config.smtp_user || 'local',
+        smtp_password_encrypted: 'LOCAL',
+        imap_host: config.imap_host || 'local',
+        imap_port: config.imap_port || 993,
+        imap_secure: config.imap_secure || 'tls',
+        imap_user: config.imap_user || 'local',
+        imap_password_encrypted: 'LOCAL',
+        from_name: config.from_name || config.from_email || 'Local',
+        from_email: config.from_email || 'local@localhost',
+        reply_to_email: config.reply_to_email || null,
+        created_at: existing?.created_at || now,
+        updated_at: now
+    };
+
+    if (existing) {
+        database.prepare(`
+            UPDATE email_configs
+            SET name = @name,
+                smtp_host = @smtp_host,
+                smtp_port = @smtp_port,
+                smtp_secure = @smtp_secure,
+                smtp_user = @smtp_user,
+                smtp_password_encrypted = @smtp_password_encrypted,
+                imap_host = @imap_host,
+                imap_port = @imap_port,
+                imap_secure = @imap_secure,
+                imap_user = @imap_user,
+                imap_password_encrypted = @imap_password_encrypted,
+                from_name = @from_name,
+                from_email = @from_email,
+                reply_to_email = @reply_to_email,
+                updated_at = @updated_at
+            WHERE id = @id
+        `).run(stub);
+        return;
+    }
+
+    database.prepare(`
+        INSERT INTO email_configs (
+            id, name, smtp_host, smtp_port, smtp_secure, smtp_user,
+            smtp_password_encrypted, imap_host, imap_port, imap_secure,
+            imap_user, imap_password_encrypted, from_name, from_email,
+            reply_to_email, created_at, updated_at
+        ) VALUES (
+            @id, @name, @smtp_host, @smtp_port, @smtp_secure, @smtp_user,
+            @smtp_password_encrypted, @imap_host, @imap_port, @imap_secure,
+            @imap_user, @imap_password_encrypted, @from_name, @from_email,
+            @reply_to_email, @created_at, @updated_at
+        )
+    `).run(stub);
+}
+
+
+function createEmailConfig(data = {}) {
+    const database = getLocalDatabase();
     const now = new Date().toISOString();
     const normalized = normalizeEmailConfigInput(data);
 
@@ -184,51 +181,27 @@ function createEmailConfig(data = {}) {
     };
 
     database.prepare(`
-        INSERT INTO email_configs(
-            id,
-            name,
-            smtp_host,
-            smtp_port,
-            smtp_secure,
-            smtp_user,
-            smtp_password_encrypted,
-            imap_host,
-            imap_port,
-            imap_secure,
-            imap_user,
-            imap_password_encrypted,
-            from_name,
-            from_email,
-            reply_to_email,
-            created_at,
-            updated_at
+        INSERT INTO email_configs (
+            id, name, smtp_host, smtp_port, smtp_secure, smtp_user,
+            smtp_password_encrypted, imap_host, imap_port, imap_secure,
+            imap_user, imap_password_encrypted, from_name, from_email,
+            reply_to_email, created_at, updated_at
         ) VALUES (
-            @id,
-            @name,
-            @smtp_host,
-            @smtp_port,
-            @smtp_secure,
-            @smtp_user,
-            @smtp_password_encrypted,
-            @imap_host,
-            @imap_port,
-            @imap_secure,
-            @imap_user,
-            @imap_password_encrypted,
-            @from_name,
-            @from_email,
-            @reply_to_email,
-            @created_at,
-            @updated_at
+            @id, @name, @smtp_host, @smtp_port, @smtp_secure, @smtp_user,
+            @smtp_password_encrypted, @imap_host, @imap_port, @imap_secure,
+            @imap_user, @imap_password_encrypted, @from_name, @from_email,
+            @reply_to_email, @created_at, @updated_at
         )
     `).run(config);
+
+    syncNetworkEmailConfigStub(config);
 
     return getEmailConfigById(config.id);
 }
 
 
 function updateEmailConfig(id, data = {}) {
-    const database = getDatabase();
+    const database = getLocalDatabase();
     const existing = getEmailConfigById(id);
 
     if (!existing) {
@@ -240,8 +213,7 @@ function updateEmailConfig(id, data = {}) {
 
     database.prepare(`
         UPDATE email_configs
-        SET
-            name = @name,
+        SET name = @name,
             smtp_host = @smtp_host,
             smtp_port = @smtp_port,
             smtp_secure = @smtp_secure,
@@ -257,20 +229,19 @@ function updateEmailConfig(id, data = {}) {
             reply_to_email = @reply_to_email,
             updated_at = @updated_at
         WHERE id = @id
-    `).run({
-        id,
-        ...normalized,
-        updated_at: now
-    });
+    `).run({ id, ...normalized, updated_at: now });
+
+    syncNetworkEmailConfigStub(getEmailConfigById(id));
 
     return getEmailConfigById(id);
 }
 
 
 function deleteEmailConfig(id) {
-    const database = getDatabase();
+    const localDatabase = getLocalDatabase();
+    const networkDatabase = getDatabase();
 
-    const result = database.prepare(`
+    const result = localDatabase.prepare(`
         DELETE FROM email_configs
         WHERE id = ?
     `).run(id);
@@ -279,10 +250,21 @@ function deleteEmailConfig(id) {
         throw new Error('Configuração de e-mail não encontrada.');
     }
 
-    return {
-        success: true,
-        id
-    };
+    const isUsed = networkDatabase.prepare(`
+        SELECT 1
+        FROM email_campaigns
+        WHERE config_id = ?
+        LIMIT 1
+    `).get(id);
+
+    if (!isUsed) {
+        networkDatabase.prepare(`
+            DELETE FROM email_configs
+            WHERE id = ?
+        `).run(id);
+    }
+
+    return { success: true, id };
 }
 
 
@@ -293,25 +275,10 @@ function normalizeCampaignRequestType(value, required = false) {
         .trim()
         .toLowerCase();
 
-    if (!normalized && !required) {
-        return null;
-    }
+    if (!normalized && !required) return null;
 
-    if (
-        normalized === 'preco' ||
-        normalized === 'precos' ||
-        normalized === 'prices'
-    ) {
-        return 'precos';
-    }
-
-    if (
-        normalized === 'pendencia' ||
-        normalized === 'pendencias' ||
-        normalized === 'pending'
-    ) {
-        return 'pendencias';
-    }
+    if (['preco', 'precos', 'prices'].includes(normalized)) return 'precos';
+    if (['pendencia', 'pendencias', 'pending'].includes(normalized)) return 'pendencias';
 
     return normalized || null;
 }
@@ -319,23 +286,16 @@ function normalizeCampaignRequestType(value, required = false) {
 
 function getCampaignInputValue(data, names, fallback = '') {
     for (const name of names) {
-        if (
-            data &&
-            data[name] !== undefined &&
-            data[name] !== null
-        ) {
+        if (data && data[name] !== undefined && data[name] !== null) {
             return data[name];
         }
     }
-
     return fallback;
 }
 
 
 function getCampaignInputText(data, names, fallback = '') {
-    return String(
-        getCampaignInputValue(data, names, fallback) || ''
-    ).trim();
+    return String(getCampaignInputValue(data, names, fallback) || '').trim();
 }
 
 
@@ -346,35 +306,18 @@ function normalizeCampaignInput(data = {}, existing = null) {
         existing?.config_id || existing?.config_id || ''
     );
 
-    const subject = getCampaignInputText(
-        data,
-        ['subject'],
-        existing?.subject || ''
-    );
-
-    const body_template = getCampaignInputText(
-        data,
-        ['body_template', 'body_template'],
-        existing?.body_template || existing?.body_template || ''
-    );
-
-    const requestTypeValue = getCampaignInputValue(
-        data,
-        ['request_type', 'request_type'],
-        existing?.request_type || existing?.request_type || null
-    );
+    const subject = getCampaignInputText(data, ['subject'], existing?.subject || '');
+    const body_template = getCampaignInputText(data, ['body_template', 'body_template'], existing?.body_template || existing?.body_template || '');
+    const requestTypeValue = getCampaignInputValue(data, ['request_type', 'request_type'], existing?.request_type || existing?.request_type || null);
 
     const cc = data.cc !== undefined ? (data.cc ? normalizeEmailList(data.cc) : null) : (existing?.cc || null);
     const bcc = data.bcc !== undefined ? (data.bcc ? normalizeEmailList(data.bcc) : null) : (existing?.bcc || null);
 
     return {
-        config_id: config_id,
+        config_id,
         subject,
-        body_template: body_template,
-        request_type: normalizeCampaignRequestType(
-            requestTypeValue,
-            false
-        ),
+        body_template,
+        request_type: normalizeCampaignRequestType(requestTypeValue, false),
         cc,
         bcc
     };
@@ -382,13 +325,13 @@ function normalizeCampaignInput(data = {}, existing = null) {
 
 
 function validateCampaignConfig(database, config_id) {
+    const localDatabase = getLocalDatabase();
+
     if (!config_id) {
-        throw new Error(
-            'Selecione uma conta remetente antes de criar a solicitação.'
-        );
+        throw new Error('Selecione uma conta remetente antes de criar a solicitação.');
     }
 
-    const config = database.prepare(`
+    const config = localDatabase.prepare(`
         SELECT id, name, from_email
         FROM email_configs
         WHERE id = ?
@@ -396,9 +339,7 @@ function validateCampaignConfig(database, config_id) {
     `).get(config_id);
 
     if (!config) {
-        throw new Error(
-            'A conta remetente selecionada não existe mais. Atualize a tela e selecione uma configuração válida.'
-        );
+        throw new Error('A conta remetente selecionada não existe mais. Atualize a tela e selecione uma configuração válida.');
     }
 
     return config;
@@ -407,8 +348,9 @@ function validateCampaignConfig(database, config_id) {
 
 function listEmailCampaigns() {
     const database = getDatabase();
+    const localDatabase = getLocalDatabase();
 
-    return database.prepare(`
+    const campaigns = database.prepare(`
         SELECT
             campaigns.id,
             campaigns.config_id,
@@ -418,20 +360,31 @@ function listEmailCampaigns() {
             campaigns.cc,
             campaigns.bcc,
             campaigns.created_at,
-            campaigns.updated_at,
-            configs.name AS config_name,
-            configs.from_email
+            campaigns.updated_at
         FROM email_campaigns campaigns
-        LEFT JOIN email_configs configs ON configs.id = campaigns.config_id
         ORDER BY campaigns.created_at DESC
     `).all();
+
+    const configs = new Map(
+        localDatabase.prepare(`
+            SELECT id, name, from_email
+            FROM email_configs
+        `).all().map(config => [config.id, config])
+    );
+
+    return campaigns.map(campaign => ({
+        ...campaign,
+        config_name: configs.get(campaign.config_id)?.name || null,
+        from_email: configs.get(campaign.config_id)?.from_email || null
+    }));
 }
 
 
 function getEmailCampaignById(id) {
     const database = getDatabase();
+    const localDatabase = getLocalDatabase();
 
-    return database.prepare(`
+    const campaign = database.prepare(`
         SELECT
             campaigns.id,
             campaigns.config_id,
@@ -441,21 +394,31 @@ function getEmailCampaignById(id) {
             campaigns.cc,
             campaigns.bcc,
             campaigns.created_at,
-            campaigns.updated_at,
-            configs.name AS config_name,
-            configs.from_email
+            campaigns.updated_at
         FROM email_campaigns campaigns
-        LEFT JOIN email_configs configs ON configs.id = campaigns.config_id
         WHERE campaigns.id = ?
         LIMIT 1
     `).get(id);
+
+    if (!campaign) return null;
+
+    const config = localDatabase.prepare(`
+        SELECT name, from_email
+        FROM email_configs
+        WHERE id = ?
+        LIMIT 1
+    `).get(campaign.config_id);
+
+    return {
+        ...campaign,
+        config_name: config?.name || null,
+        from_email: config?.from_email || null
+    };
 }
 
 
 function normalizeEmailList(value) {
-    if (!value) {
-        return null;
-    }
+    if (!value) return null;
 
     const text = String(value)
         .replace(/[,;]/g, '\n')
@@ -473,13 +436,8 @@ function createEmailCampaign(data = {}) {
     const now = new Date().toISOString();
     const campaign = normalizeCampaignInput(data);
 
-    if (!campaign.subject) {
-        throw new Error('Informe o assunto da solicitação.');
-    }
-
-    if (!campaign.body_template) {
-        throw new Error('Informe a mensagem da solicitação.');
-    }
+    if (!campaign.subject) throw new Error('Informe o assunto da solicitação.');
+    if (!campaign.body_template) throw new Error('Informe a mensagem da solicitação.');
 
     validateCampaignConfig(database, campaign.config_id);
 
@@ -497,25 +455,11 @@ function createEmailCampaign(data = {}) {
 
     database.prepare(`
         INSERT INTO email_campaigns (
-            id,
-            config_id,
-            subject,
-            body_template,
-            request_type,
-            cc,
-            bcc,
-            created_at,
-            updated_at
+            id, config_id, subject, body_template, request_type, cc, bcc,
+            created_at, updated_at
         ) VALUES (
-            @id,
-            @config_id,
-            @subject,
-            @body_template,
-            @request_type,
-            @cc,
-            @bcc,
-            @created_at,
-            @updated_at
+            @id, @config_id, @subject, @body_template, @request_type, @cc, @bcc,
+            @created_at, @updated_at
         )
     `).run(entity);
 
@@ -527,26 +471,18 @@ function updateEmailCampaign(id, data = {}) {
     const database = getDatabase();
     const existing = getEmailCampaignById(id);
 
-    if (!existing) {
-        throw new Error('Campanha não encontrada.');
-    }
+    if (!existing) throw new Error('Campanha não encontrada.');
 
     const campaign = normalizeCampaignInput(data, existing);
 
-    if (!campaign.subject) {
-        throw new Error('Informe o assunto da solicitação.');
-    }
-
-    if (!campaign.body_template) {
-        throw new Error('Informe a mensagem da solicitação.');
-    }
+    if (!campaign.subject) throw new Error('Informe o assunto da solicitação.');
+    if (!campaign.body_template) throw new Error('Informe a mensagem da solicitação.');
 
     validateCampaignConfig(database, campaign.config_id);
 
     database.prepare(`
         UPDATE email_campaigns
-        SET
-            config_id = @config_id,
+        SET config_id = @config_id,
             subject = @subject,
             body_template = @body_template,
             request_type = @request_type,
@@ -577,14 +513,9 @@ function deleteEmailCampaign(id) {
         WHERE id = ?
     `).run(id);
 
-    if (!result.changes) {
-        throw new Error('Campanha não encontrada.');
-    }
+    if (!result.changes) throw new Error('Campanha não encontrada.');
 
-    return {
-        success: true,
-        id
-    };
+    return { success: true, id };
 }
 
 
@@ -593,25 +524,13 @@ function listEmailRecipients(campaignId) {
     const normalizedCampaignId = String(campaignId || '').trim();
 
     if (!normalizedCampaignId) {
-        throw new Error(
-            'ID da campanha não informado para listar destinatários.'
-        );
+        throw new Error('ID da campanha não informado para listar destinatários.');
     }
 
     return database.prepare(`
         SELECT
-            id,
-            campaign_id,
-            email,
-            name,
-            company,
-            extra_data,
-            status,
-            sent_at,
-            replied_at,
-            error_message,
-            created_at,
-            updated_at
+            id, campaign_id, email, name, company, extra_data, status,
+            sent_at, replied_at, error_message, created_at, updated_at
         FROM email_campaign_recipients
         WHERE campaign_id = ?
         ORDER BY created_at ASC
@@ -623,24 +542,12 @@ function getEmailRecipientById(id) {
     const database = getDatabase();
     const normalizedId = String(id || '').trim();
 
-    if (!normalizedId) {
-        return null;
-    }
+    if (!normalizedId) return null;
 
     return database.prepare(`
         SELECT
-            id,
-            campaign_id,
-            email,
-            name,
-            company,
-            extra_data,
-            status,
-            sent_at,
-            replied_at,
-            error_message,
-            created_at,
-            updated_at
+            id, campaign_id, email, name, company, extra_data, status,
+            sent_at, replied_at, error_message, created_at, updated_at
         FROM email_campaign_recipients
         WHERE id = ?
         LIMIT 1
@@ -652,27 +559,11 @@ function createEmailRecipient(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
-    const campaignId = String(
-        data.campaignid ||
-        data.campaign_id ||
-        ''
-    ).trim();
+    const campaignId = String(data.campaignid || data.campaign_id || '').trim();
+    const email = String(data.email || '').trim().toLowerCase();
 
-    const email = String(data.email || '')
-        .trim()
-        .toLowerCase();
-
-    if (!campaignId) {
-        throw new Error(
-            'ID da campanha não informado para criar destinatário.'
-        );
-    }
-
-    if (!email) {
-        throw new Error(
-            'E-mail do destinatário não informado.'
-        );
-    }
+    if (!campaignId) throw new Error('ID da campanha não informado para criar destinatário.');
+    if (!email) throw new Error('E-mail do destinatário não informado.');
 
     const campaign = database.prepare(`
         SELECT id
@@ -682,9 +573,7 @@ function createEmailRecipient(data = {}) {
     `).get(campaignId);
 
     if (!campaign) {
-        throw new Error(
-            `Campanha não encontrada para o destinatário: ${campaignId}`
-        );
+        throw new Error(`Campanha não encontrada para o destinatário: ${campaignId}`);
     }
 
     const duplicate = database.prepare(`
@@ -695,63 +584,30 @@ function createEmailRecipient(data = {}) {
         LIMIT 1
     `).get(campaignId, email);
 
-    if (duplicate) {
-        return getEmailRecipientById(duplicate.id);
-    }
+    if (duplicate) return getEmailRecipientById(duplicate.id);
 
     const entity = {
         id: String(data.id || crypto.randomUUID()),
         campaign_id: campaignId,
         email,
-        name: data.name
-            ? String(data.name).trim()
-            : null,
-        company: data.company
-            ? String(data.company).trim()
-            : null,
-        extra_data: data.extradata
-            ? JSON.stringify(data.extradata)
-            : data.extra_data
-                ? JSON.stringify(data.extra_data)
-                : null,
+        name: data.name ? String(data.name).trim() : null,
+        company: data.company ? String(data.company).trim() : null,
+        extra_data: data.extradata ? JSON.stringify(data.extradata) : data.extra_data ? JSON.stringify(data.extra_data) : null,
         status: String(data.status || 'pending'),
         sent_at: data.sentat || data.sent_at || null,
         replied_at: data.repliedat || data.replied_at || null,
-        error_message:
-            data.errormessage ||
-            data.error_message ||
-            null,
+        error_message: data.errormessage || data.error_message || null,
         created_at: data.created_at || data.created_at || now,
         updated_at: data.updated_at || data.updated_at || now
     };
 
     database.prepare(`
         INSERT INTO email_campaign_recipients (
-            id,
-            campaign_id,
-            email,
-            name,
-            company,
-            extra_data,
-            status,
-            sent_at,
-            replied_at,
-            error_message,
-            created_at,
-            updated_at
+            id, campaign_id, email, name, company, extra_data, status,
+            sent_at, replied_at, error_message, created_at, updated_at
         ) VALUES (
-            @id,
-            @campaign_id,
-            @email,
-            @name,
-            @company,
-            @extra_data,
-            @status,
-            @sent_at,
-            @replied_at,
-            @error_message,
-            @created_at,
-            @updated_at
+            @id, @campaign_id, @email, @name, @company, @extra_data, @status,
+            @sent_at, @replied_at, @error_message, @created_at, @updated_at
         )
     `).run(entity);
 
@@ -781,13 +637,11 @@ function updateEmailRecipientStatus(id, status, extra = {}) {
 
     params.push(id);
 
-    const query = `
+    database.prepare(`
         UPDATE email_campaign_recipients
         SET ${updates.join(', ')}
         WHERE id = ?
-    `;
-
-    database.prepare(query).run(...params);
+    `).run(...params);
 
     return getEmailRecipientById(id);
 }
@@ -800,15 +654,10 @@ function deleteEmailRecipient(id) {
         WHERE id = ?
     `).run(id);
 
-    if (result.changes === 0) {
-        throw new Error('Destinatário não encontrado.');
-    }
+    if (!result.changes) throw new Error('Destinatário não encontrado.');
 
     return { success: true, id };
 }
-
-
-// ==================== EMAIL ATTACHMENTS ====================
 
 
 function createEmailAttachment(data) {
@@ -836,9 +685,6 @@ function createEmailAttachment(data) {
 }
 
 
-// ==================== EMAIL PROCESSED RESPONSES ====================
-
-
 function createProcessedResponse(data) {
     const database = getDatabase();
     const now = new Date().toISOString();
@@ -859,15 +705,11 @@ function createProcessedResponse(data) {
 
     database.prepare(`
         INSERT INTO email_processed_responses (
-            id, campaign_id, recipient_id,
-            email_from, email_subject, received_at,
-            file_name_original, file_name_final, file_type, file_path_final,
-            processed_at
+            id, campaign_id, recipient_id, email_from, email_subject, received_at,
+            file_name_original, file_name_final, file_type, file_path_final, processed_at
         ) VALUES (
-            @id, @campaign_id, @recipient_id,
-            @email_from, @email_subject, @received_at,
-            @file_name_original, @file_name_final, @file_type, @file_path_final,
-            @processed_at
+            @id, @campaign_id, @recipient_id, @email_from, @email_subject, @received_at,
+            @file_name_original, @file_name_final, @file_type, @file_path_final, @processed_at
         )
     `).run(response);
 
@@ -877,6 +719,7 @@ function createProcessedResponse(data) {
 
 function listProcessedResponses(campaignId) {
     const database = getDatabase();
+
     return database.prepare(`
         SELECT *
         FROM email_processed_responses
@@ -884,9 +727,6 @@ function listProcessedResponses(campaignId) {
         ORDER BY processed_at DESC
     `).all(campaignId);
 }
-
-
-// ==================== CAMPAIGN ATTACHMENTS AND HISTORY ====================
 
 
 function listEmailCampaignAttachments(campaignId) {
@@ -899,14 +739,8 @@ function listEmailCampaignAttachments(campaignId) {
 
     return database.prepare(`
         SELECT
-            id,
-            campaign_id,
-            file_name,
-            stored_file_name,
-            stored_file_path,
-            mime_type,
-            file_size,
-            created_at
+            id, campaign_id, file_name, stored_file_name, stored_file_path,
+            mime_type, file_size, created_at
         FROM email_campaign_attachments
         WHERE campaign_id = ?
         ORDER BY created_at ASC
@@ -918,37 +752,15 @@ function createEmailCampaignAttachment(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
-    const campaignId = String(
-        data.campaignid ||
-        data.campaign_id ||
-        ''
-    ).trim();
+    const campaignId = String(data.campaignid || data.campaign_id || '').trim();
 
-    if (!campaignId) {
-        throw new Error('ID da campanha não informado para salvar anexo.');
-    }
+    if (!campaignId) throw new Error('ID da campanha não informado para salvar anexo.');
 
-    const filename = String(
-        data.filename ||
-        data.file_name ||
-        'anexo'
-    ).trim();
+    const filename = String(data.filename || data.file_name || 'anexo').trim();
+    const storedFileName = String(data.storedfilename || data.stored_file_name || filename).trim();
+    const storedFilePath = String(data.storedfilepath || data.stored_file_path || '').trim();
 
-    const storedFileName = String(
-        data.storedfilename ||
-        data.stored_file_name ||
-        filename
-    ).trim();
-
-    const storedFilePath = String(
-        data.storedfilepath ||
-        data.stored_file_path ||
-        ''
-    ).trim();
-
-    if (!storedFilePath) {
-        throw new Error('Caminho do arquivo anexo não informado.');
-    }
+    if (!storedFilePath) throw new Error('Caminho do arquivo anexo não informado.');
 
     const entity = {
         id: String(data.id || crypto.randomUUID()),
@@ -956,39 +768,18 @@ function createEmailCampaignAttachment(data = {}) {
         file_name: filename,
         stored_file_name: storedFileName,
         stored_file_path: storedFilePath,
-        mime_type: data.mimetype
-            ? String(data.mimetype)
-            : null,
-        file_size: toSafeNumber(
-            data.filesize ?? data.file_size,
-            0
-        ),
-        created_at: String(
-            data.created_at ||
-            data.created_at ||
-            now
-        )
+        mime_type: data.mimetype ? String(data.mimetype) : null,
+        file_size: toSafeNumber(data.filesize ?? data.file_size, 0),
+        created_at: String(data.created_at || data.created_at || now)
     };
 
     database.prepare(`
         INSERT INTO email_campaign_attachments (
-            id,
-            campaign_id,
-            file_name,
-            stored_file_name,
-            stored_file_path,
-            mime_type,
-            file_size,
-            created_at
+            id, campaign_id, file_name, stored_file_name, stored_file_path,
+            mime_type, file_size, created_at
         ) VALUES (
-            @id,
-            @campaign_id,
-            @file_name,
-            @stored_file_name,
-            @stored_file_path,
-            @mime_type,
-            @file_size,
-            @created_at
+            @id, @campaign_id, @file_name, @stored_file_name, @stored_file_path,
+            @mime_type, @file_size, @created_at
         )
     `).run(entity);
 
@@ -1001,14 +792,8 @@ function getEmailCampaignAttachmentById(id) {
 
     return database.prepare(`
         SELECT
-            id,
-            campaign_id,
-            file_name,
-            stored_file_name,
-            stored_file_path,
-            mime_type,
-            file_size,
-            created_at
+            id, campaign_id, file_name, stored_file_name, stored_file_path,
+            mime_type, file_size, created_at
         FROM email_campaign_attachments
         WHERE id = ?
         LIMIT 1
@@ -1020,22 +805,16 @@ function deleteEmailCampaignAttachment(id) {
     const database = getDatabase();
     const normalizedId = String(id || '').trim();
 
-    const attachment = getEmailCampaignAttachmentById(
-        normalizedId
-    );
+    const attachment = getEmailCampaignAttachmentById(normalizedId);
 
-    if (!attachment) {
-        throw new Error('Anexo não encontrado.');
-    }
+    if (!attachment) throw new Error('Anexo não encontrado.');
 
     const result = database.prepare(`
         DELETE FROM email_campaign_attachments
         WHERE id = ?
     `).run(normalizedId);
 
-    if (!result.changes) {
-        throw new Error('Não foi possível excluir o anexo.');
-    }
+    if (!result.changes) throw new Error('Não foi possível excluir o anexo.');
 
     return attachment;
 }
@@ -1045,36 +824,12 @@ function createEmailSendLog(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
-    const campaignId = String(
-        data.campaignid ||
-        data.campaign_id ||
-        ''
-    ).trim();
+    const campaignId = String(data.campaignid || data.campaign_id || '').trim();
+    const requestedRecipientId = String(data.recipientid || data.recipient_id || '').trim();
+    const recipientEmail = String(data.recipientemail || data.recipient_email || data.email || '').trim().toLowerCase();
 
-    const requestedRecipientId = String(
-        data.recipientid ||
-        data.recipient_id ||
-        ''
-    ).trim();
-
-    const recipientEmail = String(
-        data.recipientemail ||
-        data.recipient_email ||
-        data.email ||
-        ''
-    ).trim().toLowerCase();
-
-    if (!campaignId) {
-        throw new Error(
-            'ID da campanha não informado para registrar log de envio.'
-        );
-    }
-
-    if (!recipientEmail) {
-        throw new Error(
-            'E-mail do destinatário não informado para registrar log.'
-        );
-    }
+    if (!campaignId) throw new Error('ID da campanha não informado para registrar log de envio.');
+    if (!recipientEmail) throw new Error('E-mail do destinatário não informado para registrar log.');
 
     const campaignExists = database.prepare(`
         SELECT id
@@ -1084,9 +839,7 @@ function createEmailSendLog(data = {}) {
     `).get(campaignId);
 
     if (!campaignExists) {
-        throw new Error(
-            `Campanha não encontrada para registrar log: ${campaignId}`
-        );
+        throw new Error(`Campanha não encontrada para registrar log: ${campaignId}`);
     }
 
     let recipientId = null;
@@ -1098,14 +851,9 @@ function createEmailSendLog(data = {}) {
             WHERE id = ?
               AND campaign_id = ?
             LIMIT 1
-        `).get(
-            requestedRecipientId,
-            campaignId
-        );
+        `).get(requestedRecipientId, campaignId);
 
-        if (recipientExists) {
-            recipientId = recipientExists.id;
-        }
+        if (recipientExists) recipientId = recipientExists.id;
     }
 
     if (!recipientId) {
@@ -1115,14 +863,9 @@ function createEmailSendLog(data = {}) {
             WHERE campaign_id = ?
               AND LOWER(TRIM(email)) = ?
             LIMIT 1
-        `).get(
-            campaignId,
-            recipientEmail
-        );
+        `).get(campaignId, recipientEmail);
 
-        if (recipientByEmail) {
-            recipientId = recipientByEmail.id;
-        }
+        if (recipientByEmail) recipientId = recipientByEmail.id;
     }
 
     const entity = {
@@ -1130,47 +873,21 @@ function createEmailSendLog(data = {}) {
         campaign_id: campaignId,
         recipient_id: recipientId,
         recipient_email: recipientEmail,
-        subject: data.subject
-            ? String(data.subject)
-            : null,
+        subject: data.subject ? String(data.subject) : null,
         status: String(data.status || 'sent'),
-        message_id: data.messageid || data.message_id
-            ? String(data.messageid || data.message_id)
-            : null,
-        error_message: data.errormessage || data.error_message
-            ? String(data.errormessage || data.error_message)
-            : null,
-        sent_at: data.sentat || data.sent_at
-            ? String(data.sentat || data.sent_at)
-            : now,
-        created_at: data.created_at || data.created_at
-            ? String(data.created_at || data.created_at)
-            : now
+        message_id: data.messageid || data.message_id ? String(data.messageid || data.message_id) : null,
+        error_message: data.errormessage || data.error_message ? String(data.errormessage || data.error_message) : null,
+        sent_at: data.sentat || data.sent_at ? String(data.sentat || data.sent_at) : now,
+        created_at: data.created_at || data.created_at ? String(data.created_at || data.created_at) : now
     };
 
     database.prepare(`
         INSERT INTO email_send_logs (
-            id,
-            campaign_id,
-            recipient_id,
-            recipient_email,
-            subject,
-            status,
-            message_id,
-            error_message,
-            sent_at,
-            created_at
+            id, campaign_id, recipient_id, recipient_email, subject, status,
+            message_id, error_message, sent_at, created_at
         ) VALUES (
-            @id,
-            @campaign_id,
-            @recipient_id,
-            @recipient_email,
-            @subject,
-            @status,
-            @message_id,
-            @error_message,
-            @sent_at,
-            @created_at
+            @id, @campaign_id, @recipient_id, @recipient_email, @subject, @status,
+            @message_id, @error_message, @sent_at, @created_at
         )
     `).run(entity);
 
@@ -1183,23 +900,13 @@ function listEmailSendLogs(campaignId) {
     const normalizedCampaignId = String(campaignId || '').trim();
 
     if (!normalizedCampaignId) {
-        throw new Error(
-            'ID da campanha não informado para listar logs de envio.'
-        );
+        throw new Error('ID da campanha não informado para listar logs de envio.');
     }
 
     return database.prepare(`
         SELECT
-            id,
-            campaign_id,
-            recipient_id,
-            recipient_email,
-            subject,
-            status,
-            message_id,
-            error_message,
-            sent_at,
-            created_at
+            id, campaign_id, recipient_id, recipient_email, subject, status,
+            message_id, error_message, sent_at, created_at
         FROM email_send_logs
         WHERE campaign_id = ?
         ORDER BY
@@ -1214,9 +921,7 @@ function listEmailCampaignHistory(campaignId) {
     const normalizedCampaignId = String(campaignId || '').trim();
 
     if (!normalizedCampaignId) {
-        throw new Error(
-            'ID da campanha não informado para listar histórico.'
-        );
+        throw new Error('ID da campanha não informado para listar histórico.');
     }
 
     const sentEvents = database.prepare(`
@@ -1259,22 +964,9 @@ function listEmailCampaignHistory(campaignId) {
         `).all(normalizedCampaignId);
     }
 
-    return [
-        ...sentEvents,
-        ...receivedEvents
-    ].sort((first, second) => {
-        const firstDate = new Date(
-            first.event_at ||
-            first.created_at ||
-            0
-        ).getTime();
-
-        const secondDate = new Date(
-            second.event_at ||
-            second.created_at ||
-            0
-        ).getTime();
-
+    return [...sentEvents, ...receivedEvents].sort((first, second) => {
+        const firstDate = new Date(first.event_at || first.created_at || 0).getTime();
+        const secondDate = new Date(second.event_at || second.created_at || 0).getTime();
         return secondDate - firstDate;
     });
 }

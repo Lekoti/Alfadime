@@ -20,42 +20,27 @@ const {
 } = require('../../utils/validation.utils');
 
 
-/**
- * Gera código único de campanha (formato: ALF-8F29C1)
- * @returns {string} Código no formato ALF-XXXXXX
- */
 function generateCampaignCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const randomBytes = crypto.randomBytes(6);
     let code = 'ALF-';
-    
     for (let i = 0; i < 6; i++) {
         code += chars[randomBytes[i] % chars.length];
     }
-    
     return code;
 }
 
 
-/**
- * Insere o código da campanha no assunto do e-mail
- * @param {string} subject - Assunto original
- * @param {string} campaignCode - Código da campanha (ALF-XXXXXX)
- * @returns {string} Assunto com código inserido
- */
 function insertCampaignCodeInSubject(subject, campaignCode) {
     const cleanedSubject = subject.replace(/\s*\[ALF-[A-Z0-9]{6}\]\s*/gi, '').trim();
     return cleanedSubject + ' [' + campaignCode + ']';
 }
 
 
-/**
- * Salva registro de e-mail enviado na tabela sent_emails
- */
 function saveSentEmail(campaignId, campaignCode, recipientId, recipientEmail, sentMessageId, subject, status, errorMessage) {
     const database = require('../../database/connection').getDatabase();
     const now = new Date().toISOString();
-    
+
     const record = {
         id: crypto.randomUUID(),
         campaign_id: campaignId,
@@ -70,7 +55,7 @@ function saveSentEmail(campaignId, campaignCode, recipientId, recipientEmail, se
         created_at: now,
         updated_at: now
     };
-    
+
     database.prepare(`
         INSERT INTO sent_emails (
             id, campaign_id, campaign_code, recipient_id, recipient_email,
@@ -82,22 +67,17 @@ function saveSentEmail(campaignId, campaignCode, recipientId, recipientEmail, se
             @created_at, @updated_at
         )
     `).run(record);
-    
+
     return record;
 }
 
 
 function getValue(data, names, fallback = '') {
     for (const name of names) {
-        if (
-            data &&
-            data[name] !== undefined &&
-            data[name] !== null
-        ) {
+        if (data && data[name] !== undefined && data[name] !== null) {
             return data[name];
         }
     }
-
     return fallback;
 }
 
@@ -116,12 +96,16 @@ function getPort(data, names, fallback = 0) {
 function normalizeConfigData(data = {}, existing = null) {
     const smtpPasswordInput = getText(data, [
         'smtp_password_encrypted',
-        'smtp_password_encrypted'
+        'smtp_password_encrypted',
+        'smtppassword',
+        'smtp_password'
     ]);
 
     const imapPasswordInput = getText(data, [
         'imap_password_encrypted',
-        'imap_password_encrypted'
+        'imap_password_encrypted',
+        'imappassword',
+        'imap_password'
     ]);
 
     const existingSmtpPassword = getText(existing, [
@@ -136,33 +120,19 @@ function normalizeConfigData(data = {}, existing = null) {
 
     return {
         name: getText(data, ['name']),
-
         smtp_host: getText(data, ['smtp_host', 'smtp_host']),
         smtp_port: getPort(data, ['smtp_port', 'smtp_port']),
-        smtp_secure: getText(
-            data,
-            ['smtp_secure', 'smtp_secure'],
-            'starttls'
-        ) || 'starttls',
+        smtp_secure: getText(data, ['smtp_secure', 'smtp_secure'], 'starttls') || 'starttls',
         smtp_user: getText(data, ['smtp_user', 'smtp_user']),
         smtp_password_encrypted: smtpPasswordInput || existingSmtpPassword,
-
         imap_host: getText(data, ['imap_host', 'imap_host']),
         imap_port: getPort(data, ['imap_port', 'imap_port']),
-        imap_secure: getText(
-            data,
-            ['imap_secure', 'imap_secure'],
-            'tls'
-        ) || 'tls',
+        imap_secure: getText(data, ['imap_secure', 'imap_secure'], 'tls') || 'tls',
         imap_user: getText(data, ['imap_user', 'imap_user']),
         imap_password_encrypted: imapPasswordInput || existingImapPassword,
-
         from_name: getText(data, ['from_name', 'from_name']),
         from_email: getText(data, ['from_email', 'from_email']),
-        reply_to_email: getText(
-            data,
-            ['reply_to_email', 'reply_to_email']
-        ) || null
+        reply_to_email: getText(data, ['reply_to_email', 'reply_to_email']) || null
     };
 }
 
@@ -179,12 +149,7 @@ function getConfigById(id) {
 
 function createConfig(data = {}) {
     const normalized = normalizeConfigData(data);
-
-    validateConfigData(normalized, {
-        partial: false,
-        requirePasswords: true
-    });
-
+    validateConfigData(normalized, { partial: false, requirePasswords: true });
     return repository.createEmailConfig(normalized);
 }
 
@@ -197,23 +162,12 @@ function updateConfig(id, data = {}) {
     }
 
     const normalized = normalizeConfigData(data, existing);
-
-    validateConfigData(normalized, {
-        partial: false,
-        requirePasswords: true
-    });
-
+    validateConfigData(normalized, { partial: false, requirePasswords: true });
     return repository.updateEmailConfig(id, normalized);
 }
 
 
-function validateConfigData(
-    data,
-    {
-        partial = false,
-        requirePasswords = false
-    } = {}
-) {
+function validateConfigData(data, { partial = false, requirePasswords = false } = {}) {
     const requiredFields = [
         ['name', 'Informe o nome da configuração.'],
         ['smtp_host', 'Informe o host SMTP.'],
@@ -235,25 +189,17 @@ function validateConfigData(
 
     for (const [field, errorMessage] of requiredFields) {
         const value = data[field];
-
         if (!partial && !String(value || '').trim()) {
             throw new Error(errorMessage);
         }
     }
 
     if (!isValidEmail(data.from_email)) {
-        throw new Error(
-            'Informe um e-mail válido para o remetente.'
-        );
+        throw new Error('Informe um e-mail válido para o remetente.');
     }
 
-    if (
-        data.reply_to_email &&
-        !isValidEmail(data.reply_to_email)
-    ) {
-        throw new Error(
-            'Informe um e-mail válido para resposta.'
-        );
+    if (data.reply_to_email && !isValidEmail(data.reply_to_email)) {
+        throw new Error('Informe um e-mail válido para resposta.');
     }
 
     validatePort(data.smtp_port, 'SMTP');
@@ -264,14 +210,8 @@ function validateConfigData(
 function validatePort(value, label) {
     const port = toSafeNumber(value, 0);
 
-    if (
-        !Number.isInteger(port) ||
-        port < 1 ||
-        port > 65535
-    ) {
-        throw new Error(
-            'Informe uma porta ' + label + ' válida entre 1 e 65535.'
-        );
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error('Informe uma porta ' + label + ' válida entre 1 e 65535.');
     }
 }
 
@@ -287,34 +227,14 @@ function listProcessableCampaigns() {
 
 
 function isCampaignProcessable(campaign) {
-    if (!campaign) {
-        return false;
-    }
+    if (!campaign) return false;
 
-    if (
-        campaign.active !== undefined &&
-        !toSafeNumber(campaign.active, 0)
-    ) {
-        return false;
-    }
+    if (campaign.active !== undefined && !toSafeNumber(campaign.active, 0)) return false;
+    if (campaign.enabled !== undefined && !toSafeNumber(campaign.enabled, 0)) return false;
 
-    if (
-        campaign.enabled !== undefined &&
-        !toSafeNumber(campaign.enabled, 0)
-    ) {
-        return false;
-    }
+    if (campaign.is_active !== undefined && !toSafeNumber(campaign.is_active, 0)) return false;
 
-    if (
-        campaign.is_active !== undefined &&
-        !toSafeNumber(campaign.is_active, 0)
-    ) {
-        return false;
-    }
-
-    const status = String(campaign.status || '')
-        .trim()
-        .toLowerCase();
+    const status = String(campaign.status || '').trim().toLowerCase();
 
     return ![
         'inactive',
@@ -350,14 +270,9 @@ function updateCampaign(id, data = {}) {
         throw new Error('Campanha não encontrada.');
     }
 
-    validateCampaignData(data, {
-        partial: true
-    });
+    validateCampaignData(data, { partial: true });
 
-    if (
-        data.config_id !== undefined &&
-        !repository.getEmailConfigById(data.config_id)
-    ) {
+    if (data.config_id !== undefined && !repository.getEmailConfigById(data.config_id)) {
         throw new Error('Configuração de e-mail não encontrada.');
     }
 
@@ -373,29 +288,19 @@ function validateCampaignData(data, { partial = false } = {}) {
     ];
 
     for (const [field, errorMessage] of requiredFields) {
-        if (
-            !partial &&
-            !String(data[field] || '').trim()
-        ) {
+        if (!partial && !String(data[field] || '').trim()) {
             throw new Error(errorMessage);
         }
     }
 
-    if (
-        data.subject !== undefined &&
-        !String(data.subject || '').trim()
-    ) {
+    if (data.subject !== undefined && !String(data.subject || '').trim()) {
         throw new Error('Informe o assunto da campanha.');
     }
 
-    if (
-        data.body_template !== undefined &&
-        !String(data.body_template || '').trim()
-    ) {
+    if (data.body_template !== undefined && !String(data.body_template || '').trim()) {
         throw new Error('Informe o corpo da mensagem.');
     }
 
-    // Validar CC se informado
     if (data.cc !== undefined && data.cc !== null && data.cc !== "") {
         const ccEmails = String(data.cc)
             .replace(/[,;]/g, '\n')
@@ -405,14 +310,11 @@ function validateCampaignData(data, { partial = false } = {}) {
 
         for (const email of ccEmails) {
             if (!isValidEmail(email)) {
-                throw new Error(
-                    `E-mail inválido em CC: ${email}. Use apenas e-mails válidos, separados por vírgula ou ponto e vírgula.`
-                );
+                throw new Error(`E-mail inválido em CC: ${email}. Use apenas e-mails válidos, separados por vírgula ou ponto e vírgula.`);
             }
         }
     }
 
-    // Validar BCC se informado
     if (data.bcc !== undefined && data.bcc !== null && data.bcc !== "") {
         const bccEmails = String(data.bcc)
             .replace(/[,;]/g, '\n')
@@ -422,9 +324,7 @@ function validateCampaignData(data, { partial = false } = {}) {
 
         for (const email of bccEmails) {
             if (!isValidEmail(email)) {
-                throw new Error(
-                    `E-mail inválido em CCO: ${email}. Use apenas e-mails válidos, separados por vírgula ou ponto e vírgula.`
-                );
+                throw new Error(`E-mail inválido em CCO: ${email}. Use apenas e-mails válidos, separados por vírgula ou ponto e vírgula.`);
             }
         }
     }
@@ -453,17 +353,12 @@ function createRecipient(data = {}) {
         throw new Error('Campanha não encontrada.');
     }
 
-    return repository.createEmailRecipient(
-        normalizeRecipientData(data)
-    );
+    return repository.createEmailRecipient(normalizeRecipientData(data));
 }
 
 
 function createRecipientsBatch(campaignId, recipientsData) {
-    if (
-        !Array.isArray(recipientsData) ||
-        recipientsData.length === 0
-    ) {
+    if (!Array.isArray(recipientsData) || recipientsData.length === 0) {
         throw new Error('Informe ao menos um destinatário.');
     }
 
@@ -474,11 +369,7 @@ function createRecipientsBatch(campaignId, recipientsData) {
     const created = [];
     const errors = [];
 
-    for (
-        let index = 0;
-        index < recipientsData.length;
-        index += 1
-    ) {
+    for (let index = 0; index < recipientsData.length; index += 1) {
         const item = recipientsData[index] || {};
 
         try {
@@ -514,9 +405,7 @@ function validateRecipientData(data) {
     }
 
     if (!isValidEmail(data.email)) {
-        throw new Error(
-            'Informe um e-mail de destinatário válido.'
-        );
+        throw new Error('Informe um e-mail de destinatário válido.');
     }
 }
 
@@ -525,12 +414,8 @@ function normalizeRecipientData(data) {
     return {
         ...data,
         email: String(data.email).trim().toLowerCase(),
-        name: data.name
-            ? String(data.name).trim()
-            : null,
-        company: data.company
-            ? String(data.company).trim()
-            : null
+        name: data.name ? String(data.name).trim() : null,
+        company: data.company ? String(data.company).trim() : null
     };
 }
 
@@ -568,50 +453,32 @@ async function sendCampaign(campaignId, options = {}) {
     }
 
     if (!isCampaignProcessable(campaign)) {
-        throw new Error(
-            'A campanha está inativa, pausada ou arquivada.'
-        );
+        throw new Error('A campanha está inativa, pausada ou arquivada.');
     }
 
-    // Gera código de campanha se não existir
     let campaignCode = campaign.campaign_code;
     if (!campaignCode) {
         campaignCode = generateCampaignCode();
         repository.updateEmailCampaign(campaignId, { campaign_code: campaignCode });
     }
 
-    const config = repository.getEmailConfigById(
-        campaign.config_id
-    );
+    const config = repository.getEmailConfigById(campaign.config_id);
 
     if (!config) {
-        throw new Error(
-            'Configuração de e-mail não encontrada.'
-        );
+        throw new Error('Configuração de e-mail não encontrada.');
     }
 
-    const recipients = repository.listEmailRecipients(
-        campaignId
-    );
+    const recipients = repository.listEmailRecipients(campaignId);
 
     if (recipients.length === 0) {
-        throw new Error(
-            'Nenhum destinatário cadastrado na campanha.'
-        );
+        throw new Error('Nenhum destinatário cadastrado na campanha.');
     }
 
-    const attachmentValidation =
-        getCampaignAttachmentValidation(campaignId);
+    const attachmentValidation = getCampaignAttachmentValidation(campaignId);
 
     if (attachmentValidation.missing.length > 0) {
         const names = attachmentValidation.missing
-            .map((attachment) => {
-                return (
-                    attachment.filename ||
-                    attachment.file_name ||
-                    'anexo sem nome'
-                );
-            })
+            .map((attachment) => attachment.filename || attachment.file_name || 'anexo sem nome')
             .join(', ');
 
         throw new Error(
@@ -620,33 +487,21 @@ async function sendCampaign(campaignId, options = {}) {
         );
     }
 
-    const attachments = getCampaignAttachmentsForSmtp(
-        campaignId
-    );
-
-    const sendInterval = normalizeSendInterval(
-        options.sendInterval
-    );
-
+    const attachments = getCampaignAttachmentsForSmtp(campaignId);
+    const sendInterval = normalizeSendInterval(options.sendInterval);
     const results = [];
-
-    // Insere código no assunto
     const subjectWithCode = insertCampaignCodeInSubject(campaign.subject, campaignCode);
 
     for (let index = 0; index < recipients.length; index += 1) {
         const recipient = recipients[index];
 
-        if (
-            recipient.status === EMAIL_STATUS.SENT ||
-            recipient.status === EMAIL_STATUS.REPLIED
-        ) {
+        if (recipient.status === EMAIL_STATUS.SENT || recipient.status === EMAIL_STATUS.REPLIED) {
             results.push({
                 recipient_id: recipient.id,
                 email: recipient.email,
                 status: 'skipped',
                 reason: 'Já enviado ou respondido'
             });
-
             continue;
         }
 
@@ -656,10 +511,7 @@ async function sendCampaign(campaignId, options = {}) {
             email: recipient.email
         };
 
-        const body = replacePlaceholders(
-            campaign.body_template,
-            data
-        );
+        const body = replacePlaceholders(campaign.body_template, data);
 
         try {
             const sendResult = await sendEmailViaSmtp(
@@ -675,7 +527,6 @@ async function sendCampaign(campaignId, options = {}) {
                 attachments
             );
 
-            // Salva em sent_emails
             saveSentEmail(
                 campaignId,
                 campaignCode,
@@ -687,13 +538,7 @@ async function sendCampaign(campaignId, options = {}) {
                 null
             );
 
-            repository.updateEmailRecipientStatus(
-                recipient.id,
-                EMAIL_STATUS.SENT,
-                {
-                    error_message: null
-                }
-            );
+            repository.updateEmailRecipientStatus(recipient.id, EMAIL_STATUS.SENT, { error_message: null });
 
             repository.createEmailSendLog({
                 campaign_id: campaignId,
@@ -713,10 +558,8 @@ async function sendCampaign(campaignId, options = {}) {
                 attachment_count: attachments.length
             });
         } catch (error) {
-            const errorMessage = error?.message ||
-                'Falha desconhecida ao enviar e-mail.';
+            const errorMessage = error?.message || 'Falha desconhecida ao enviar e-mail.';
 
-            // Salva erro em sent_emails
             saveSentEmail(
                 campaignId,
                 campaignCode,
@@ -728,13 +571,7 @@ async function sendCampaign(campaignId, options = {}) {
                 errorMessage
             );
 
-            repository.updateEmailRecipientStatus(
-                recipient.id,
-                EMAIL_STATUS.ERROR,
-                {
-                    error_message: errorMessage
-                }
-            );
+            repository.updateEmailRecipientStatus(recipient.id, EMAIL_STATUS.ERROR, { error_message: errorMessage });
 
             repository.createEmailSendLog({
                 campaign_id: campaignId,
@@ -771,20 +608,14 @@ async function sendCampaign(campaignId, options = {}) {
 
 
 function normalizeSendInterval(value) {
-    if (
-        value === undefined ||
-        value === null ||
-        value === ''
-    ) {
+    if (value === undefined || value === null || value === '') {
         return DEFAULT_SEND_INTERVAL_MS;
     }
 
     const interval = Number(value);
 
     if (!Number.isFinite(interval) || interval < 0) {
-        throw new Error(
-            'O intervalo entre envios deve ser maior ou igual a zero.'
-        );
+        throw new Error('O intervalo entre envios deve ser maior ou igual a zero.');
     }
 
     return interval;
@@ -796,13 +627,7 @@ function replacePlaceholders(template, data) {
 
     for (const [key, value] of Object.entries(data)) {
         const pattern = new RegExp('{{' + key + '}}', 'g');
-
-        result = result.replace(
-            pattern,
-            value === undefined || value === null
-                ? ''
-                : String(value)
-        );
+        result = result.replace(pattern, value === undefined || value === null ? '' : String(value));
     }
 
     return result;
@@ -833,20 +658,13 @@ async function processIncoming(campaignId) {
         };
     }
 
-    const config = repository.getEmailConfigById(
-        campaign.config_id
-    );
+    const config = repository.getEmailConfigById(campaign.config_id);
 
     if (!config) {
-        throw new Error(
-            'Configuração de e-mail não encontrada.'
-        );
+        throw new Error('Configuração de e-mail não encontrada.');
     }
 
-    const result = await processIncomingEmails(
-        config,
-        campaign
-    );
+    const result = await processIncomingEmails(config, campaign);
 
     return {
         campaign_id: campaignId,
