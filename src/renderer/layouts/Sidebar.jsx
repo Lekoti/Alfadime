@@ -90,6 +90,28 @@ function Sidebar({ collapsed = false, onToggle }) {
                             )}
                         </button>
 
+                        {!collapsed && item.key === "/industry-contacts" && isActive(item) && (
+                            <div className="alfadime-menu-subitems">
+                                <button
+                                    type="button"
+                                    className={pathname === "/industry-contacts"
+                                        ? "alfadime-menu-item active" : "alfadime-menu-item"}
+                                    onClick={() => navigate("/industry-contacts")}
+                                >
+                                    Contatos
+                                </button>
+                                <button
+                                    type="button"
+                                    className={pathname === "/contacts/charge-favorites"
+                                        ? "alfadime-menu-item active" : "alfadime-menu-item"}
+                                    onClick={() => navigate("/contacts/charge-favorites")}
+                                >
+                                    Favoritos de cobrança
+                                </button>
+                            </div>
+                        )}
+
+
                         {!collapsed && item.key === "/email" && isActive(item) && (
                             <div className="alfadime-menu-subitems">
                                 <button
