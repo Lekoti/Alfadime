@@ -266,18 +266,7 @@ export default function ContactChargeFavoriteForm({
             </label>
 
 
-            <label className="contacts-charge-checkbox">
-                <input
-                    type="checkbox"
-                    checked={Boolean(form.save_recipients)}
-                    onChange={(event) => updateField("save_recipients", event.target.checked)}
-                />
 
-
-                <span>
-                    Salvar a lista de contatos selecionada neste favorito
-                </span>
-            </label>
 
 
             <div className="contacts-charge-attachments">
@@ -320,6 +309,19 @@ export default function ContactChargeFavoriteForm({
                 </div>
             </div>
 
+
+            <label className="contacts-charge-checkbox">
+                <input
+                    type="checkbox"
+                    checked={Boolean(form.save_recipients)}
+                    onChange={(event) => updateField("save_recipients", event.target.checked)}
+                />
+
+
+                <span>
+                    Salvar a lista de contatos selecionada neste favorito
+                </span>
+            </label>
 
             <div className="contacts-charge-selection">
                 <div className="contacts-charge-selection-column">

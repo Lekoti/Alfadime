@@ -1110,3 +1110,22 @@
     .industry-contacts-filter-fields { grid-template-columns: 1fr; }
     .industry-contacts-filter-actions > button { flex: 1 1 100%; }
 }
+/* contacts-multi-branch-v1 */
+.industry-contacts-form-grid select {
+    width: 100%; min-height: 32px; box-sizing: border-box;
+    border: 1px solid #cdd6df; border-radius: 5px; padding: 0 8px;
+    font-family: inherit; font-size: 11px; background: #fff; color: #263241;
+}
+.contacts-branch-selection {
+    grid-column: 1 / -1; min-width: 0; margin: 0;
+    border: 1px solid #d5dbe3; border-radius: 6px; padding: 12px;
+}
+.contacts-branch-selection legend { font-size: 11px; font-weight: 700; color: #45515e; padding: 0 5px; }
+.contacts-branch-selection > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.industry-contacts-form-grid .contacts-branch-selection label {
+    display: inline-flex; flex-direction: row; align-items: center; gap: 6px;
+}
+.industry-contacts-form-grid .contacts-branch-selection input {
+    width: 14px; height: 14px; min-height: 0; padding: 0;
+}
+.contacts-branch-selection p { margin: 10px 0 0; font-size: 10px; color: #6b7785; }

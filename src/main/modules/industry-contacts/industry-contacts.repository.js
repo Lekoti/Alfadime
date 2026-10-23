@@ -178,6 +178,49 @@ function getContactById(id) {
 
 
 function saveContact(data = {}) {
+    const allowed = ["DPR", "AMS", "DMT", "DMS", "DSC"];
+    const database = getDatabase();
+
+    return database.transaction(() => {
+        if (data.id) {
+            const existing = getContactById(data.id);
+            if (!existing) throw new Error("Contato não encontrado para atualização.");
+            const branch = normalizeBranch(data.branch || data.filial);
+            if (!allowed.includes(branch)) throw new Error("Selecione uma filial válida.");
+            const key = normalizeLaboratoryKey(data.laboratory_key || data.laboratory_name);
+            const conflict = getContactByLaboratoryKey(key, branch);
+            if (conflict && conflict.id !== existing.id) {
+                throw new Error("Já existe cadastro para esta indústria na filial " + branch + ".");
+            }
+            return saveSingleContact(data);
+        }
+
+        const mode = data.branch_mode || "single";
+        if (!["single", "selected", "all"].includes(mode)) {
+            throw new Error("Abrangência de filiais inválida.");
+        }
+        const requested = mode === "all" ? allowed
+            : mode === "selected" ? (Array.isArray(data.branches) ? data.branches : [])
+            : [data.branch || data.filial];
+        const branches = [...new Set(requested.map(normalizeBranch))];
+        if (!branches.length || branches.some((branch) => !allowed.includes(branch))) {
+            throw new Error("Selecione pelo menos uma filial válida.");
+        }
+        const laboratoryName = normalizeText(data.laboratory_name);
+        const key = normalizeLaboratoryKey(data.laboratory_key || laboratoryName);
+        if (!laboratoryName || !key) throw new Error("Indústria é obrigatória.");
+        const conflicts = branches.filter((branch) => getContactByLaboratoryKey(key, branch));
+        if (conflicts.length) {
+            throw new Error("Cadastro já existente nas filiais: " + conflicts.join(", ") +
+                ". Nenhum contato foi criado. Desmarque essas filiais ou edite os cadastros existentes.");
+        }
+        const contacts = branches.map((branch) => saveSingleContact({ ...data, branch }));
+        return contacts[0];
+    })();
+}
+
+
+function saveSingleContact(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
