@@ -1,6 +1,6 @@
 {
   "name": "alfadime",
-  "version": "10.6.29",
+  "version": "10.6.30",
   "main": "dist/main/main.js",
   "scripts": {
     "test": "echo \"Nenhum teste automatizado configurado ainda.\" && exit 0",
