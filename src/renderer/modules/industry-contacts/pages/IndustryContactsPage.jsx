@@ -1,4 +1,4 @@
-﻿import {
+import {
     useEffect,
     useMemo,
     useRef,
@@ -702,9 +702,7 @@ function IndustryContactsPage() {
             await loadData();
 
 
-            setSuccess(
-                "Contato salvo com sucesso."
-            );
+            setSuccess(result?.save_summary?.message || "Contato salvo com sucesso.");
         } catch (
             saveError
         ) {

@@ -46,7 +46,81 @@ function ensureDatabaseDirectory(databasePath) {
 
 
 
+function migrateMultipleContacts(connection) {
+    const table = connection.prepare(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'industry_contacts'"
+    ).get();
+    if (!table) return;
+    const uniqueRule = /,\s*UNIQUE\s*\(\s*laboratory_key\s*,\s*branch\s*\)/i;
+    if (!uniqueRule.test(table.sql)) {
+        const uniqueIndexes = connection.pragma("index_list('industry_contacts')")
+            .filter((index) => index.unique && index.origin !== "pk");
+        if (uniqueIndexes.length) {
+            throw new Error("Estrutura de contatos inesperada. Migração interrompida sem excluir registros.");
+        }
+        return;
+    }
+    const quote = (name) => '"' + String(name).replace(/"/g, '""') + '"';
+    const tables = connection.prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+    ).all();
+    for (const item of tables) {
+        const references = connection.prepare("PRAGMA foreign_key_list(" + quote(item.name) + ")").all();
+        if (references.some((reference) => reference.table === "industry_contacts")) {
+            throw new Error("Há chaves estrangeiras referenciando contatos. Migração requer revisão específica.");
+        }
+    }
+    const temporary = "industry_contacts_multiple_v1";
+    if (connection.prepare("SELECT name FROM sqlite_master WHERE name = ?").get(temporary)) {
+        throw new Error("Tabela temporária de migração já existe. Nenhuma tabela foi excluída.");
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupPath = connection.name + ".before-multiple-contacts-" + stamp + ".db";
+    connection.prepare("VACUUM INTO ?").run(backupPath);
+    if (!fs.existsSync(backupPath) || fs.statSync(backupPath).size === 0) {
+        throw new Error("Backup do banco não confirmado. Migração cancelada.");
+    }
+    const foreignKeys = connection.pragma("foreign_keys", { simple: true });
+    connection.pragma("foreign_keys = OFF");
+    try {
+        connection.transaction(() => {
+            const schema = connection.prepare(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'industry_contacts'"
+            ).get();
+            if (schema.sql !== table.sql) throw new Error("Estrutura alterada durante a preparação. Reinicie a operação.");
+            const objects = connection.prepare(
+                "SELECT sql FROM sqlite_master WHERE tbl_name = 'industry_contacts' AND type IN ('index', 'trigger') AND sql IS NOT NULL"
+            ).all();
+            const columns = connection.pragma("table_info('industry_contacts')")
+                .map((column) => quote(column.name)).join(", ");
+            const create = table.sql.replace(uniqueRule, "")
+                .replace(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"industry_contacts"|`industry_contacts`|\[industry_contacts\]|industry_contacts)/i,
+                    "CREATE TABLE " + quote(temporary));
+            if (create === table.sql || uniqueRule.test(create)) throw new Error("Não foi possível preparar a nova estrutura.");
+            connection.exec(create);
+            connection.exec("INSERT INTO " + quote(temporary) + " (" + columns + ") SELECT " + columns + " FROM industry_contacts");
+            const originalCount = connection.prepare("SELECT COUNT(*) AS total FROM industry_contacts").get().total;
+            const copiedCount = connection.prepare("SELECT COUNT(*) AS total FROM " + quote(temporary)).get().total;
+            const difference = connection.prepare(
+                "SELECT " + columns + " FROM industry_contacts EXCEPT SELECT " + columns + " FROM " + quote(temporary) + " LIMIT 1"
+            ).get();
+            if (originalCount !== copiedCount || difference) throw new Error("Conferência da cópia falhou. Transação cancelada.");
+            connection.exec("DROP TABLE industry_contacts");
+            connection.exec("ALTER TABLE " + quote(temporary) + " RENAME TO industry_contacts");
+            for (const object of objects) connection.exec(object.sql);
+            if (connection.pragma("foreign_key_check").length) throw new Error("Falha na verificação de integridade referencial.");
+            const integrity = connection.pragma("quick_check", { simple: true });
+            if (integrity !== "ok") throw new Error("Verificação do banco falhou: " + integrity);
+        }).immediate();
+        console.log("[Contatos] Múltiplos contatos habilitados. Backup:", backupPath);
+    } finally {
+        connection.pragma("foreign_keys = " + (foreignKeys ? "ON" : "OFF"));
+    }
+}
+
+
 function ensureSchema(connection) {
+    migrateMultipleContacts(connection);
     connection.exec(`
         CREATE TABLE IF NOT EXISTS industry_contacts (
             id TEXT PRIMARY KEY,
@@ -61,8 +135,7 @@ function ensureSchema(connection) {
             cargo TEXT,
             spreadsheet_row INTEGER,
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE(laboratory_key, branch)
+            updated_at TEXT NOT NULL
         );
 
         CREATE INDEX IF NOT EXISTS

@@ -232,6 +232,7 @@ function saveContact(data = {}) {
     syncPricePendingNotification(contact);
     return {
         contact,
+        save_summary: savedContact.save_summary || null,
         spreadsheet: {
             success: true,
             disabled: true,

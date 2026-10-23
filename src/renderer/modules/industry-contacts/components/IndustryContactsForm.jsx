@@ -93,7 +93,7 @@ export default function IndustryContactsForm({
                                 </label>
                             ))}
                         </div>
-                        <p>Será criado um cadastro por filial. Cadastros existentes não serão sobrescritos.</p>
+                        <p>Será adicionado um contato por filial. Outros contatos da mesma indústria serão preservados.</p>
                     </fieldset>
                 )}
                 <label className="industry-contacts-notes-field">Observações

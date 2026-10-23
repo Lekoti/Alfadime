@@ -114,38 +114,17 @@ function listLaboratories() {
 }
 
 
-function getContactByLaboratoryKey(
-    laboratoryKey,
-    branch = ""
-) {
-    const database = getDatabase();
-
-
-    return database
-        .prepare(`
-            SELECT
-                id,
-                laboratory_name,
-                laboratory_key,
-                branch,
-                contact_name,
-                phone,
-                email,
-                service_region,
-                notes,
-                cargo,
-                spreadsheet_row,
-                created_at,
-                updated_at
-            FROM industry_contacts
-            WHERE laboratory_key = ?
-                AND branch = ?
-            LIMIT 1
-        `)
-        .get(
-            laboratoryKey,
-            normalizeBranch(branch)
-        );
+function getContactByLaboratoryKey(laboratoryKey, branch = "") {
+    const rows = getDatabase().prepare(`
+        SELECT * FROM industry_contacts
+        WHERE laboratory_key = ? AND branch = ?
+        ORDER BY id
+        LIMIT 2
+    `).all(normalizeLaboratoryKey(laboratoryKey), normalizeBranch(branch));
+    if (rows.length > 1) {
+        throw new Error("Há vários contatos para esta indústria e filial. Selecione um contato específico para a cobrança.");
+    }
+    return rows[0];
 }
 
 
@@ -177,28 +156,40 @@ function getContactById(id) {
 }
 
 
+function findIdenticalContact(data, branch, ignoreId = null) {
+    const key = normalizeLaboratoryKey(data.laboratory_key || data.laboratory_name);
+    const identity = (value) => String(value || "").trim().toLocaleLowerCase("pt-BR");
+    const fields = ["contact_name", "cargo", "phone", "email"];
+    return getDatabase().prepare(
+        "SELECT * FROM industry_contacts WHERE laboratory_key = ? AND branch = ?"
+    ).all(key, branch).find((contact) => contact.id !== ignoreId &&
+        fields.every((field) => identity(contact[field]) === identity(data[field])));
+}
+
+
+function assertDistinctContact(data, branch, ignoreId = null) {
+    if (findIdenticalContact(data, branch, ignoreId)) {
+        throw new Error("Este contato já existe na filial " + branch + ". Nenhum cadastro foi sobrescrito.");
+    }
+}
+
+
 function saveContact(data = {}) {
     const allowed = ["DPR", "AMS", "DMT", "DMS", "DSC"];
-    const database = getDatabase();
-
-    return database.transaction(() => {
+    return getDatabase().transaction(() => {
+        const laboratoryName = normalizeText(data.laboratory_name);
+        const key = normalizeLaboratoryKey(data.laboratory_key || laboratoryName);
+        if (!laboratoryName || !key) throw new Error("Indústria é obrigatória.");
         if (data.id) {
             const existing = getContactById(data.id);
             if (!existing) throw new Error("Contato não encontrado para atualização.");
             const branch = normalizeBranch(data.branch || data.filial);
             if (!allowed.includes(branch)) throw new Error("Selecione uma filial válida.");
-            const key = normalizeLaboratoryKey(data.laboratory_key || data.laboratory_name);
-            const conflict = getContactByLaboratoryKey(key, branch);
-            if (conflict && conflict.id !== existing.id) {
-                throw new Error("Já existe cadastro para esta indústria na filial " + branch + ".");
-            }
-            return saveSingleContact(data);
+            assertDistinctContact(data, branch, existing.id);
+            return saveSingleContact({ ...data, branch });
         }
-
         const mode = data.branch_mode || "single";
-        if (!["single", "selected", "all"].includes(mode)) {
-            throw new Error("Abrangência de filiais inválida.");
-        }
+        if (!["single", "selected", "all"].includes(mode)) throw new Error("Abrangência de filiais inválida.");
         const requested = mode === "all" ? allowed
             : mode === "selected" ? (Array.isArray(data.branches) ? data.branches : [])
             : [data.branch || data.filial];
@@ -206,17 +197,39 @@ function saveContact(data = {}) {
         if (!branches.length || branches.some((branch) => !allowed.includes(branch))) {
             throw new Error("Selecione pelo menos uma filial válida.");
         }
-        const laboratoryName = normalizeText(data.laboratory_name);
-        const key = normalizeLaboratoryKey(data.laboratory_key || laboratoryName);
-        if (!laboratoryName || !key) throw new Error("Indústria é obrigatória.");
-        const conflicts = branches.filter((branch) => getContactByLaboratoryKey(key, branch));
-        if (conflicts.length) {
-            throw new Error("Cadastro já existente nas filiais: " + conflicts.join(", ") +
-                ". Nenhum contato foi criado. Desmarque essas filiais ou edite os cadastros existentes.");
+        if (mode === "single") {
+            assertDistinctContact(data, branches[0]);
+            return saveSingleContact({ ...data, branch: branches[0] });
         }
-        const contacts = branches.map((branch) => saveSingleContact({ ...data, branch }));
-        return contacts[0];
-    })();
+        const created = [];
+        const existing = [];
+        const createdBranches = [];
+        const skippedBranches = [];
+        for (const branch of branches) {
+            const identical = findIdenticalContact(data, branch);
+            if (identical) {
+                existing.push(identical);
+                skippedBranches.push(branch);
+                continue;
+            }
+            created.push(saveSingleContact({ ...data, branch }));
+            createdBranches.push(branch);
+        }
+        const message = created.length
+            ? `${created.length} cadastro(s) criado(s) em ${createdBranches.join(", ")}. ` +
+                (existing.length ? `${existing.length} já existente(s), mantido(s) em ${skippedBranches.join(", ")}.` : "Nenhum cadastro existente foi alterado.")
+            : `O contato já existe em todas as ${branches.length} filiais selecionadas. Nenhum cadastro foi criado ou alterado.`;
+        return {
+            ...(created[0] || existing[0]),
+            save_summary: {
+                created: created.length,
+                skipped: existing.length,
+                created_branches: createdBranches,
+                skipped_branches: skippedBranches,
+                message
+            }
+        };
+    }).immediate();
 }
 
 
@@ -342,34 +355,11 @@ function saveSingleContact(data = {}) {
                 @created_at,
                 @updated_at
             )
-            ON CONFLICT(laboratory_key, branch)
-            DO UPDATE SET
-                laboratory_name =
-                    excluded.laboratory_name,
-                contact_name =
-                    excluded.contact_name,
-                phone =
-                    excluded.phone,
-                email =
-                    excluded.email,
-                service_region =
-                    excluded.service_region,
-                notes =
-                    excluded.notes,
-                cargo =
-                    excluded.cargo,
-                spreadsheet_row =
-                    excluded.spreadsheet_row,
-                updated_at =
-                    excluded.updated_at
         `)
         .run(contact);
 
 
-    return getContactByLaboratoryKey(
-        laboratoryKey,
-        branch
-    );
+    return getContactById(contact.id);
 }
 
 
