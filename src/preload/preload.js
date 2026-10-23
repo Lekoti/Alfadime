@@ -1,4 +1,4 @@
-const {
+﻿const {
     contextBridge,
     ipcRenderer
 } = require(
@@ -793,6 +793,84 @@ contextBridge.exposeInMainWorld(
                 invoke(
                     "industry-contacts:test-connection",
                     path
+                )
+        },
+        contactsCharge: {
+            listFavorites: () =>
+                invoke(
+                    "contacts:list-charge-favorites"
+                ),
+
+            getFavorite: (id) =>
+                invoke(
+                    "contacts:get-charge-favorite",
+                    { id }
+                ),
+
+            saveFavorite: (data) =>
+                invoke(
+                    "contacts:save-charge-favorite",
+                    data
+                ),
+
+            deleteFavorite: (id) =>
+                invoke(
+                    "contacts:delete-charge-favorite",
+                    { id }
+                ),
+
+            prepareCharge: (payload) =>
+                invoke(
+                    "contacts:prepare-favorite-charge",
+                    payload
+                ),
+
+            sendCharge: (payload) =>
+                invoke(
+                    "contacts:send-favorite-charge",
+                    payload
+                ),
+
+            getChargeStatus: (payload) =>
+                invoke(
+                    "contacts:charge-status",
+                    payload
+                ),
+
+            cancelCharge: (payload) =>
+                invoke(
+                    "contacts:cancel-charge",
+                    payload
+                ),
+
+            retryFailedCharge: (payload) =>
+                invoke(
+                    "contacts:retry-failed-charge",
+                    payload
+                ),
+
+            listRuns: (limit = 50) =>
+                invoke(
+                    "contacts:list-charge-runs",
+                    { limit }
+                ),
+
+            getRun: (runId) =>
+                invoke(
+                    "contacts:get-charge-run",
+                    { run_id: runId }
+                ),
+
+            cancelRun: (runId) =>
+                invoke(
+                    "contacts:cancel-charge-run",
+                    { run_id: runId }
+                ),
+
+            retryRun: (runId) =>
+                invoke(
+                    "contacts:retry-charge-run",
+                    { run_id: runId }
                 )
         },
 

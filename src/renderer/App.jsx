@@ -19,6 +19,7 @@ import ProductCorrectionsPage from "./modules/product-corrections/pages/ProductC
 import PricePendingPage from "./modules/price-pending/pages/PricePendingPage.jsx";
 import PurchasesPage from "./modules/purchases/pages/PurchasesPage.jsx";
 import IndustryContactsPage from "./modules/industry-contacts/pages/IndustryContactsPage.jsx";
+import ContactChargeFavoritesPage from "./modules/industry-contacts/pages/ContactChargeFavoritesPage.jsx";
 import NotificationsPage from "./modules/notifications/pages/NotificationsPage.jsx";
 import EmailCampaignsPage from "./modules/email-dispatch/pages/EmailCampaignsPage.jsx";
 import EmailReceivedPage from "./modules/email-dispatch/pages/EmailReceivedPage.jsx";
@@ -233,6 +234,15 @@ function ApplicationRoutes() {
                         element={<SettingsPermissionsPage />}
                     />
                 </Route>
+
+                <Route
+                    path="contacts/charge-favorites"
+                    element={
+                        <PermissionRoute moduleKey="industry-contacts">
+                            <ContactChargeFavoritesPage />
+                        </PermissionRoute>
+                    }
+                />
 
 
 

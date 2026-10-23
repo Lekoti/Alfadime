@@ -1,4 +1,4 @@
-import { Download, Factory, Mail, Plus, Users } from "lucide-react";
+import { Download, Plus, Star } from "lucide-react";
 
 
 export default function IndustryContactsFilters({
@@ -20,43 +20,61 @@ export default function IndustryContactsFilters({
     onClear,
     onCreate,
     onExport,
-    onBulkCharge
+    onOpenChargeFavorites
 }) {
     function updateFilter(field, value) {
         onFiltersChange({ ...filters, [field]: value });
     }
+
 
     return (
         <section className="industry-contacts-filter-panel">
             <div className="industry-contacts-filter-summary">
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon">
-                        <Factory size={16} strokeWidth={1.8} />
+                        Total
                     </span>
+
+
                     <span>Total</span>
+
+
                     <strong>{summary.total}</strong>
                 </div>
 
+
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon">
-                        <Users size={16} strokeWidth={1.8} />
+                        Com contato
                     </span>
+
+
                     <span>Com contato</span>
+
+
                     <strong>{summary.withContact}</strong>
                 </div>
 
+
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon warning">
-                        <Users size={16} strokeWidth={1.8} />
+                        Sem contato
                     </span>
+
+
                     <span>Sem contato</span>
+
+
                     <strong>{summary.withoutContact}</strong>
                 </div>
             </div>
 
+
             <div className="industry-contacts-filter-fields">
                 <label className="industry-contacts-search">
                     <span>Buscar</span>
+
+
                     <input
                         type="search"
                         placeholder="Indústria, responsável ou e-mail"
@@ -65,34 +83,51 @@ export default function IndustryContactsFilters({
                     />
                 </label>
 
+
                 <label>
                     <span>Filial</span>
+
+
                     <select
                         value={filters.branch || ""}
                         onChange={(event) => updateFilter("branch", event.target.value)}
                     >
                         <option value="">Todas</option>
+
+
                         {branches.map((branch) => (
-                            <option key={branch} value={branch}>{branch}</option>
+                            <option key={branch} value={branch}>
+                                {branch}
+                            </option>
                         ))}
                     </select>
                 </label>
 
+
                 <label>
                     <span>Cargo</span>
+
+
                     <select
                         value={filters.cargo || ""}
                         onChange={(event) => updateFilter("cargo", event.target.value)}
                     >
                         <option value="">Todos</option>
+
+
                         {cargos.map((cargo) => (
-                            <option key={cargo} value={cargo}>{cargo}</option>
+                            <option key={cargo} value={cargo}>
+                                {cargo}
+                            </option>
                         ))}
                     </select>
                 </label>
 
+
                 <label>
                     <span>Situação</span>
+
+
                     <select
                         value={filters.status || "all"}
                         onChange={(event) => updateFilter("status", event.target.value)}
@@ -103,8 +138,11 @@ export default function IndustryContactsFilters({
                     </select>
                 </label>
 
+
                 <label>
                     <span>Atualização de preços e pendências</span>
+
+
                     <select
                         value={filters.charge_update || ""}
                         onChange={(event) => updateFilter("charge_update", event.target.value)}
@@ -118,6 +156,7 @@ export default function IndustryContactsFilters({
                 </label>
             </div>
 
+
             <div className="industry-contacts-filter-actions">
                 {canEdit && (
                     <button
@@ -127,9 +166,12 @@ export default function IndustryContactsFilters({
                         disabled={loading || saving || deleting}
                     >
                         <Plus size={15} strokeWidth={1.9} />
+
+
                         Novo contato
                     </button>
                 )}
+
 
                 {canExport && (
                     <button
@@ -139,21 +181,27 @@ export default function IndustryContactsFilters({
                         disabled={loading || exporting || !hasRows}
                     >
                         <Download size={15} strokeWidth={1.9} />
+
+
                         {exporting ? "Exportando..." : "Exportar Excel"}
                     </button>
                 )}
+
 
                 {canCharge && (
                     <button
                         type="button"
                         className="industry-contacts-action-button primary"
-                        onClick={onBulkCharge}
-                        disabled={loading || charging || saving || deleting || !hasFilteredRows}
+                        onClick={onOpenChargeFavorites}
+                        disabled={loading || charging || saving || deleting}
                     >
-                        <Mail size={15} strokeWidth={1.9} />
-                        Cobrar em lote
+                        <Star size={15} strokeWidth={1.9} />
+
+
+                        Favoritos de cobrança
                     </button>
                 )}
+
 
                 <button
                     type="button"

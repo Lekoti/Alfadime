@@ -1,15 +1,15 @@
-import {
+﻿import {
     useEffect,
     useMemo,
     useRef,
     useState
 } from "react";
+import { useNavigate } from "react-router-dom";
 
 
 import {
     Download,
     Mail,
-    Plus,
     SlidersHorizontal
 } from "lucide-react";
 
@@ -35,6 +35,14 @@ import IndustryContactsTable from
     "../components/IndustryContactsTable";
 
 
+import ContactFavoritePickerModal from
+    "../components/ContactFavoritePickerModal";
+
+
+import ContactChargeModal from
+    "../components/ContactChargeModal";
+
+
 import {
     EMPTY_INDUSTRY_CONTACT_FILTERS,
     EMPTY_INDUSTRY_CONTACT_FORM,
@@ -50,7 +58,6 @@ import { useModuleState } from "../../../hooks/useModuleState";
 
 
 import IndustryContactsChargePreview from "../components/IndustryContactsChargePreview";
-import IndustryContactsBulkChargeModal from "../components/IndustryContactsBulkChargeModal";
 import { matchesChargeUpdate, formatChargeDate } from "../utils/industry-contacts-charge.utils";
 import "../styles/industry-contacts.css";
 
@@ -89,6 +96,9 @@ const INITIAL_STATE = {
 
 
 function IndustryContactsPage() {
+    const navigate = useNavigate();
+
+
     const {
         isLoading: isLoadingPermissions,
         can
@@ -198,10 +208,6 @@ function IndustryContactsPage() {
         useState(false);
 
 
-    const [bulkChargeOpen, setBulkChargeOpen] =
-        useState(false);
-
-
     const [chargeRow, setChargeRow] =
         useState(null);
 
@@ -220,6 +226,22 @@ function IndustryContactsPage() {
 
     const [chargePreview, setChargePreview] =
         useState(null);
+
+
+    const [favoritePickerOpen, setFavoritePickerOpen] =
+        useState(false);
+
+
+    const [favoriteChargeRow, setFavoriteChargeRow] =
+        useState(null);
+
+
+    const [selectedFavorite, setSelectedFavorite] =
+        useState(null);
+
+
+    const [favoriteChargeOpen, setFavoriteChargeOpen] =
+        useState(false);
 
 
     const [error, setError] =
@@ -1057,6 +1079,35 @@ function IndustryContactsPage() {
     }
 
 
+    function handleChargeFavorite(
+        row
+    ) {
+        if (
+            !canCharge
+        ) {
+            setError(
+                "Você não tem permissão para enviar cobranças."
+            );
+
+
+            return;
+        }
+
+
+        setFavoriteChargeRow(row);
+        setFavoritePickerOpen(true);
+    }
+
+
+    function handleSelectFavorite(
+        favorite
+    ) {
+        setSelectedFavorite(favorite);
+        setFavoritePickerOpen(false);
+        setFavoriteChargeOpen(true);
+    }
+
+
     async function handleExport() {
         if (
             !canExport
@@ -1245,7 +1296,9 @@ function IndustryContactsPage() {
                         onClear={clearFilters}
                         onCreate={openCreateForm}
                         onExport={handleExport}
-                        onBulkCharge={() => setBulkChargeOpen(true)}
+                        onOpenChargeFavorites={() =>
+                            navigate("/contacts/charge-favorites")
+                        }
                     />
                 </section>
             )}
@@ -1362,6 +1415,9 @@ function IndustryContactsPage() {
                     }
                     onCharge={
                         handleCharge
+                    }
+                    onChargeFavorite={
+                        handleChargeFavorite
                     }
                 />
             </section>
@@ -1561,7 +1617,6 @@ function IndustryContactsPage() {
                                     onClick={
                                         closeChargePreview
                                     }
-                                    aria-label="Fechar"
                                     disabled={
                                         charging
                                     }
@@ -1617,14 +1672,23 @@ function IndustryContactsPage() {
                         </div>
                     </div>
                 )}
-            {canCharge && bulkChargeOpen && (
-                <IndustryContactsBulkChargeModal
-                    open={bulkChargeOpen}
-                    rows={filteredRows}
-                    onClose={() => setBulkChargeOpen(false)}
-                    onCompleted={() => loadData()}
-                />
-            )}
+
+
+            <ContactFavoritePickerModal
+                open={favoritePickerOpen}
+                row={favoriteChargeRow}
+                onClose={() => setFavoritePickerOpen(false)}
+                onSelect={handleSelectFavorite}
+            />
+
+
+            <ContactChargeModal
+                open={favoriteChargeOpen}
+                favorite={selectedFavorite}
+                contacts={rows}
+                onClose={() => setFavoriteChargeOpen(false)}
+                onCompleted={loadData}
+            />
         </main>
     );
 }

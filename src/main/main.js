@@ -51,6 +51,13 @@ const {
 
 
 const {
+    registerContactsChargeIpc
+} = require(
+    "./modules/industry-contacts/contacts-charge.ipc"
+);
+
+
+const {
     registerNotificationsIpc
 } = require(
     "./modules/notifications/notifications.ipc"
@@ -866,6 +873,9 @@ function registerAllIpc() {
     registerIndustryContactsIpc(
         ipcMain
     );
+
+
+    registerContactsChargeIpc();
 
 
     registerNotificationsIpc(

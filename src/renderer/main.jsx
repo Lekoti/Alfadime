@@ -4,6 +4,7 @@ import App from "./App";
 import { initTheme } from "./shared/theme";
 import "./styles/globals.css";
 import "./modules/industry-contacts/styles/industry-contacts.css";
+import "./modules/industry-contacts/styles/contacts-charge.css";
 
 
 initTheme();
