@@ -581,3 +581,68 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* contatos-layout-fix-v1 */
+.contacts-charge-favorites-page {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background: #eef1f5;
+    color: #263241;
+    padding: 18px clamp(14px, 2vw, 28px) 28px;
+}
+.contacts-charge-favorites-page *, .contacts-charge-modal * { box-sizing: border-box; }
+.contacts-charge-form-panel { flex-shrink: 0; padding: 16px; border-radius: 8px; }
+.contacts-charge-favorite-form { min-width: 0; }
+.contacts-charge-favorite-form > .contacts-charge-form-actions:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 10px 0;
+    background: #fff;
+    border-bottom: 1px solid #e1e6ed;
+}
+.contacts-charge-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.contacts-charge-favorite-form .contacts-charge-attachment-button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 12px;
+    gap: 10px;
+    border: 1px dashed #b9cbdc;
+    background: #f5f8fb;
+}
+.contacts-charge-file-input {
+    display: block;
+    width: 100%;
+    font: inherit;
+    color: #45515e;
+}
+.contacts-charge-file-input::file-selector-button {
+    margin-right: 10px;
+    padding: 8px 12px;
+    border: 1px solid #b9cbdc;
+    border-radius: 5px;
+    background: #edf4fa;
+    color: #345d82;
+    cursor: pointer;
+}
+.contacts-charge-selection-column { min-width: 0; }
+.contacts-charge-selection-list { max-height: 220px; }
+.contacts-charge-favorite-form input[type="text"],
+.contacts-charge-favorite-form select,
+.contacts-charge-favorite-form textarea { width: 100%; min-width: 0; font-size: 11px; border-radius: 5px; }
+.contacts-charge-primary-button, .contacts-charge-save-button, .contacts-charge-send-button {
+    background: #3b5f86;
+    border-radius: 5px;
+    min-height: 34px;
+    font-family: inherit;
+    font-size: 11px;
+}
+.contacts-charge-primary-button:hover, .contacts-charge-save-button:hover, .contacts-charge-send-button:hover { background: #304e6e; }
+.contacts-charge-modal { box-sizing: border-box; }
+.contacts-charge-modal > .contacts-charge-selection { display: flex; flex-direction: column; }
+.contacts-charge-favorites-header { flex-wrap: wrap; }
+.contacts-charge-attachment-list span { overflow-wrap: anywhere; }

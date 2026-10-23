@@ -1,4 +1,4 @@
-import { Download, Plus, Star } from "lucide-react";
+import { Download, Plus, Star, Factory, Users } from "lucide-react";
 
 
 export default function IndustryContactsFilters({
@@ -32,7 +32,7 @@ export default function IndustryContactsFilters({
             <div className="industry-contacts-filter-summary">
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon">
-                        Total
+                        <Factory size={16} strokeWidth={1.8} />
                     </span>
 
 
@@ -45,7 +45,7 @@ export default function IndustryContactsFilters({
 
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon">
-                        Com contato
+                        <Users size={16} strokeWidth={1.8} />
                     </span>
 
 
@@ -58,7 +58,7 @@ export default function IndustryContactsFilters({
 
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon warning">
-                        Sem contato
+                        <Users size={16} strokeWidth={1.8} />
                     </span>
 
 

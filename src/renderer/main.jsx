@@ -5,6 +5,7 @@ import { initTheme } from "./shared/theme";
 import "./styles/globals.css";
 import "./modules/industry-contacts/styles/industry-contacts.css";
 import "./modules/industry-contacts/styles/contacts-charge.css";
+import "./modules/industry-contacts/styles/contacts-charge-actions.css";
 
 
 initTheme();
@@ -40,3 +41,4 @@ try {
     console.error("[main.jsx] Erro ao renderizar:", error);
     document.body.innerHTML = `<pre style="color: red; padding: 20px;">Erro: ${error.message}\n\n${error.stack}</pre>`;
 }
+

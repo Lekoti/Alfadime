@@ -85,7 +85,7 @@ export default function ContactChargeFavoriteForm({
     function addAttachments(files) {
         const newAttachments = Array.from(files || []).map((file) => ({
             file_name: file.name,
-            file_path: file.path,
+            file_path: window.alfadime.contactsCharge.getAttachmentPath(file),
             file_size: file.size,
             mime_type: file.type
         }));
@@ -193,6 +193,29 @@ export default function ContactChargeFavoriteForm({
                 onSubmit(form);
             }}
         >
+            <div className="contacts-charge-form-actions">
+                <button
+                    type="button"
+                    className="contacts-charge-cancel-button"
+                    onClick={onCancel}
+                    disabled={saving}
+                >
+                    Cancelar
+                </button>
+
+
+                <button
+                    type="submit"
+                    className="contacts-charge-save-button"
+                    disabled={saving}
+                >
+                    <Save size={15} strokeWidth={1.9} />
+
+
+                    {saving ? "Salvando..." : "Salvar favorito"}
+                </button>
+            </div>
+
             <div className="contacts-charge-form-grid">
                 <label>
                     <span>Nome do favorito</span>
@@ -255,6 +278,47 @@ export default function ContactChargeFavoriteForm({
                     Salvar a lista de contatos selecionada neste favorito
                 </span>
             </label>
+
+
+            <div className="contacts-charge-attachments">
+                <h3>Anexos</h3>
+
+
+                <label className="contacts-charge-attachment-button">
+                    <Paperclip size={15} strokeWidth={1.9} />
+
+
+                    Adicionar anexos
+
+
+                    <input
+                        type="file"
+                        multiple
+                        onChange={(event) => addAttachments(event.target.files)}
+                        className="contacts-charge-file-input"
+                    />
+                </label>
+
+
+                <div className="contacts-charge-attachment-list">
+                    {form.attachments.map((attachment, index) => (
+                        <div key={`${attachment.file_path}-${index}`}>
+                            <span>
+                                {attachment.file_name}
+                            </span>
+
+
+                            <button
+                                type="button"
+                                onClick={() => removeAttachment(index)}
+                                aria-label="Remover anexo"
+                            >
+                                <X size={14} strokeWidth={2} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
 
             <div className="contacts-charge-selection">
@@ -334,47 +398,6 @@ export default function ContactChargeFavoriteForm({
                             );
                         })}
                     </div>
-                </div>
-            </div>
-
-
-            <div className="contacts-charge-attachments">
-                <h3>Anexos</h3>
-
-
-                <label className="contacts-charge-attachment-button">
-                    <Paperclip size={15} strokeWidth={1.9} />
-
-
-                    Adicionar anexos
-
-
-                    <input
-                        type="file"
-                        multiple
-                        onChange={(event) => addAttachments(event.target.files)}
-                        hidden
-                    />
-                </label>
-
-
-                <div className="contacts-charge-attachment-list">
-                    {form.attachments.map((attachment, index) => (
-                        <div key={`${attachment.file_path}-${index}`}>
-                            <span>
-                                {attachment.file_name}
-                            </span>
-
-
-                            <button
-                                type="button"
-                                onClick={() => removeAttachment(index)}
-                                aria-label="Remover anexo"
-                            >
-                                <X size={14} strokeWidth={2} />
-                            </button>
-                        </div>
-                    ))}
                 </div>
             </div>
 

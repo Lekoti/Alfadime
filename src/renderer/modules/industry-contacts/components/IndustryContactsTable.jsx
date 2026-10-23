@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import ContactRowActionsMenu from "./ContactRowActionsMenu";
-import { formatChargeDate } from "../utils/industry-contacts-charge.utils";
 
 
 export default function IndustryContactsTable({
@@ -15,8 +14,7 @@ export default function IndustryContactsTable({
     onEdit,
     onDelete,
     onCharge,
-    onChargeFavorite,
-    onShowUpdateStatus
+    onChargeFavorite
 }) {
     const [statusRow, setStatusRow] = useState(null);
 
@@ -74,8 +72,6 @@ export default function IndustryContactsTable({
                         <th>Telefone</th>
                         <th>E-mail</th>
                         <th>Atualização</th>
-                        <th>Últ. cobrança de preços</th>
-                        <th>Últ. cobrança de pendências</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -84,7 +80,7 @@ export default function IndustryContactsTable({
                 <tbody>
                     {loading && (
                         <tr>
-                            <td colSpan="11" className="industry-contacts-empty-cell">
+                            <td colSpan="9" className="industry-contacts-empty-cell">
                                 Carregando contatos...
                             </td>
                         </tr>
@@ -140,16 +136,6 @@ export default function IndustryContactsTable({
 
 
                                 <td>
-                                    {formatChargeDate(row.last_prices_charge_at)}
-                                </td>
-
-
-                                <td>
-                                    {formatChargeDate(row.last_pending_charge_at)}
-                                </td>
-
-
-                                <td>
                                     <ContactRowActionsMenu
                                         row={row}
                                         canEdit={canEdit}
@@ -169,7 +155,7 @@ export default function IndustryContactsTable({
 
                     {!loading && !rows.length && (
                         <tr>
-                            <td colSpan="11" className="industry-contacts-empty-cell">
+                            <td colSpan="9" className="industry-contacts-empty-cell">
                                 Nenhum contato encontrado.
                             </td>
                         </tr>

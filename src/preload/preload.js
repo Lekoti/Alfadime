@@ -1,6 +1,7 @@
-﻿const {
+const {
     contextBridge,
-    ipcRenderer
+    ipcRenderer,
+    webUtils
 } = require(
     "electron"
 );
@@ -796,6 +797,8 @@ contextBridge.exposeInMainWorld(
                 )
         },
         contactsCharge: {
+            getAttachmentPath: (file) => webUtils.getPathForFile(file),
+
             listFavorites: () =>
                 invoke(
                     "contacts:list-charge-favorites"
