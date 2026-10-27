@@ -1,5 +1,12 @@
 const crypto = require("node:crypto");
 const { getDatabase } = require("./industry-contacts.database");
+const {
+    CHARGE_TYPES,
+    CHARGE_SUBJECTS,
+    CHARGE_EMAIL_BODIES
+} = require("./industry-contacts-charge.constants");
+
+const FIXED_FAVORITE_ID = "fixed-prices-pending-outdated";
 
 function now() {
     return new Date().toISOString();
@@ -58,6 +65,32 @@ function ensureSchema(database) {
             FOREIGN KEY (favorite_id) REFERENCES contact_charge_favorites(id) ON DELETE CASCADE
         );
     `);
+
+    ensureFixedFavorite(database);
+}
+
+function ensureFixedFavorite(database) {
+    const existing = database
+        .prepare("SELECT id FROM contact_charge_favorites WHERE id = ?")
+        .get(FIXED_FAVORITE_ID);
+
+    if (existing) return;
+
+    database.prepare(`
+        INSERT OR IGNORE INTO contact_charge_favorites (
+            id, name, charge_type, subject, body,
+            save_recipients, notes, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+    `).run(
+        FIXED_FAVORITE_ID,
+        "Cobrar preços e pendências desatualizados",
+        CHARGE_TYPES.BOTH,
+        CHARGE_SUBJECTS[CHARGE_TYPES.BOTH],
+        CHARGE_EMAIL_BODIES[CHARGE_TYPES.BOTH],
+        "Favorito fixo do sistema. Cobra somente indústrias com preços e/ou pendências desatualizados.",
+        now(),
+        now()
+    );
 }
 
 function mapFavorite(row) {
@@ -69,6 +102,7 @@ function mapFavorite(row) {
         body: row.body,
         save_recipients: row.save_recipients === 1,
         notes: row.notes || "",
+        is_fixed: row.id === FIXED_FAVORITE_ID,
         created_at: row.created_at,
         updated_at: row.updated_at,
         recipients: [],
@@ -143,6 +177,10 @@ function clearFavoriteRelations(database, favoriteId) {
 function saveFavorite(data = {}) {
     const database = getDatabase();
     ensureSchema(database);
+
+    if (data.id === FIXED_FAVORITE_ID) {
+        throw new Error("O favorito fixo não pode ser editado.");
+    }
 
     const name = normalizeText(data.name);
     const chargeType = normalizeText(data.charge_type);
@@ -276,6 +314,14 @@ function saveFavorite(data = {}) {
 }
 
 function deleteFavorite(id) {
+    if (id === FIXED_FAVORITE_ID) {
+        return {
+            success: false,
+            fixed: true,
+            message: "O favorito fixo não pode ser excluído."
+        };
+    }
+
     const database = getDatabase();
     ensureSchema(database);
 
@@ -287,6 +333,7 @@ function deleteFavorite(id) {
 }
 
 module.exports = {
+    FIXED_FAVORITE_ID,
     listFavorites,
     getFavorite,
     saveFavorite,

@@ -625,10 +625,12 @@ function IndustryContactsPage() {
     const saveConflictResolver = useRef(null);
     const saveConflictSequence = useRef(0);
 
+
     useEffect(() => () => {
         saveConflictResolver.current?.(null);
         saveConflictResolver.current = null;
     }, []);
+
 
     function resolveSaveConflict(choice) {
         const resolve = saveConflictResolver.current;
@@ -636,6 +638,7 @@ function IndustryContactsPage() {
         setSaveConflictRequest(null);
         resolve?.(choice);
     }
+
 
     async function saveWithConflictConfirmation(data) {
         const snapshot = { ...data, branches: Array.isArray(data.branches) ? [...data.branches] : [] };
@@ -682,6 +685,7 @@ function IndustryContactsPage() {
 
 
             if (!result) return;
+
 
             const savedContact = result?.contact;
 

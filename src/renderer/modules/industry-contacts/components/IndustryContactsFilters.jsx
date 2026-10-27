@@ -1,6 +1,5 @@
 import { Download, Plus, Star, Factory, Users } from "lucide-react";
 
-
 export default function IndustryContactsFilters({
     filters,
     branches = [],
@@ -26,7 +25,6 @@ export default function IndustryContactsFilters({
         onFiltersChange({ ...filters, [field]: value });
     }
 
-
     return (
         <section className="industry-contacts-filter-panel">
             <div className="industry-contacts-filter-summary">
@@ -35,45 +33,35 @@ export default function IndustryContactsFilters({
                         <Factory size={16} strokeWidth={1.8} />
                     </span>
 
-
                     <span>Total</span>
-
 
                     <strong>{summary.total}</strong>
                 </div>
-
 
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon">
                         <Users size={16} strokeWidth={1.8} />
                     </span>
 
-
                     <span>Com contato</span>
-
 
                     <strong>{summary.withContact}</strong>
                 </div>
-
 
                 <div className="industry-contacts-summary-card">
                     <span className="industry-contacts-summary-icon warning">
                         <Users size={16} strokeWidth={1.8} />
                     </span>
 
-
                     <span>Sem contato</span>
-
 
                     <strong>{summary.withoutContact}</strong>
                 </div>
             </div>
 
-
             <div className="industry-contacts-filter-fields">
                 <label className="industry-contacts-search">
                     <span>Buscar</span>
-
 
                     <input
                         type="search"
@@ -83,17 +71,14 @@ export default function IndustryContactsFilters({
                     />
                 </label>
 
-
                 <label>
                     <span>Filial</span>
-
 
                     <select
                         value={filters.branch || ""}
                         onChange={(event) => updateFilter("branch", event.target.value)}
                     >
                         <option value="">Todas</option>
-
 
                         {branches.map((branch) => (
                             <option key={branch} value={branch}>
@@ -103,17 +88,14 @@ export default function IndustryContactsFilters({
                     </select>
                 </label>
 
-
                 <label>
                     <span>Cargo</span>
-
 
                     <select
                         value={filters.cargo || ""}
                         onChange={(event) => updateFilter("cargo", event.target.value)}
                     >
                         <option value="">Todos</option>
-
 
                         {cargos.map((cargo) => (
                             <option key={cargo} value={cargo}>
@@ -123,10 +105,8 @@ export default function IndustryContactsFilters({
                     </select>
                 </label>
 
-
                 <label>
                     <span>Situação</span>
-
 
                     <select
                         value={filters.status || "all"}
@@ -138,10 +118,8 @@ export default function IndustryContactsFilters({
                     </select>
                 </label>
 
-
                 <label>
                     <span>Atualização de preços e pendências</span>
-
 
                     <select
                         value={filters.charge_update || ""}
@@ -156,7 +134,6 @@ export default function IndustryContactsFilters({
                 </label>
             </div>
 
-
             <div className="industry-contacts-filter-actions">
                 {canEdit && (
                     <button
@@ -167,11 +144,9 @@ export default function IndustryContactsFilters({
                     >
                         <Plus size={15} strokeWidth={1.9} />
 
-
                         Novo contato
                     </button>
                 )}
-
 
                 {canExport && (
                     <button
@@ -182,11 +157,9 @@ export default function IndustryContactsFilters({
                     >
                         <Download size={15} strokeWidth={1.9} />
 
-
                         {exporting ? "Exportando..." : "Exportar Excel"}
                     </button>
                 )}
-
 
                 {canCharge && (
                     <button
@@ -197,11 +170,9 @@ export default function IndustryContactsFilters({
                     >
                         <Star size={15} strokeWidth={1.9} />
 
-
                         Favoritos de cobrança
                     </button>
                 )}
-
 
                 <button
                     type="button"

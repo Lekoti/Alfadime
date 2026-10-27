@@ -5,19 +5,20 @@ const path = require("node:path");
 const favoritesRepository = require("./contacts-charge-favorites.repository");
 const runRepository = require("./contacts-charge-run.repository");
 const contactsRepository = require("./industry-contacts.repository");
+const chargeView = require("./industry-contacts-charge-view.service");
 const emailRepository = require("../email-dispatch/email-dispatch.repository");
 const { sendEmailViaSmtp } = require("../email-dispatch/email-dispatch-smtp.service");
 const { isValidEmail } = require("../../utils/validation.utils");
+const {
+    CHARGE_TYPES,
+    CHARGE_SUBJECTS,
+    CHARGE_EMAIL_BODIES
+} = require("./industry-contacts-charge.constants");
+const { getAttachmentPaths } = require("./industry-contacts-charge.service");
 
 const prepared = new Map();
 const PREVIEW_TTL = 30 * 60 * 1000;
-
-const CHARGE_TYPES = {
-    PRICES: "prices",
-    PENDING: "pending",
-    DOCUMENTS: "documents",
-    CUSTOM: "custom"
-};
+const FIXED_FAVORITE_ID = favoritesRepository.FIXED_FAVORITE_ID;
 
 function now() {
     return new Date().toISOString();
@@ -26,16 +27,6 @@ function now() {
 function normalizeText(value) {
     const text = String(value ?? "").trim();
     return text || null;
-}
-
-function normalizeChargeType(value) {
-    const type = normalizeText(value)?.toLowerCase();
-
-    if (Object.values(CHARGE_TYPES).includes(type)) {
-        return type;
-    }
-
-    throw new Error("Tipo de cobrança inválido.");
 }
 
 function validateAttachment(attachment) {
@@ -139,6 +130,182 @@ function buildMessage(favorite, contact) {
     };
 }
 
+function resolveFixedType(needsPrices, needsPending) {
+    if (needsPrices && needsPending) return CHARGE_TYPES.BOTH;
+    if (needsPrices) return CHARGE_TYPES.PRICES;
+    return CHARGE_TYPES.PENDING;
+}
+
+function buildFixedMessage(group) {
+    const type = resolveFixedType(group.needsPrices, group.needsPending);
+    const row = group.rows[0];
+
+    return {
+        charge_type: type,
+        charge_label: "Cobrar preços e pendências desatualizados",
+        to: group.email,
+        cc: null,
+        bcc: null,
+        subject: CHARGE_SUBJECTS[type],
+        body: CHARGE_EMAIL_BODIES[type],
+        attachments: getAttachmentPaths(type),
+        contact: {
+            id: row.contact_id || row.id,
+            laboratory_name: row.laboratory_name,
+            laboratory_key: row.laboratory_key,
+            branch: row.branch,
+            contact_name: row.contact_name,
+            email: group.email
+        },
+        covered: group.rows.map((item) => ({
+            contact_id: item.contact_id || item.id,
+            laboratory_name: item.laboratory_name,
+            branch: item.branch
+        }))
+    };
+}
+
+function prepareFixedCharge(payload = {}) {
+    const result = chargeView.listLaboratories();
+    const allRows = Array.isArray(result?.rows) ? result.rows : [];
+
+    const requestedContacts = Array.isArray(payload.contacts) ? payload.contacts : [];
+    const requestedIds = new Set(
+        requestedContacts
+            .map((item) => normalizeText(item.contact_id || item.id))
+            .filter(Boolean)
+    );
+    const hasSelection = requestedIds.size > 0;
+
+    const skipped = [];
+    const rows = [];
+
+    for (const row of allRows) {
+        const rowId = normalizeText(row.contact_id || row.id);
+
+        if (row.charge_update_status === "updated") {
+            skipped.push({
+                contact_id: rowId,
+                laboratory_name: row.laboratory_name,
+                branch: row.branch,
+                reason: "Preços e pendências já atualizados."
+            });
+            continue;
+        }
+
+        if (hasSelection && !requestedIds.has(rowId)) {
+            continue;
+        }
+
+        rows.push(row);
+    }
+
+    const groups = new Map();
+    const invalid = [];
+    const duplicates = [];
+
+    for (const row of rows) {
+        const email = String(row.email || "").trim().toLowerCase();
+
+        if (!email || !isValidEmail(email)) {
+            invalid.push({
+                contact_id: row.contact_id || row.id || null,
+                laboratory_name: row.laboratory_name || "Contato",
+                branch: row.branch || "",
+                reason: "O contato não possui e-mail válido cadastrado."
+            });
+            continue;
+        }
+
+        const needsPrices = !row.prices_updated;
+        const needsPending = !row.pending_updated;
+        const group = groups.get(email);
+
+        if (!group) {
+            groups.set(email, {
+                email,
+                rows: [row],
+                needsPrices,
+                needsPending
+            });
+            continue;
+        }
+
+        group.rows.push(row);
+        group.needsPrices = group.needsPrices || needsPrices;
+        group.needsPending = group.needsPending || needsPending;
+
+        duplicates.push({
+            email,
+            laboratory_name: row.laboratory_name,
+            branch: row.branch,
+            keptLaboratory: group.rows[0].laboratory_name,
+            keptBranch: group.rows[0].branch
+        });
+    }
+
+    const messages = [];
+
+    for (const group of groups.values()) {
+        try {
+            messages.push(buildFixedMessage(group));
+        } catch (error) {
+            for (const row of group.rows) {
+                invalid.push({
+                    contact_id: row.contact_id || row.id || null,
+                    laboratory_name: row.laboratory_name || "Contato",
+                    branch: row.branch || "",
+                    reason: error.message
+                });
+            }
+        }
+    }
+
+    if (!messages.length) {
+        throw new Error("Nenhuma indústria desatualizada com e-mail válido foi encontrada.");
+    }
+
+    const token = crypto.randomUUID();
+    const fingerprints = new Map();
+
+    for (const message of messages) {
+        for (const attachment of message.attachments) {
+            fingerprints.set(attachment.path, fingerprint(attachment.path));
+        }
+    }
+
+    prepared.set(token, {
+        favorite: favoritesRepository.getFavorite(FIXED_FAVORITE_ID),
+        messages,
+        fingerprints,
+        expires: Date.now() + PREVIEW_TTL,
+        running: null,
+        cancelRequested: false,
+        startedAt: null,
+        finishedAt: null,
+        current: 0,
+        currentLaboratory: ""
+    });
+
+    return {
+        success: true,
+        preview_token: token,
+        favorite_id: FIXED_FAVORITE_ID,
+        favorite_name: "Cobrar preços e pendências desatualizados",
+        charge_type: CHARGE_TYPES.BOTH,
+        selected: rows.length,
+        valid: messages.length,
+        invalid,
+        skipped,
+        duplicates,
+        message_count: messages.length,
+        messages,
+        pricesOnly: messages.filter((message) => message.charge_type === CHARGE_TYPES.PRICES).length,
+        pendingOnly: messages.filter((message) => message.charge_type === CHARGE_TYPES.PENDING).length,
+        both: messages.filter((message) => message.charge_type === CHARGE_TYPES.BOTH).length
+    };
+}
+
 function prepareFavoriteCharge(payload = {}) {
     for (const [key, entry] of prepared) {
         if (Date.now() > entry.expires && !entry.running) {
@@ -147,6 +314,11 @@ function prepareFavoriteCharge(payload = {}) {
     }
 
     const favoriteId = normalizeText(payload.favorite_id);
+
+    if (favoriteId === FIXED_FAVORITE_ID) {
+        return prepareFixedCharge(payload);
+    }
+
     const favorite = favoritesRepository.getFavorite(favoriteId);
 
     if (!favorite) {
@@ -515,6 +687,7 @@ async function retryFailedCharge(payload = {}) {
 
 module.exports = {
     CHARGE_TYPES,
+    FIXED_FAVORITE_ID,
     listFavorites: favoritesRepository.listFavorites,
     getFavorite: favoritesRepository.getFavorite,
     saveFavorite: favoritesRepository.saveFavorite,

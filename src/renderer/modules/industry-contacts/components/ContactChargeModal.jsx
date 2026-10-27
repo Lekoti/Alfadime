@@ -12,6 +12,17 @@ import {
 } from "../constants/contacts.constants";
 
 
+const FIXED_FAVORITE_ID = "fixed-prices-pending-outdated";
+
+
+function isOutdatedWithEmail(contact) {
+    const status = contact.charge_update_status;
+    const email = String(contact.email || "").trim();
+
+    return Boolean(email) && status && status !== "updated";
+}
+
+
 function formatDuration(ms) {
     const seconds = Math.max(0, Math.round(ms / 1000));
     const minutes = Math.floor(seconds / 60);
@@ -55,15 +66,28 @@ export default function ContactChargeModal({
     const [success, setSuccess] = useState("");
 
 
+    const isFixed = favorite?.id === FIXED_FAVORITE_ID;
+
+
     useEffect(() => {
         if (!open) return;
 
 
-        setSelectedContacts(
-            favorite?.save_recipients
-                ? (favorite.recipients || []).map((item) => item.contact_id)
-                : []
-        );
+        if (isFixed) {
+            setSelectedContacts(
+                contacts
+                    .filter(isOutdatedWithEmail)
+                    .map((contact) => contact.contact_id || contact.id)
+            );
+        } else {
+            setSelectedContacts(
+                favorite?.save_recipients
+                    ? (favorite.recipients || []).map((item) => item.contact_id)
+                    : []
+            );
+        }
+
+
         setPreview(null);
         setStatus(null);
         setResult(null);
@@ -96,6 +120,11 @@ export default function ContactChargeModal({
 
 
     const availableContacts = useMemo(() => {
+        if (isFixed) {
+            return contacts.filter(isOutdatedWithEmail);
+        }
+
+
         const industryCodes = new Set(
             (favorite?.industries || []).map(
                 (item) => item.industry_global_code
@@ -128,7 +157,7 @@ export default function ContactChargeModal({
 
 
         return Array.from(merged.values());
-    }, [contacts, favorite]);
+    }, [contacts, favorite, isFixed]);
 
 
     const filteredContacts = useMemo(() => {
@@ -295,6 +324,24 @@ export default function ContactChargeModal({
     );
 
 
+    const previewFirstMessage = preview?.messages?.[0];
+
+
+    const previewSubject =
+        preview?.subject || previewFirstMessage?.subject || "";
+
+
+    const previewBody =
+        preview?.body || previewFirstMessage?.body || "";
+
+
+    const previewAttachmentsCount = (
+        preview?.attachments ||
+        previewFirstMessage?.attachments ||
+        []
+    ).length;
+
+
     return (
         <div className="contacts-charge-overlay" role="dialog" aria-modal="true">
             <div className="contacts-charge-modal">
@@ -332,6 +379,15 @@ export default function ContactChargeModal({
 
 
                         <div className="contacts-charge-contact-list">
+                            {filteredContacts.length === 0 && (
+                                <span>
+                                    {isFixed
+                                        ? "Nenhuma indústria desatualizada com e-mail cadastrado."
+                                        : "Nenhum contato encontrado."}
+                                </span>
+                            )}
+
+
                             {filteredContacts.map((contact) => {
                                 const id = contact.contact_id || contact.id;
 
@@ -378,27 +434,27 @@ export default function ContactChargeModal({
 
 
                             <span>
-                                <strong>Inválidos:</strong> {preview.invalid.length}
+                                <strong>Inválidos:</strong> {(preview.invalid || []).length}
                             </span>
 
 
                             <span>
-                                <strong>Duplicados:</strong> {preview.duplicates.length}
+                                <strong>Duplicados:</strong> {(preview.duplicates || []).length}
                             </span>
 
 
                             <span>
-                                <strong>Anexos:</strong> {preview.attachments.length}
+                                <strong>Anexos:</strong> {previewAttachmentsCount}
                             </span>
                         </div>
 
 
                         <div className="contacts-charge-preview-email">
-                            <strong>{preview.subject}</strong>
+                            <strong>{previewSubject}</strong>
 
 
                             <pre>
-                                {preview.body}
+                                {previewBody}
                             </pre>
                         </div>
                     </section>
