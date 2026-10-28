@@ -1,113 +1,145 @@
 import ExcelJS from "exceljs";
 import {buildColumns,PRICE_CRITERIA} from "../constants/merchandise-purchases.constants";
+import {buildMerchandiseReports,reportValue,REPORT_FORMATS} from "./merchandiseReport.service";
+import {addNativeExcelCharts} from "./merchandiseNativeCharts.service";
+const PANEL="Filtros e Tabelas",PRODUCTS="Simulação Compras",BLUE="FF344B65";
 const FMT={text:"@",int:"#,##0",dec:"#,##0.0",currency:'"R$" #,##0.00'};
-const BLUE="FF344B65";
 function L(n){let s="";while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26);}return s;}
 function clean(v){if(typeof v==="number")return Number.isFinite(v)?v:0;return typeof v==="string"?v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,""):v??"";}
 function f(cell,formula,result){cell.value={formula,result:clean(result)};}
-function head(cell,value,color=BLUE){cell.value=value;cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:color}};cell.alignment={wrapText:true,vertical:"middle"};}
+function quote(v){return '"'+String(v).replace(/~/g,"~~").replace(/\*/g,"~*").replace(/\?/g,"~?").replace(/"/g,'""')+'"';}
+function head(cell,value,color=BLUE){cell.value=clean(value);cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:color}};cell.alignment={wrapText:true,vertical:"middle"};}
 function color(k){if(k==="maxPeriod"||k==="maxQty")return "FF047857";if(k==="minPeriod"||k==="minQty")return "FFBE123C";if(/price|Purchase|Company/i.test(k)&&k!=="company")return "FFB45309";if(/stock|blocked|pending|consolidated|transferred/i.test(k))return "FF047857";if(/avg|curve/i.test(k))return "FF0E7490";return BLUE;}
 export async function exportMerchandiseExcel({rows,premises,importInfo,filtersLabel}){
     if(!rows?.length)throw new Error("Nenhum produto para exportar.");
     const wb=new ExcelJS.Workbook();wb.calcProperties.fullCalcOnLoad=true;
-    const ws=wb.addWorksheet("Simulação Compras"),aux=wb.addWorksheet("Apoio");
+    const ws=wb.addWorksheet(PRODUCTS),panel=wb.addWorksheet(PANEL),graphs=wb.addWorksheet("Gráficos"),aux=wb.addWorksheet("Apoio");
     const cols=buildColumns(premises.closedMonth),pos=Object.fromEntries(cols.map((c,i)=>[c.key,i]));
-    const n=rows.length,end=n+5;
+    const n=rows.length,ae=n+5,ve=n+1;
     const a=(key,r)=>`${L(3+pos[key])}${r}`;
-    const ar=key=>`'Apoio'!$${L(3+pos[key])}$6:$${L(3+pos[key])}$${end}`;
-    const vr=key=>`$${L(8+pos[key])}$6:$${L(8+pos[key])}$${end}`;
+    const ar=key=>`'Apoio'!$${L(3+pos[key])}$6:$${L(3+pos[key])}$${ae}`;
+    const vr=key=>`'${PRODUCTS}'!$${L(1+pos[key])}$2:$${L(1+pos[key])}$${ve}`;
     const unique=key=>[...new Set(rows.map(r=>String(r[key]||"")).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
-    ws.getCell("B2").value="Simulação de Compra";ws.getCell("B2").font={size:16,bold:true,color:{argb:BLUE}};
-    ws.mergeCells("B3:F3");ws.getCell("B3").value=filtersLabel||"Todas as empresas e laboratórios exportados";
-    ws.mergeCells("B4:F4");head(ws.getCell("B4"),"FILTROS GERAIS — combinados","FFB45309");
+    panel.mergeCells("B2:O2");head(panel.getCell("B2"),"FILTROS E TABELAS — Compras de Mercadorias");panel.getRow(2).height=28;
+    panel.mergeCells("B3:O3");panel.getCell("B3").value=filtersLabel||"Todas as empresas e laboratórios exportados";
+    panel.mergeCells("B4:F4");head(panel.getCell("B4"),"Filtros gerais","FFB45309");
     const filters=[["Empresa","company",5],["Laboratório","lab",6],["Curva","curve",7]];
     filters.forEach(([label,key,r],i)=>{
-        ws.getCell(`B${r}`).value=label;ws.mergeCells(`C${r}:F${r}`);const cell=ws.getCell(`C${r}`);cell.value="Todos";
+        panel.getCell(`B${r}`).value=label;panel.mergeCells(`C${r}:F${r}`);const cell=panel.getCell(`C${r}`);cell.value="Todos";
         cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFF3C7"}};
         const values=["Todos",...unique(key)],col=L(50+i),name=`MP_Filtro_${i}`;
-        values.forEach((v,j)=>aux.getCell(`${col}${j+1}`).value=clean(v));
-        wb.definedNames.add(`'Apoio'!$${col}$1:$${col}$${values.length}`,name);
+        values.forEach((v,j)=>aux.getCell(`${col}${j+1}`).value=clean(v));wb.definedNames.add(`'Apoio'!$${col}$1:$${col}$${values.length}`,name);
         cell.dataValidation={type:"list",allowBlank:true,showErrorMessage:true,formulae:[name],error:"Escolha uma opção da lista."};
     });
-    ws.mergeCells("B8:F8");ws.getCell("B8").value="Todos ou vazio = sem restrição. Alta = acima da média dos meses fechados.";ws.getCell("B8").alignment={wrapText:true};ws.getRow(8).height=30;
-    ws.getCell("B9").value="Produtos encontrados";f(ws.getCell("C9"),`'Apoio'!A${end}`,n);
-    ["Premissas","Dias","Estoque Mês"].forEach((h,i)=>head(ws.getCell(11,2+i),h));
-    [["A",12],["B",13],["C",14],["OTHER",15]].forEach(([k,r])=>{ws.getCell(`B${r}`).value=k==="OTHER"?"D E F (Outros)":`Curva ${k}`;ws.getCell(`C${r}`).value=premises.curveDays[k]||0;f(ws.getCell(`D${r}`),`C${r}/30`,(premises.curveDays[k]||0)/30);ws.getCell(`D${r}`).numFmt="0.0";});
-    ws.getCell("B16").value="Critério de preço";ws.mergeCells("C16:F16");
-    const criterion=ws.getCell("C16");criterion.value=PRICE_CRITERIA.find(c=>c.value===premises.priceCriteria)?.label||"Própria empresa";
+    panel.mergeCells("B8:F8");panel.getCell("B8").value="Todos ou vazio = sem restrição. Os três filtros atuam juntos.";panel.getCell("B8").alignment={wrapText:true};panel.getRow(8).height=30;
+    panel.getCell("B9").value="Produtos encontrados";f(panel.getCell("C9"),`'Apoio'!A${ae}`,n);
+    ["Premissas","Dias","Estoque Mês"].forEach((h,i)=>head(panel.getCell(11,2+i),h));
+    [["A",12],["B",13],["C",14],["OTHER",15]].forEach(([k,r])=>{
+        panel.getCell(`B${r}`).value=k==="OTHER"?"D E F (Outros)":`Curva ${k}`;
+        panel.getCell(`C${r}`).value=premises.curveDays[k]||0;f(panel.getCell(`D${r}`),`C${r}/30`,(premises.curveDays[k]||0)/30);panel.getCell(`D${r}`).numFmt="0.0";
+        panel.getCell(`C${r}`).dataValidation={type:"decimal",operator:"greaterThanOrEqual",formulae:[0],showErrorMessage:true,error:"Informe dias maiores ou iguais a zero."};
+    });
+    panel.getCell("B16").value="Critério de preço";panel.mergeCells("C16:F16");const criterion=panel.getCell("C16");
+    criterion.value=PRICE_CRITERIA.find(c=>c.value===premises.priceCriteria)?.label||"Própria empresa";
     criterion.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFFF3C7"}};
-    PRICE_CRITERIA.forEach((v,i)=>aux.getCell(`BA${i+1}`).value=v.label);
-    wb.definedNames.add(`'Apoio'!$BA$1:$BA$${PRICE_CRITERIA.length}`,"MP_Criterios");
-    criterion.dataValidation={type:"list",allowBlank:false,showErrorMessage:true,formulae:["MP_Criterios"]};
-    const lowestRecords=new Map();
-    rows.forEach(row=>{const k=row.barcode||`cod:${row.productCode}`;const current=lowestRecords.get(k);if(row.ownPrice>0&&(!current||row.ownPrice<current.ownPrice))lowestRecords.set(k,row);});
+    PRICE_CRITERIA.forEach((v,i)=>aux.getCell(`BA${i+1}`).value=v.label);wb.definedNames.add(`'Apoio'!$BA$1:$BA$${PRICE_CRITERIA.length}`,"MP_Criterios");criterion.dataValidation={type:"list",allowBlank:false,showErrorMessage:true,formulae:["MP_Criterios"]};
+    const lowestRecords=new Map();rows.forEach(row=>{const k=row.barcode||`cod:${row.productCode}`,old=lowestRecords.get(k);if(row.ownPrice>0&&(!old||row.ownPrice<old.ownPrice))lowestRecords.set(k,row);});
     aux.getCell("A5").value=0;
     for(let i=0;i<n;i++){
-        const r=i+6,ref=key=>a(key,r),input=rows[i];
-        const conditions=filters.map(([,key,fr])=>`OR('Simulação Compras'!$C$${fr}="Todos",'Simulação Compras'!$C$${fr}="",${ref(key)}='Simulação Compras'!$C$${fr})`).join(",");
+        const r=i+6,pr=i+2,ref=key=>a(key,r),input=rows[i];
+        const conditions=filters.map(([,key,fr])=>`OR('${PANEL}'!$C$${fr}="Todos",'${PANEL}'!$C$${fr}="",${ref(key)}='${PANEL}'!$C$${fr})`).join(",");
         f(aux.getCell(`A${r}`),`A${r-1}+IF(AND(${conditions}),1,0)`,i+1);
-        f(aux.getCell(`B${r}`),`IF(${i+1}<=$A$${end},MATCH(${i+1},$A$6:$A$${end},0),0)`,i+1);
+        f(aux.getCell(`B${r}`),`IF(${i+1}<=$A$${ae},MATCH(${i+1},$A$6:$A$${ae},0),0)`,i+1);
         const box=ref("boxSize"),multiple=`IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),${box},1)`;
         const qty=base=>`ROUNDUP(MAX(ROUNDUP(${base}/30*${ref("targetDays")},0)-${ref("consolidated")},0)/${multiple},0)*${multiple}`;
-        // Additional support fields preserve origin when the criterion changes.
-        aux.getCell(`BC${r}`).value=input.priceOrigin||"Sem preço";
-        const ownVia=premises.priceSource!=="lastPurchase"&&!(Number(input[premises.priceSource])>0)&&input.ownPrice>0;
-        aux.getCell(`BD${r}`).value=ownVia?"Sim":"Não";
-        const lowOrigin=input.lowestCompany==="Igual"?input.company:input.lowestCompany;
         const low=lowestRecords.get(input.barcode||`cod:${input.productCode}`);
-        aux.getCell(`BE${r}`).value=low?.company||lowOrigin||"Sem preço";
+        const ownVia=premises.priceSource!=="lastPurchase"&&!(Number(input[premises.priceSource])>0)&&input.ownPrice>0;
         const lowVia=low&&premises.priceSource!=="lastPurchase"&&!(Number(low[premises.priceSource])>0)&&low.ownPrice>0;
-        aux.getCell(`BF${r}`).value=lowVia?"Sim":"Não";
+        aux.getCell(`BD${r}`).value=ownVia?"Sim":"Não";aux.getCell(`BE${r}`).value=low?.company||input.company||"Sem preço";aux.getCell(`BF${r}`).value=lowVia?"Sim":"Não";
         const expressions={
             consolidated:`SUM(${ref("pending")}:${ref("transferred")})`,
-            targetDays:`IF(${ref("curve")}="A",'Simulação Compras'!$C$12,IF(${ref("curve")}="B",'Simulação Compras'!$C$13,IF(${ref("curve")}="C",'Simulação Compras'!$C$14,'Simulação Compras'!$C$15)))`,
-            selectedPrice:`IF('Simulação Compras'!$C$16="Menor preço",${ref("lowestPrice")},${ref("ownPrice")})`,
-            priceViaLast:`IF(${ref("selectedPrice")}<=0,"",IF('Simulação Compras'!$C$16="Menor preço",BF${r},BD${r}))`,
-            priceOrigin:`IF(${ref("selectedPrice")}<=0,"Sem preço",IF(${ref("priceViaLast")}="Sim","Última compra",IF('Simulação Compras'!$C$16="Menor preço",BE${r},${ref("company")})))`,
-            finalValue:`${ref("finalQty")}*${ref("selectedPrice")}`,periodSuggestion:qty(ref("refQty")),
-            periodValue:`${ref("periodSuggestion")}*${ref("selectedPrice")}`,stockMonths:`IFERROR(${ref("consolidated")}/${ref("avgMonth")},0)`,
-            boxStatus:`IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),"OK","Caixa inválida")`
+            targetDays:`IF(${ref("curve")}="A",'${PANEL}'!$C$12,IF(${ref("curve")}="B",'${PANEL}'!$C$13,IF(${ref("curve")}="C",'${PANEL}'!$C$14,'${PANEL}'!$C$15)))`,
+            selectedPrice:`IF('${PANEL}'!$C$16="Menor preço",${ref("lowestPrice")},${ref("ownPrice")})`,
+            priceViaLast:`IF(${ref("selectedPrice")}<=0,"",IF('${PANEL}'!$C$16="Menor preço",BF${r},BD${r}))`,
+            priceOrigin:`IF(${ref("selectedPrice")}<=0,"Sem preço",IF(${ref("priceViaLast")}="Sim","Última compra",IF('${PANEL}'!$C$16="Menor preço",BE${r},${ref("company")})))`,
+            finalValue:`${ref("finalQty")}*${ref("selectedPrice")}`,periodSuggestion:qty(ref("refQty")),periodValue:`${ref("periodSuggestion")}*${ref("selectedPrice")}`,
+            stockMonths:`IFERROR(${ref("consolidated")}/${ref("avgMonth")},0)`,boxStatus:`IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),"OK","Caixa inválida")`
         };
         if(!input.manual)expressions.finalQty=qty(ref("avgMonth"));
         cols.forEach((c,j)=>{
-            const value=clean(input[c.key]),cell=aux.getCell(r,3+j);
-            if(expressions[c.key])f(cell,expressions[c.key],value);else cell.value=value;
-            const out=ws.getCell(r,8+j);
-            f(out,`IF('Apoio'!$B${r}=0,"",INDEX(${ar(c.key)},'Apoio'!$B${r}))`,value);
-            out.numFmt=FMT[c.type]||"General";out.font={name:"Calibri",size:10};
-            if(c.key==="maxPeriod"||c.key==="minPeriod"){
-                out.fill={type:"pattern",pattern:"solid",fgColor:{argb:c.key==="maxPeriod"?"FFDCFCE7":"FFFEE2E2"}};
-                out.font={name:"Calibri",size:10,color:{argb:c.key==="maxPeriod"?"FF166534":"FF991B1B"}};
-                out.alignment={wrapText:true,vertical:"top"};
-            }
+            const value=clean(input[c.key]),cell=aux.getCell(r,3+j);if(expressions[c.key])f(cell,expressions[c.key],value);else cell.value=value;
+            const out=ws.getCell(pr,j+1);let expression=`IF('Apoio'!$B${r}=0,"",INDEX(${ar(c.key)},'Apoio'!$B${r}))`;
+            // Derived visible values also follow manual changes to quantity or price on this row.
+            const v=key=>`${L(1+pos[key])}${pr}`;
+            if(c.key==="finalValue")expression=`IF(${v("company")}="","",${v("finalQty")}*${v("selectedPrice")})`;
+            if(c.key==="periodValue")expression=`IF(${v("company")}="","",${v("periodSuggestion")}*${v("selectedPrice")})`;
+            f(out,expression,value);out.numFmt=FMT[c.type]||"General";out.font={name:"Calibri",size:10};
+            if(c.key==="maxPeriod"||c.key==="minPeriod"){out.fill={type:"pattern",pattern:"solid",fgColor:{argb:c.key==="maxPeriod"?"FFDCFCE7":"FFFEE2E2"}};out.alignment={wrapText:true,vertical:"top"};}
         });
     }
-    cols.forEach((c,j)=>{head(ws.getCell(5,8+j),c.label,color(c.key));ws.getColumn(8+j).width=c.key==="maxPeriod"?50:c.key==="minPeriod"?35:c.width;});
-    let at=18;
-    function table(title,headers,items,formats){ws.mergeCells(`B${at}:F${at}`);head(ws.getCell(`B${at++}`),title);headers.forEach((h,j)=>head(ws.getCell(at,j+2),h));at++;items.forEach(item=>{item.forEach((v,j)=>{const cell=ws.getCell(at,j+2);if(v&&typeof v==="object")f(cell,v.f,v.v);else cell.value=clean(v);cell.numFmt=formats[j]||"General";});at++;});at+=2;}
-    const sum=key=>({f:`SUM(${vr(key)})`,v:rows.reduce((s,r)=>s+(Number(r[key])||0),0)});
-    table("Resultado da simulação",["Indicador","Quantidade"],[["Itens a comprar",{f:`COUNTIF(${vr("finalQty")},">0")`,v:rows.filter(r=>r.finalQty>0).length}],["Quantidade total",sum("finalQty")]],[null,FMT.int]);
-    table("Valores da simulação",["Indicador","Valor"],[["Valor selecionado",sum("finalValue")],["Valor sugestão período",sum("periodValue")]],[null,FMT.currency]);
-    function group(title,key,values){table(title,["Grupo","Qtde","Valor"],values.map(label=>{const crit='"'+label.replace(/~/g,"~~").replace(/\*/g,"~*").replace(/\?/g,"~?").replace(/"/g,'""')+'"';const matches=rows.filter(r=>String(r[key]||"")===label);return [label,{f:`SUMIF(${vr(key)},${crit},${vr("finalQty")})`,v:matches.reduce((s,r)=>s+r.finalQty,0)},{f:`SUMIF(${vr(key)},${crit},${vr("finalValue")})`,v:matches.reduce((s,r)=>s+r.finalValue,0)}];}),[null,FMT.int,FMT.currency]);}
-    group("Por curva","curve",unique("curve"));group("Por empresa","company",unique("company"));group("Por laboratório","lab",unique("lab"));
-    const scenario=key=>({f:`SUMPRODUCT(${vr("finalQty")},${vr(key)})`,v:rows.reduce((s,r)=>s+r.finalQty*r[key],0)});
-    table("Comparativo de cenários",["Cenário","Custo total"],[["Menor preço",scenario("lowestPrice")],["Própria empresa",scenario("ownPrice")],["Preço selecionado",scenario("selectedPrice")]],[null,FMT.currency]);
-    group("Origem do preço","priceOrigin",[...new Set([...unique("priceOrigin"),...unique("company"),"Última compra","Sem preço"])]);
-    const via=rows.filter(r=>r.priceViaLast==="Sim");
-    table("Compra via última compra",["Indicador","Quantidade"],[["Quantidade",{f:`SUMIF(${vr("priceViaLast")},"Sim",${vr("finalQty")})`,v:via.reduce((s,r)=>s+r.finalQty,0)}]],[null,FMT.int]);
-    table("Valor via última compra",["Indicador","Valor"],[["Valor",{f:`SUMIF(${vr("priceViaLast")},"Sim",${vr("finalValue")})`,v:via.reduce((s,r)=>s+r.finalValue,0)}]],[null,FMT.currency]);
-    table("Alertas",["Indicador","Quantidade"],[["Saldo transferido",sum("transferred")],["Caixa inválida",{f:`COUNTIF(${vr("boxStatus")},"Caixa inválida")`,v:rows.filter(r=>!r.boxValid).length}],["Sem preço com compra",{f:`COUNTIFS(${vr("finalQty")},">0",${vr("selectedPrice")},"<=0")`,v:rows.filter(r=>r.finalQty>0&&r.selectedPrice<=0).length}]],[null,FMT.int]);
-    ws.getColumn(2).width=36;ws.getColumn(3).width=22;[4,5,6].forEach(c=>ws.getColumn(c).width=18);ws.getRow(5).height=38;
-    ws.views=[{state:"frozen",xSplit:7,ySplit:5,topLeftCell:"H6"}];ws.autoFilter={from:{row:5,column:8},to:{row:end,column:7+cols.length}};
-    aux.state="veryHidden";
+    cols.forEach((c,j)=>{head(ws.getCell(1,j+1),c.label,color(c.key));ws.getColumn(j+1).width=c.key==="maxPeriod"?50:c.key==="minPeriod"?35:c.width;});ws.getRow(1).height=38;
+    ws.views=[{state:"frozen",ySplit:1,topLeftCell:"A2"}];ws.autoFilter={from:{row:1,column:1},to:{row:ve,column:cols.length}};
+    const reports=buildMerchandiseReports(rows),placements=[];
+    function expression(m){
+        if(m.op==="sum")return `SUM(${vr(m.key)})`;
+        if(m.op==="buyCount")return `COUNTIF(${vr("finalQty")},">0")`;
+        if(m.op==="scenario")return `SUMPRODUCT(${vr("finalQty")},${vr(m.key)})`;
+        if(m.op==="difference")return `SUMPRODUCT(${vr("finalQty")},${vr(m.key)})-SUMPRODUCT(${vr("finalQty")},${vr("lowestPrice")})`;
+        if(m.op==="group")return `SUMIF(${vr(m.groupKey)},${quote(m.label)},${vr(m.key)})`;
+        if(m.op==="groupAverage")return `IFERROR(SUMIF(${vr(m.groupKey)},${quote(m.label)},${vr("finalValue")})/SUMIF(${vr(m.groupKey)},${quote(m.label)},${vr("finalQty")}),0)`;
+        if(m.op==="invalidBox")return `COUNTIF(${vr("boxStatus")},"Caixa inválida")`;
+        if(m.op==="noPriceBuy")return `COUNTIFS(${vr("finalQty")},">0",${vr("selectedPrice")},"<=0")`;
+        throw new Error(`Indicador desconhecido: ${m.op}`);
+    }
+    function writeReport(report,row,col){
+        panel.mergeCells(row,col,row,col+3);head(panel.getCell(row,col),report.title);
+        report.headers.forEach((h,j)=>head(panel.getCell(row+1,col+j),h));
+        report.rows.forEach((cells,i)=>cells.forEach((cell,j)=>{const target=panel.getCell(row+2+i,col+j);if(cell&&typeof cell==="object")f(target,expression(cell),cell.value);else target.value=clean(cell);target.numFmt=REPORT_FORMATS[report.formats[j]]||"General";}));
+        placements.push({report,row,col});
+    }
+    const main=reports.filter(r=>r.id!=="lab");let nextRow=19;
+    for(let i=0;i<main.length;i+=3){const band=main.slice(i,i+3);band.forEach((r,j)=>writeReport(r,nextRow,2+j*5));nextRow+=Math.max(...band.map(r=>r.rows.length))+5;}
+    writeReport(reports.find(r=>r.id==="lab"),nextRow,2);
+    panel.getColumn(2).width=36;panel.getColumn(7).width=36;panel.getColumn(12).width=36;
+    [3,4,5,8,9,10,13,14,15].forEach(c=>panel.getColumn(c).width=19);[6,11].forEach(c=>panel.getColumn(c).width=3);
+    panel.views=[{state:"frozen",ySplit:3}];
+    graphs.mergeCells("B1:U1");head(graphs.getCell("B1"),"GRÁFICOS E TABELAS — resultados vinculados");graphs.getRow(1).height=28;
+    graphs.mergeCells("B2:U2");graphs.getCell("B2").value="Atualize filtros e premissas na aba Filtros e Tabelas. Os gráficos usam as células abaixo.";
+    for(let c=1;c<=25;c++)graphs.getColumn(c).width=13;
+    const chartSpecs=[];let graphRow=4;
+    const graphBands=[];
+    const regular=placements.filter(p=>p.report.id!=="lab");
+    for(let i=0;i<regular.length;i+=2)graphBands.push(regular.slice(i,i+2));
+    graphBands.push(placements.filter(p=>p.report.id==="lab"));
+    for(const band of graphBands){let height=24;
+        band.forEach((p,k)=>{
+            const start=2+k*12,report=p.report,tableRow=graphRow+19,first=tableRow+1,count=Math.max(1,report.rows.length);
+            graphs.mergeCells(graphRow,start,graphRow,start+9);head(graphs.getCell(graphRow,start),report.title);
+            report.headers.forEach((h,j)=>head(graphs.getCell(tableRow,start+j),h));
+            if(report.rows.length){report.rows.forEach((cells,ri)=>cells.forEach((cell,cj)=>{
+                f(graphs.getCell(first+ri,start+cj),`'${PANEL}'!${L(p.col+cj)}${p.row+2+ri}`,reportValue(cell));graphs.getCell(first+ri,start+cj).numFmt=REPORT_FORMATS[report.formats[cj]]||"General";
+            }));}else{graphs.getCell(first,start).value="Sem dados";graphs.getCell(first,start+report.chartColumn).value=0;}
+            chartSpecs.push({title:`${report.title} — ${report.headers[report.chartColumn]}`,seriesName:report.headers[report.chartColumn],
+                categoryFormula:`'Gráficos'!$${L(start)}$${first}:$${L(start)}$${first+count-1}`,
+                valueFormula:`'Gráficos'!$${L(start+report.chartColumn)}$${first}:$${L(start+report.chartColumn)}$${first+count-1}`,
+                labels:report.rows.length?report.rows.map(r=>r[0]):["Sem dados"],values:report.rows.length?report.rows.map(r=>reportValue(r[report.chartColumn])):[0],
+                format:REPORT_FORMATS[report.formats[report.chartColumn]]||"General",fromCol:start-1,toCol:start+9,fromRow:graphRow,toRow:graphRow+18,
+                color:["3B5F86","0E7490","047857","7C3AED","B45309"][chartSpecs.length%5]});
+            height=Math.max(height,report.rows.length+23);
+        });graphRow+=height;
+    }
+    graphs.views=[{state:"frozen",ySplit:2}];aux.state="veryHidden";
     const base=wb.addWorksheet("Planilha1");base.addRow((importInfo.headers||[]).map(clean));rows.forEach(r=>base.addRow((r.raw||[]).map(clean)));
     const rules=wb.addWorksheet("Regras da consolidação");[
-        ["Regra","Aplicação"],["Auxiliares","Transferidos para a aba Apoio, oculta. A aba principal contém somente painel e resultados."],
-        ["Critério","C16 altera preço selecionado, origem e valores. Não altera quantidade."],
-        ["Meses de alta","Quantidade mensal estritamente acima da média dos meses fechados. Não significa crescimento mês a mês. A regra não altera a sugestão de compra."],
-        ["Períodos","Maior e menor venda continuam mensais. Empates mostram todos os meses correspondentes. Meses sem venda entram no cálculo."],
-        ["Filtros","Empresa, laboratório e curva combinam-se. As listas não reduzem as opções entre si; combinação inexistente retorna zero resultados."],
-        ["Base",importInfo.fileName||""]].forEach(r=>rules.addRow(r));rules.getColumn(1).width=25;rules.getColumn(2).width=110;
-    const buffer=await wb.xlsx.writeBuffer(),blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=`Simulacao-Compra-${new Date().toISOString().slice(0,10)}.xlsx`;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+        ["Regra","Aplicação"],["Abas","Simulação Compras: produtos. Filtros e Tabelas: controles e resumos. Gráficos: gráficos nativos e tabelas vinculadas."],
+        ["Filtros","Empresa, laboratório e curva combinam-se por E. Todos ou vazio desativa o critério. As listas não são dependentes."],
+        ["Recálculo","Requer cálculo automático do Excel. Não há sincronização com o app. Somente os produtos exportados estão disponíveis."],
+        ["Edição","Altere filtros, dias por curva e critério na aba Filtros e Tabelas. Quantidade/preço podem ser substituídos na tabela, atualizando valores e gráficos; essas substituições ficam na posição da linha. Para nova filtragem, prefira reexportar os valores manuais pelo app."],
+        ["Dados originais","Planilha1 é uma cópia para conferência; editar essa aba não altera os resultados calculados."],
+        ["Gráficos","São objetos nativos ligados às células da aba Gráficos. A última tabela do painel é Por laboratório."],
+        ["Alta de vendas","Meses com quantidade acima da média dos meses fechados. Não altera a sugestão de compra."],
+        ["Base",importInfo.fileName||""]].forEach(r=>rules.addRow(r));rules.getColumn(1).width=25;rules.getColumn(2).width=120;
+    let buffer=await wb.xlsx.writeBuffer();buffer=await addNativeExcelCharts(buffer,graphs.id,chartSpecs);
+    const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),url=URL.createObjectURL(blob),link=document.createElement("a");
+    link.href=url;link.download=`Simulacao-Compra-${new Date().toISOString().slice(0,10)}.xlsx`;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
