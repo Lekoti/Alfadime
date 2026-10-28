@@ -1,392 +1,195 @@
 import ExcelJS from "exceljs";
+import { buildColumns, PRICE_CRITERIA } from "../constants/merchandise-purchases.constants";
 
-import {
-    PERIOD_REFERENCES,
-    PRICE_CRITERIA,
-    PRICE_SOURCES,
-    buildColumns
-} from "../constants/merchandise-purchases.constants";
-
-const SHEET_NAME = "Simulação Compras";
-const DATA_START_COLUMN = 8;
-const DATA_HEADER_ROW = 5;
-const DATA_FIRST_ROW = 6;
-const SUMMARY_START_ROW = 11;
-const HEADER_COLOR = "FF344B65";
-const BORDER_COLOR = "FFDFE4EA";
-
-const COLUMN_COLORS = {
-    identification: "FF3B5F86",
-    sales: "FF0E7490",
-    period: "FF7C3AED",
-    stock: "FF047857",
-    price: "FFB45309",
-    result: "FFBE123C",
-    validation: "FF6B7280"
-};
-
-function columnColor(key) {
-    if (["company", "productCode", "barcode", "description", "lab", "group"].includes(key)) {
-        return COLUMN_COLORS.identification;
-    }
-    if (["curve", "boxSize", "avgMonth", "avgAll", "avg6", "avg3"].includes(key)) {
-        return COLUMN_COLORS.sales;
-    }
-    if (["maxPeriod", "maxQty", "minPeriod", "minQty", "refQty", "periodSuggestion", "periodValue"].includes(key)) {
-        return COLUMN_COLORS.period;
-    }
-    if (["pending", "stock", "blocked", "transferred", "consolidated", "targetDays", "stockMonths"].includes(key)) {
-        return COLUMN_COLORS.stock;
-    }
-    if (["ownPrice", "lastPurchase", "lowestCompany", "lowestPrice", "selectedPrice", "priceOrigin", "priceViaLast"].includes(key)) {
-        return COLUMN_COLORS.price;
-    }
-    if (["finalQty", "finalValue"].includes(key)) {
-        return COLUMN_COLORS.result;
-    }
-    return COLUMN_COLORS.validation;
+const BLUE = "FF344B65";
+const FMT = { text: "@", int: "#,##0", dec: "#,##0.0", currency: '"R$" #,##0.00' };
+function letter(n) {
+    let s = "";
+    while (n) { n--; s = String.fromCharCode(65 + n % 26) + s; n = Math.floor(n / 26); }
+    return s;
+}
+function color(key) {
+    if (/Period|Qty$|period|refQty/.test(key) && !["finalQty"].includes(key)) return "FF7C3AED";
+    if (/stock|blocked|pending|transferred|consolidated|targetDays/i.test(key)) return "FF047857";
+    if (/price|Purchase|Company/i.test(key) && key !== "company") return "FFB45309";
+    if (["finalQty", "finalValue"].includes(key)) return "FFBE123C";
+    if (/avg|curve|boxSize/i.test(key)) return "FF0E7490";
+    return BLUE;
+}
+function head(cell, value, fill = BLUE) {
+    cell.value = value;
+    cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+    cell.alignment = { vertical: "middle", wrapText: true };
+}
+function clean(value) {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    if (typeof value === "string") return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+    return value ?? "";
+}
+function formula(cell, text, result) {
+    cell.value = { formula: text, result: clean(result) };
 }
 
-const NUMBER_FORMATS = {
-    currency: '"R$" #,##0.00',
-    int: "#,##0",
-    dec: "#,##0.0",
-    text: "@"
-};
-
-function columnLetter(index) {
-    let result = "";
-    let n = index;
-    while (n > 0) {
-        const mod = (n - 1) % 26;
-        result = String.fromCharCode(65 + mod) + result;
-        n = Math.floor((n - 1) / 26);
-    }
-    return result;
-}
-
-function labelOf(list, value) {
-    return list.find((item) => item.value === value)?.label || value;
-}
-
-function thinBorder() {
-    const side = { style: "thin", color: { argb: BORDER_COLOR } };
-    return { top: side, left: side, bottom: side, right: side };
-}
-
-function summaryTable(sheet, startRow, title, headers, rows, formats = []) {
-    const titleCell = sheet.getCell(`B${startRow}`);
-    titleCell.value = title;
-    titleCell.font = { bold: true, size: 10, color: { argb: HEADER_COLOR } };
-
-    headers.forEach((header, index) => {
-        const cell = sheet.getCell(startRow + 1, 2 + index);
-        cell.value = header;
-        cell.font = { bold: true, size: 9, color: { argb: "FFFFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_COLOR } };
-        cell.border = thinBorder();
+export async function exportMerchandiseExcel({ rows, premises, importInfo, filtersLabel }) {
+    if (!rows?.length) throw new Error("Nenhum produto para exportar.");
+    const wb = new ExcelJS.Workbook();
+    wb.calcProperties.fullCalcOnLoad = true;
+    const ws = wb.addWorksheet("Simulação Compras");
+    const cols = buildColumns(premises.closedMonth);
+    const n = rows.length, end = n + 5;
+    const pos = Object.fromEntries(cols.map((c, i) => [c.key, i]));
+    const vr = key => `$${letter(8 + pos[key])}$6:$${letter(8 + pos[key])}$${end}`;
+    const sr = key => `$${letter(60 + pos[key])}$6:$${letter(60 + pos[key])}$${end}`;
+    const source = (key, r) => `${letter(60 + pos[key])}${r}`;
+    const visible = (key, r) => `${letter(8 + pos[key])}${r}`;
+    const unique = key => [...new Set(rows.map(r => String(r[key] || "")).filter(Boolean))].sort((a,b) => a.localeCompare(b,"pt-BR"));
+    ws.getCell("B2").value = "Simulação de Compra";
+    ws.getCell("B2").font = { size: 16, bold: true, color: { argb: BLUE } };
+    ws.mergeCells("B3:F3");
+    ws.getCell("B3").value = filtersLabel || "Todas as empresas e laboratórios exportados";
+    head(ws.getCell("B4"), "FILTROS GERAIS — combinados", "FFB45309");
+    ws.mergeCells("B4:F4");
+    const filters = [ ["Empresa", "company", 5], ["Laboratório", "lab", 6], ["Curva", "curve", 7] ];
+    filters.forEach(([label,key,r],i) => {
+        ws.getCell(`B${r}`).value = label;
+        ws.getCell(`B${r}`).font = { bold: true, size: 11 };
+        ws.mergeCells(`C${r}:F${r}`);
+        const cell = ws.getCell(`C${r}`);
+        cell.value = "Todos";
+        cell.fill = { type:"pattern", pattern:"solid", fgColor:{argb:"FFFFF3C7"} };
+        const values = ["Todos", ...unique(key)];
+        const lc = letter(100 + i);
+        values.forEach((v,j) => { ws.getCell(`${lc}${j+1}`).value = clean(v); });
+        cell.dataValidation = { type:"list", allowBlank:true, showErrorMessage:true,
+            errorTitle:"Seleção inválida", error:"Escolha uma opção da lista.",
+            formulae:[`$${lc}$1:$${lc}$${values.length}`] };
     });
+    ws.mergeCells("B8:F8");
+    ws.getCell("B8").value = "Todos ou vazio = sem restrição. Os 3 filtros atuam juntos.";
+    ws.getCell("B8").font = { size:9, italic:true };
+    ws.getCell("B9").value = "Produtos encontrados";
+    formula(ws.getCell("C9"), `$BF$${end}`, n);
 
-    rows.forEach((row, rowIndex) => {
-        row.forEach((value, columnIndex) => {
-            const cell = sheet.getCell(startRow + 2 + rowIndex, 2 + columnIndex);
-            cell.value = value;
-            cell.numFmt = formats[columnIndex] || "General";
-            cell.font = { size: 9 };
-            cell.border = thinBorder();
+    head(ws.getCell("B11"), "Premissas"); head(ws.getCell("C11"), "Dias"); head(ws.getCell("D11"), "Estoque Mês");
+    [["A",12],["B",13],["C",14],["OTHER",15]].forEach(([key,r]) => {
+        ws.getCell(`B${r}`).value = key === "OTHER" ? "D E F (Outros)" : `Curva ${key}`;
+        ws.getCell(`C${r}`).value = premises.curveDays[key] || 0;
+        formula(ws.getCell(`D${r}`), `C${r}/30`, (premises.curveDays[key] || 0)/30);
+        ws.getCell(`D${r}`).numFmt = "0.0";
+    });
+    ws.getCell("B16").value = "Critério de preço";
+    ws.getCell("C16").value = PRICE_CRITERIA.find(x => x.value === premises.priceCriteria)?.label || premises.priceCriteria;
+
+    // BF: contador cumulativo de correspondências. BG: índice do resultado.
+    ws.getCell("BF5").value = 0;
+    for (let i=0;i<n;i++) {
+        const r = i+6;
+        const conditions = filters.map(([,key,fr]) => `OR($C$${fr}="Todos",$C$${fr}="",${source(key,r)}=$C$${fr})`).join(",");
+        formula(ws.getCell(`BF${r}`), `BF${r-1}+IF(AND(${conditions}),1,0)`, i+1);
+        formula(ws.getCell(`BG${r}`), `IF(${i+1}<=$BF$${end},MATCH(${i+1},$BF$6:$BF$${end},0),0)`, i+1);
+        cols.forEach((c,j) => {
+            const cell = ws.getCell(r,60+j);
+            let value = clean(rows[i][c.key]);
+            const ref = key => source(key,r);
+            const box = ref("boxSize");
+            const mult = `IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),${box},1)`;
+            const qty = base => `ROUNDUP(MAX(ROUNDUP(${base}/30*${ref("targetDays")},0)-${ref("consolidated")},0)/${mult},0)*${mult}`;
+            const expressions = {
+                consolidated: `SUM(${ref("pending")}:${ref("transferred")})`,
+                targetDays: `IF(${ref("curve")}="A",$C$12,IF(${ref("curve")}="B",$C$13,IF(${ref("curve")}="C",$C$14,$C$15)))`,
+                finalValue: `${ref("finalQty")}*${ref("selectedPrice")}`,
+                periodSuggestion: qty(ref("refQty")),
+                periodValue: `${ref("periodSuggestion")}*${ref("selectedPrice")}`,
+                stockMonths: `IFERROR(${ref("consolidated")}/${ref("avgMonth")},0)`,
+                boxStatus: `IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),"OK","Caixa inválida")`
+            };
+            if (!rows[i].manual) expressions.finalQty = qty(ref("avgMonth"));
+            if (expressions[c.key]) formula(cell,expressions[c.key],value); else cell.value=value;
+            const out = ws.getCell(r,8+j);
+            formula(out, `IF($BG${r}=0,"",INDEX(${sr(c.key)},$BG${r}))`,value);
+            out.numFmt = FMT[c.type] || "General";
+            out.font = { name:"Calibri", size:10 };
         });
+    }
+    cols.forEach((c,j) => {
+        head(ws.getCell(5,8+j),c.label,color(c.key));
+        ws.getColumn(8+j).width = c.width;
     });
-
-    return startRow + 2 + rows.length + 1;
-}
-
-function uniqueValues(rows, field) {
-    return [...new Set(rows.map((row) => String(row[field] || "")).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "pt-BR"));
-}
-
-export async function exportMerchandiseExcel({
-    rows,
-    tables,
-    premises,
-    importInfo,
-    filtersLabel
-}) {
-    const columns = buildColumns(premises.closedMonth);
-    const letters = {};
-    columns.forEach((column, index) => {
-        letters[column.key] = columnLetter(DATA_START_COLUMN + index);
-    });
-
-    const companies = uniqueValues(rows, "company");
-    const laboratories = uniqueValues(rows, "lab");
-    const curves = uniqueValues(rows, "curve");
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet(SHEET_NAME);
-    const lastRow = DATA_FIRST_ROW + rows.length - 1;
-
-    const range = (key) =>
-        `$${letters[key]}$${DATA_FIRST_ROW}:$${letters[key]}$${Math.max(lastRow, DATA_FIRST_ROW)}`;
-
-    sheet.getCell("B2").value = "Simulação de Compra";
-    sheet.getCell("B2").font = { bold: true, size: 14, color: { argb: HEADER_COLOR } };
-    sheet.getCell("B3").value = filtersLabel || "Sem filtros aplicados";
-    sheet.getCell("B3").font = { italic: true, size: 9, color: { argb: "FF6B7785" } };
-
-    // Filtro geral destacado no topo esquerdo
-    const filterLabels = [
-        { cell: "B4", label: "Empresa", values: companies },
-        { cell: "C4", label: "Laboratório", values: laboratories },
-        { cell: "D4", label: "Curva", values: curves }
-    ];
-
-    filterLabels.forEach((field) => {
-        const cell = sheet.getCell(field.cell);
-        cell.value = "";
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3C7" } };
-        cell.border = {
-            top: { style: "medium", color: { argb: "FFB45309" } },
-            left: { style: "medium", color: { argb: "FFB45309" } },
-            bottom: { style: "medium", color: { argb: "FFB45309" } },
-            right: { style: "medium", color: { argb: "FFB45309" } }
-        };
-        cell.font = { bold: true, size: 10, color: { argb: "FF92400E" } };
-
-        if (field.values.length > 0) {
-            sheet.dataValidations.add(`${field.cell}:${field.cell}`, {
-                type: "list",
-                allowBlank: true,
-                formulae: [`"${field.values.join(",")}"`]
-            });
-        }
-    });
-
-    sheet.getCell("A4").value = "Filtros:";
-    sheet.getCell("A4").font = { bold: true, size: 10, color: { argb: "FF92400E" } };
-
-    const headerStyle = {
-        font: { bold: true, color: { argb: "FFFFFFFF" }, size: 9 },
-        fill: { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_COLOR } },
-        alignment: { horizontal: "center", vertical: "middle", wrapText: true }
-    };
-
-    ["B", "C", "D"].forEach((letter) => {
-        Object.assign(sheet.getCell(`${letter}${DATA_HEADER_ROW}`), headerStyle);
-    });
-
-    sheet.getCell(`B${DATA_HEADER_ROW}`).value = "Premissas";
-    sheet.getCell(`C${DATA_HEADER_ROW}`).value = "Dias";
-    sheet.getCell(`D${DATA_HEADER_ROW}`).value = "Estoque Mês";
-
-    const curvePremises = [
-        ["Curva A", premises.curveDays.A],
-        ["Curva B", premises.curveDays.B],
-        ["Curva C", premises.curveDays.C],
-        ["D E F (Outros)", premises.curveDays.OTHER]
-    ];
-
-    curvePremises.forEach(([label, days], index) => {
-        const r = DATA_FIRST_ROW + index;
-        sheet.getCell(`B${r}`).value = label;
-        sheet.getCell(`C${r}`).value = days;
-        sheet.getCell(`D${r}`).value = { formula: `C${r}/30`, result: days / 30 };
-        sheet.getCell(`C${r}`).font = { color: { argb: "FF0000FF" }, bold: true };
-        sheet.getCell(`D${r}`).numFmt = "0.0";
-    });
-
-    sheet.getCell("B10").value = "Critério de preço";
-    sheet.getCell("C10").value = labelOf(PRICE_CRITERIA, premises.priceCriteria);
-    sheet.getCell("B10").font = { bold: true, size: 9 };
-    sheet.getCell("C10").font = { size: 9 };
-
-    let summaryRow = SUMMARY_START_ROW;
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Resultado da simulação",
-        ["Indicador", "Valor"],
-        [
-            ["Itens a comprar", { formula: `COUNTIF(${range("finalQty")},">0")`, result: tables.result.itemsToBuy }],
-            ["Qtde total a comprar", { formula: `SUM(${range("finalQty")})`, result: tables.result.totalQty }],
-            ["Valor total (R$)", { formula: `SUM(${range("finalValue")})`, result: tables.result.totalValue }],
-            ["Valor sugestão período (R$)", { formula: `SUM(${range("periodValue")})`, result: rows.reduce((s, r) => s + r.periodValue, 0) }]
-        ],
-        [null, NUMBER_FORMATS.currency]
-    );
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Por Curva",
-        ["Curva", "Qtde", "Valor"],
-        tables.curveRows.map((row) => {
-            const criteria = row.label === "D E F (Outros)" ? "<>" : row.label;
-            return [
-                row.label,
-                { formula: `SUMIF(${range("curve")},"${criteria}",${range("finalQty")})`, result: row.qty },
-                { formula: `SUMIF(${range("curve")},"${criteria}",${range("finalValue")})`, result: row.value }
-            ];
-        }),
-        [null, NUMBER_FORMATS.int, NUMBER_FORMATS.currency]
-    );
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Por Empresa",
-        ["Empresa", "Qtde", "Valor"],
-        tables.companyRows.map((row) => [row.label, row.qty, row.value]),
-        [null, NUMBER_FORMATS.int, NUMBER_FORMATS.currency]
-    );
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Por Laboratório",
-        ["Laboratório", "Qtde", "Valor"],
-        tables.labRows.map((row) => [row.label, row.qty, row.value]),
-        [null, NUMBER_FORMATS.int, NUMBER_FORMATS.currency]
-    );
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Comparativo de Cenários — Custo Total",
-        ["Cenário", "Custo Total", "A mais vs menor preço"],
-        tables.scenarioRows.map((row) => [row.label, row.value, row.diff === 0 ? "—" : row.diff]),
-        [null, NUMBER_FORMATS.currency, NUMBER_FORMATS.currency]
-    );
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Distribuição por origem do preço",
-        ["Origem", "Qtde", "Valor", "Preço médio"],
-        tables.originRows.map((row) => [row.label, row.qty, row.value, row.avgPrice]),
-        [null, NUMBER_FORMATS.int, NUMBER_FORMATS.currency, NUMBER_FORMATS.currency]
-    );
-
-    summaryRow = summaryTable(
-        sheet, summaryRow, "Compra via última compra",
-        ["Indicador", "Valor"],
-        [
-            ["Qtde comprada via última compra", tables.viaLast.qty],
-            ["Valor via última compra", tables.viaLast.value]
-        ],
-        [null, NUMBER_FORMATS.currency]
-    );
-
-    summaryTable(
-        sheet, summaryRow, "Alertas",
-        ["Indicador", "Valor"],
-        [
-            ["Saldo transferido", tables.transferred],
-            ["Itens com caixa inválida", tables.invalidBox],
-            ["Itens sem preço com compra", tables.noPriceWithBuy]
-        ],
-        [null, NUMBER_FORMATS.int]
-    );
-
-    columns.forEach((column, index) => {
-        const cell = sheet.getCell(DATA_HEADER_ROW, DATA_START_COLUMN + index);
-        const color = columnColor(column.key);
-
-        cell.value = column.label;
-        cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 9 };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
-        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-        cell.border = thinBorder();
-        sheet.getColumn(DATA_START_COLUMN + index).width = column.width;
-    });
-
-    sheet.getColumn("A").width = 10;
-    sheet.getColumn("B").width = 32;
-    sheet.getColumn("C").width = 16;
-    sheet.getColumn("D").width = 16;
-    sheet.getColumn("E").width = 16;
-    sheet.getColumn("F").width = 18;
-    sheet.getRow(DATA_HEADER_ROW).height = 32;
-
-    rows.forEach((row, rowIndex) => {
-        const r = DATA_FIRST_ROW + rowIndex;
-        const ref = (key) => `${letters[key]}${r}`;
-        const box = ref("boxSize");
-        const boxExpr = `IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),${box},1)`;
-        const suggest = (monthlyRef) =>
-            `ROUNDUP(MAX(ROUNDUP(${monthlyRef}/30*${ref("targetDays")},0)-${ref("consolidated")},0)/${boxExpr},0)*${boxExpr}`;
-
-        const formulas = {
-            consolidated: { formula: `SUM(${ref("pending")}:${ref("transferred")})`, result: row.consolidated },
-            targetDays: {
-                formula: `IF(${ref("curve")}="A",$C$6,IF(${ref("curve")}="B",$C$7,IF(${ref("curve")}="C",$C$8,$C$9)))`,
-                result: row.targetDays
-            },
-            finalQty: row.manual ? row.finalQty : { formula: suggest(ref("avgMonth")), result: row.finalQty },
-            finalValue: { formula: `${ref("finalQty")}*${ref("selectedPrice")}`, result: row.finalValue },
-            periodSuggestion: { formula: suggest(ref("refQty")), result: row.periodSuggestion },
-            periodValue: { formula: `${ref("periodSuggestion")}*${ref("selectedPrice")}`, result: row.periodValue },
-            stockMonths: { formula: `IFERROR(${ref("consolidated")}/${ref("avgMonth")},0)`, result: row.stockMonths },
-            boxStatus: {
-                formula: `IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),"OK","Caixa inválida")`,
-                result: row.boxStatus
-            }
-        };
-
-        columns.forEach((column, columnIndex) => {
-            const cell = sheet.getCell(r, DATA_START_COLUMN + columnIndex);
-            const value = formulas[column.key] ?? row[column.key];
-
-            cell.value = value === undefined || value === null ? "" : value;
-            cell.numFmt = NUMBER_FORMATS[column.type] || "General";
-            cell.font = { size: 9 };
-            cell.border = thinBorder();
-
-            if (column.key === "finalQty" && row.manual) {
-                cell.font = { size: 9, bold: true, color: { argb: "FF92400E" } };
-                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF3C7" } };
-            }
-        });
-    });
-
-    const lastDataColumn = DATA_START_COLUMN + columns.length - 1;
-
-    sheet.views = [
-        { state: "frozen", xSplit: DATA_START_COLUMN - 1, ySplit: DATA_HEADER_ROW }
-    ];
-
-    sheet.autoFilter = {
-        from: { row: DATA_HEADER_ROW, column: DATA_START_COLUMN },
-        to: { row: DATA_HEADER_ROW, column: DATA_START_COLUMN + columns.length - 1 }
-    };
-
-    const baseSheet = workbook.addWorksheet("Planilha1");
-    baseSheet.addRow(importInfo.headers);
-    baseSheet.getRow(1).font = { bold: true };
-    rows.forEach((row) => baseSheet.addRow(row.raw));
-
-    const rulesSheet = workbook.addWorksheet("Regras da consolidação");
-    const rules = [
-        ["Regra", "Aplicação"],
-        ["Filtro geral", "As células destacadas em amarelo no topo esquerdo (B4, C4, D4) mostram Empresa, Laboratório e Curva. A tabela exportada já contém somente os itens filtrados no app."],
-        ["Filtro da tabela", "Use as setas de filtro no cabeçalho da tabela principal para refinar Empresa, Laboratório, Curva e demais colunas."],
-        ["Saldo consolidado", "Pendência + estoque + bloqueado + saldo transferido da própria empresa."],
-        ["Compra por caixa", "Necessidade arredondada para cima ao múltiplo inteiro positivo de Cx Padrao. Zero de necessidade permanece zero."],
-        ["Caixa inválida", "Zero, vazia, fracionária ou negativa: múltiplo 1; sinalização na coluna Validação Cx."],
-        ["Qtde a Comprar", "ARREDONDAR.PARA.CIMA(Média Mês / 30 x Dias da curva) - saldo consolidado, em múltiplos da caixa."],
-        ["Sugestão Compra Período", "Mesma fórmula, usando a Qtde Ref. Período escolhida nas premissas."],
-        ["Preços", "Fonte e critério definidos nas premissas. Sem preço positivo, usa a última compra como estimativa."],
-        ["Tabelas resumo", "Posicionadas à esquerda, no topo da aba Simulação Compras."],
-        ["Base", `Arquivo importado: ${importInfo.fileName}`]
-    ];
-
-    rules.forEach((rule) => rulesSheet.addRow(rule));
-    rulesSheet.getRow(1).font = { bold: true };
-    rulesSheet.getColumn(1).width = 26;
-    rulesSheet.getColumn(2).width = 110;
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-
-    const date = new Date().toISOString().slice(0, 10);
-    const link = document.createElement("a");
-
-    link.href = URL.createObjectURL(blob);
-    link.download = `Simulacao-Compra-${date}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    // Resumos referenciam exclusivamente a tabela de resultados filtrados.
+    let at = 18;
+    function table(title, headers, items, formats) {
+        ws.mergeCells(`B${at}:F${at}`); head(ws.getCell(`B${at}`), title); at++;
+        headers.forEach((h,j) => head(ws.getCell(at,j+2),h)); at++;
+        for (const item of items) {
+            item.forEach((v,j) => {
+                const cell=ws.getCell(at,j+2);
+                if (v && typeof v === "object") formula(cell,v.f,v.v); else cell.value=clean(v);
+                cell.numFmt=formats[j] || "General";
+                cell.font={name:"Calibri",size:10};
+            }); at++;
+        } at+=2;
+    }
+    const sum = key => ({f:`SUM(${vr(key)})`,v:rows.reduce((s,r)=>s+(Number(r[key])||0),0)});
+    table("Resultado da simulação",["Indicador","Valor"],[
+        ["Itens a comprar",{f:`COUNTIF(${vr("finalQty")},">0")`,v:rows.filter(r=>r.finalQty>0).length}],
+        ["Qtde total a comprar",sum("finalQty")]
+    ],[null,FMT.int]);
+    table("Valores da simulação",["Indicador","Valor"],[
+        ["Valor selecionado",sum("finalValue")],["Valor sugestão período",sum("periodValue")]
+    ],[null,FMT.currency]);
+    function group(title,key,values) {
+        table(title,["Grupo","Qtde","Valor"],values.map(label=>{
+            const matching=rows.filter(r=>String(r[key]||"")===label);
+            const criterion='"'+label.replace(/~/g,"~~").replace(/\*/g,"~*").replace(/\?/g,"~?").replace(/"/g,'""')+'"';
+            return [label,{f:`SUMIF(${vr(key)},${criterion},${vr("finalQty")})`,v:matching.reduce((s,r)=>s+r.finalQty,0)},
+                {f:`SUMIF(${vr(key)},${criterion},${vr("finalValue")})`,v:matching.reduce((s,r)=>s+r.finalValue,0)}];
+        }),[null,FMT.int,FMT.currency]);
+    }
+    group("Por curva (cada curva separada)","curve",unique("curve"));
+    group("Por empresa","company",unique("company"));
+    group("Por laboratório","lab",unique("lab"));
+    const scenario = key => ({f:`SUMPRODUCT(${vr("finalQty")},${vr(key)})`,v:rows.reduce((s,r)=>s+r.finalQty*r[key],0)});
+    table("Comparativo de cenários",["Cenário","Custo total"],[
+        ["Menor preço",scenario("lowestPrice")],["Própria empresa",scenario("ownPrice")],
+        ["Preço selecionado",scenario("selectedPrice")]
+    ],[null,FMT.currency]);
+    group("Distribuição por origem do preço","priceOrigin",unique("priceOrigin"));
+    table("Compra via última compra",["Indicador","Quantidade"],[
+        ["Quantidade",{f:`SUMIF(${vr("priceViaLast")},"Sim",${vr("finalQty")})`,v:rows.filter(r=>r.priceViaLast==="Sim").reduce((s,r)=>s+r.finalQty,0)}]
+    ],[null,FMT.int]);
+    table("Valor via última compra",["Indicador","Valor"],[
+        ["Valor",{f:`SUMIF(${vr("priceViaLast")},"Sim",${vr("finalValue")})`,v:rows.filter(r=>r.priceViaLast==="Sim").reduce((s,r)=>s+r.finalValue,0)}]
+    ],[null,FMT.currency]);
+    table("Alertas",["Indicador","Quantidade"],[
+        ["Saldo transferido",sum("transferred")],
+        ["Caixa inválida",{f:`COUNTIF(${vr("boxStatus")},"Caixa inválida")`,v:rows.filter(r=>!r.boxValid).length}],
+        ["Sem preço com compra",{f:`COUNTIFS(${vr("finalQty")},">0",${vr("selectedPrice")},"<=0")`,v:rows.filter(r=>r.finalQty>0 && r.selectedPrice<=0).length}]
+    ],[null,FMT.int]);
+    ws.getColumn(2).width=36;
+    ws.getColumn(3).width=22;
+    [4,5,6].forEach(c=>ws.getColumn(c).width=18);
+    for (let c=58;c<=102;c++) ws.getColumn(c).hidden=true;
+    ws.getRow(5).height=38;
+    ws.views=[{state:"frozen",xSplit:7,ySplit:5,topLeftCell:"H6"}];
+    ws.autoFilter={from:{row:5,column:8},to:{row:end,column:7+cols.length}};
+    const base=wb.addWorksheet("Planilha1");
+    base.addRow((importInfo.headers||[]).map(clean));
+    rows.forEach(r=>base.addRow((r.raw||[]).map(clean)));
+    const rules=wb.addWorksheet("Regras da consolidação");
+    [ ["Regra","Aplicação"],
+      ["Filtros","Empresa, laboratório e curva combinam-se por E. Todos ou vazio desativa o critério."],
+      ["Listas","As listas contêm os valores exportados. Não são listas dependentes; combinações sem correspondência resultam em zero produtos."],
+      ["Resultados","A tabela à direita compacta os produtos encontrados. As linhas restantes ficam vazias, não ocultas."],
+      ["Quantidade","Edite as premissas C12:C15 para recalcular. Quantidades manuais previamente definidas no app são preservadas."],
+      ["Exportação","Somente produtos enviados pelo app estão disponíveis; um filtro aplicado antes de exportar limita a base deste arquivo."],
+      ["Desempenho","Grandes exportações exigem recálculo de muitas fórmulas."],
+      ["Base",importInfo.fileName || ""] ].forEach(r=>rules.addRow(r));
+    rules.getColumn(1).width=25; rules.getColumn(2).width=110;
+    const buffer=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=`Simulacao-Compra-${new Date().toISOString().slice(0,10)}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
