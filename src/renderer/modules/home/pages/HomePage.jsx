@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 
-
 import {
     Home,
     Package,
@@ -14,14 +13,9 @@ import {
     Settings
 } from "lucide-react";
 
-
 import usePermissions from "../../auth/hooks/usePermissions";
 
-
 import "../styles/home.css";
-
-
-
 
 const MODULES = [
     {
@@ -68,6 +62,13 @@ const MODULES = [
         description: "Gestão de compras e curva ABC."
     },
     {
+        path: "/merchandise-purchases",
+        moduleKey: "purchases",
+        icon: ShoppingCart,
+        title: "Compras de Mercadorias",
+        description: "Simulação de compras por empresa e laboratório, com filtros, gráficos e exportação Excel."
+    },
+    {
         path: "/industry-contacts",
         moduleKey: "industry-contacts",
         icon: Phone,
@@ -97,90 +98,55 @@ const MODULES = [
     }
 ];
 
-
-
-
 function HomePage() {
     const navigate = useNavigate();
-
-
-
 
     const {
         isLoading,
         canAccessModule
     } = usePermissions();
 
-
-
-
-    const visibleModules =
-        MODULES.filter(
-            (module) =>
-                canAccessModule(
-                    module.moduleKey
-                )
-        );
-
-
-
+    const visibleModules = MODULES.filter(
+        (module) => canAccessModule(module.moduleKey)
+    );
 
     return (
         <div className="home-page">
             <div className="home-grid">
-                {
-                    isLoading ? (
-                        <p>
-                            Carregando módulos...
-                        </p>
-                    ) : (
-                        visibleModules.map((module) => {
-                            const Icon =
-                                module.icon;
+                {isLoading ? (
+                    <p>Carregando módulos...</p>
+                ) : (
+                    visibleModules.map((module) => {
+                        const Icon = module.icon;
 
+                        return (
+                            <button
+                                key={module.path}
+                                type="button"
+                                className="home-card"
+                                onClick={() => navigate(module.path)}
+                            >
+                                <span className="home-card-icon">
+                                    <Icon
+                                        size={22}
+                                        strokeWidth={1.8}
+                                    />
+                                </span>
 
+                                <span className="home-card-title">
+                                    {module.title}
+                                </span>
 
-
-                            return (
-                                <button
-                                    key={module.path}
-                                    type="button"
-                                    className="home-card"
-                                    onClick={() =>
-                                        navigate(module.path)
-                                    }
-                                >
-                                    <span className="home-card-icon">
-                                        <Icon
-                                            size={22}
-                                            strokeWidth={1.8}
-                                        />
-                                    </span>
-
-
-
-
-                                    <span className="home-card-title">
-                                        {module.title}
-                                    </span>
-
-
-
-
-                                    <span className="home-card-description">
-                                        {module.description}
-                                    </span>
-                                </button>
-                            );
-                        })
-                    )
-                }
+                                <span className="home-card-description">
+                                    {module.description}
+                                </span>
+                            </button>
+                        );
+                    })
+                )}
             </div>
         </div>
     );
 }
-
-
-
 
 export default HomePage;
