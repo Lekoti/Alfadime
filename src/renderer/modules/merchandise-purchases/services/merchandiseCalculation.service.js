@@ -302,6 +302,109 @@ export function summarizeRows(rows) {
     );
 }
 
+function groupBy(rows, field) {
+    const groups = new Map();
+
+    rows.forEach((row) => {
+        const key = String(row[field] || "Não informado");
+
+        if (!groups.has(key)) {
+            groups.set(key, { label: key, qty: 0, value: 0, count: 0 });
+        }
+
+        const group = groups.get(key);
+
+        group.qty += row.finalQty;
+        group.value += row.finalValue;
+        group.count += 1;
+    });
+
+    return [...groups.values()]
+        .map((group) => ({
+            ...group,
+            avgPrice: group.qty > 0 ? group.value / group.qty : 0
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+}
+
+export function buildSummaryTables(rows) {
+    const curveOrder = ["A", "B", "C", "D E F (Outros)"];
+    const curves = new Map(
+        curveOrder.map((label) => [
+            label,
+            { label, qty: 0, value: 0, count: 0 }
+        ])
+    );
+
+    rows.forEach((row) => {
+        const key = ["A", "B", "C"].includes(row.curve)
+            ? row.curve
+            : "D E F (Outros)";
+        const group = curves.get(key);
+
+        group.qty += row.finalQty;
+        group.value += row.finalValue;
+        group.count += 1;
+    });
+
+    const curveRows = [...curves.values()];
+    const companyRows = groupBy(rows, "company");
+    const labRows = groupBy(rows, "lab");
+
+    const scenarioRows = [
+        {
+            label: "Menor preço",
+            value: rows.reduce((sum, row) => sum + row.finalQty * row.lowestPrice, 0),
+            extra: null
+        },
+        {
+            label: "Própria empresa",
+            value: rows.reduce((sum, row) => sum + row.finalQty * row.ownPrice, 0),
+            extra: null
+        },
+        {
+            label: "Preço selecionado",
+            value: rows.reduce((sum, row) => sum + row.finalValue, 0),
+            extra: null
+        }
+    ];
+
+    const lowest = scenarioRows[0].value;
+
+    scenarioRows.forEach((row) => {
+        row.diff = row.value - lowest;
+    });
+
+    const originRows = groupBy(rows, "priceOrigin").map((row) => ({
+        ...row,
+        avgPrice: row.qty > 0 ? row.value / row.qty : 0
+    }));
+
+    const viaLastRows = rows.filter((row) => row.priceViaLast === "Sim");
+
+    return {
+        result: {
+            itemsToBuy: rows.filter((row) => row.finalQty > 0).length,
+            totalQty: rows.reduce((sum, row) => sum + row.finalQty, 0),
+            totalValue: rows.reduce((sum, row) => sum + row.finalValue, 0)
+        },
+        curveRows,
+        companyRows,
+        labRows,
+        scenarioRows,
+        originRows,
+        viaLast: {
+            qty: viaLastRows.reduce((sum, row) => sum + row.finalQty, 0),
+            value: viaLastRows.reduce((sum, row) => sum + row.finalValue, 0)
+        },
+        transferred: rows.reduce((sum, row) => sum + row.transferred, 0),
+        invalidBox: rows.filter((row) => !row.boxValid).length,
+        noPriceWithBuy: rows.filter(
+            (row) => row.finalQty > 0 && row.selectedPrice <= 0
+        ).length
+    };
+}
+
 export function uniqueSorted(rows, field) {
     return [...new Set(rows.map((row) => row[field]).filter(Boolean))].sort(
         (a, b) => String(a).localeCompare(String(b), "pt-BR")

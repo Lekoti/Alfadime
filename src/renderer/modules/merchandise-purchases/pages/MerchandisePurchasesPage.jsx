@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import MerchandiseFilters from "../components/MerchandiseFilters";
 import MerchandiseImportPanel from "../components/MerchandiseImportPanel";
 import MerchandisePremises from "../components/MerchandisePremises";
+import MerchandiseSummaryTables from "../components/MerchandiseSummaryTables";
 import MerchandiseTable from "../components/MerchandiseTable";
 import { buildColumns } from "../constants/merchandise-purchases.constants";
 import { useMerchandisePurchases } from "../hooks/useMerchandisePurchases";
+import { buildSummaryTables } from "../services/merchandiseCalculation.service";
 import { exportMerchandiseExcel } from "../services/merchandiseExport.service";
 import "../styles/merchandise-purchases.css";
 
@@ -42,6 +44,11 @@ export default function MerchandisePurchasesPage() {
     const columns = useMemo(
         () => buildColumns(premises.closedMonth),
         [premises.closedMonth]
+    );
+
+    const tables = useMemo(
+        () => (rows.length > 0 ? buildSummaryTables(rows) : null),
+        [rows]
     );
 
     const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -108,6 +115,7 @@ export default function MerchandisePurchasesPage() {
 
             await exportMerchandiseExcel({
                 rows: exportRows,
+                tables: buildSummaryTables(exportRows),
                 premises,
                 importInfo: imported,
                 filtersLabel: buildFiltersLabel()
@@ -258,15 +266,21 @@ export default function MerchandisePurchasesPage() {
                 {loading ? (
                     <div className="mp-loading">Importando e calculando a planilha...</div>
                 ) : imported ? (
-                    <MerchandiseTable
-                        rows={pageRows}
-                        columns={columns}
-                        selectedIds={selectedIds}
-                        allSelected={allSelected}
-                        onToggleSelection={toggleSelection}
-                        onToggleAll={toggleAll}
-                        onQuantityChange={setQuantity}
-                    />
+                    <>
+                        <MerchandiseTable
+                            rows={pageRows}
+                            columns={columns}
+                            selectedIds={selectedIds}
+                            allSelected={allSelected}
+                            onToggleSelection={toggleSelection}
+                            onToggleAll={toggleAll}
+                            onQuantityChange={setQuantity}
+                        />
+
+                        <div className="mp-summary-tables-wrapper">
+                            <MerchandiseSummaryTables tables={tables} />
+                        </div>
+                    </>
                 ) : (
                     <div className="mp-loading">Nenhuma planilha importada.</div>
                 )}
