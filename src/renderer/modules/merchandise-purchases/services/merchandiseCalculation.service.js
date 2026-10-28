@@ -1,412 +1,85 @@
-import { MONTH_LABELS } from "../constants/merchandise-purchases.constants";
-
-const EPSILON = 1e-9;
-
-function roundUp(value) {
-    return Math.ceil(value - EPSILON);
-}
-
-function curveKey(curve) {
-    const key = String(curve || "").trim().toUpperCase();
-
-    return ["A", "B", "C"].includes(key) ? key : "OTHER";
-}
-
-export function getBoxMultiple(box) {
-    return Number.isInteger(box) && box > 0 ? box : 1;
-}
-
+const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const curveKey = value => ["A","B","C"].includes(value) ? value : "OTHER";
+export function getBoxMultiple(box) { return Number.isInteger(box) && box > 0 ? box : 1; }
 export function suggestQuantity(monthly, days, balance, box) {
-    const multiple = getBoxMultiple(box);
-    const need = Math.max(roundUp((monthly / 30) * days) - balance, 0);
-
-    return Math.ceil(need / multiple) * multiple;
+    const m = getBoxMultiple(box);
+    return Math.ceil(Math.max(Math.ceil(monthly / 30 * days - 1e-9) - balance, 0) / m) * m;
 }
-
-function average(months, from, to) {
-    const size = to - from + 1;
-    let total = 0;
-
-    for (let i = from; i <= to; i += 1) {
-        total += months[i - 1];
-    }
-
-    return size > 0 ? total / size : 0;
-}
-
-function pickReference(kind, data) {
-    switch (kind) {
-        case "min":
-            return data.minQty;
-        case "avgMonth":
-            return data.avgMonth;
-        case "avg3":
-            return data.avg3;
-        case "avg6":
-            return data.avg6;
-        case "avgAll":
-            return data.avgAll;
-        default:
-            return data.maxQty;
-    }
-}
-
 export function computeRows(rows, premises) {
-    const closed = Math.min(12, Math.max(1, Number(premises.closedMonth) || 12));
-    const source = premises.priceSource;
-
-    const groupKey = (row) => row.barcode || `cod:${row.productCode}`;
-
-    const basePrices = rows.map((row) => {
-        const price = Number(row[source]) || 0;
-
-        if (price > 0) {
-            return { price, viaLast: false };
-        }
-
-        const last = Number(row.lastPurchase) || 0;
-
-        return last > 0
-            ? { price: last, viaLast: true }
-            : { price: 0, viaLast: false };
+    const closed = Math.min(12,Math.max(1,Number(premises.closedMonth)||12));
+    const key = r => r.barcode || `cod:${r.productCode}`;
+    const prices = rows.map(r => {
+        const p = Number(r[premises.priceSource]) || 0;
+        return p > 0 ? {price:p,viaLast:false} : {price:Math.max(0,Number(r.lastPurchase)||0),viaLast:(Number(r.lastPurchase)||0)>0};
     });
-
     const cheapest = new Map();
-
-    rows.forEach((row, index) => {
-        const base = basePrices[index];
-
-        if (base.price <= 0) {
-            return;
-        }
-
-        const key = groupKey(row);
-        const current = cheapest.get(key);
-
-        if (!current || base.price < current.price) {
-            cheapest.set(key, {
-                price: base.price,
-                company: row.company,
-                viaLast: base.viaLast
-            });
-        }
+    rows.forEach((r,i) => {
+        const p=prices[i];
+        if(p.price>0 && (!cheapest.has(key(r)) || p.price<cheapest.get(key(r)).price)) cheapest.set(key(r),{...p,company:r.company});
     });
-
-    return rows.map((row, index) => {
-        const months = row.months;
-        const base = basePrices[index];
-        const low = cheapest.get(groupKey(row));
-
-        const avgAll = average(months, 1, closed);
-        const avg6 = average(months, Math.max(1, closed - 5), closed);
-        const avg3 = average(months, Math.max(1, closed - 2), closed);
-        const avgMonth =
-            row.avgMonthSheet === null || row.avgMonthSheet === undefined
-                ? avgAll
-                : row.avgMonthSheet;
-
-        let maxIndex = 0;
-        let minIndex = 0;
-
-        for (let i = 1; i < closed; i += 1) {
-            if (months[i] > months[maxIndex]) {
-                maxIndex = i;
-            }
-
-            if (months[i] < months[minIndex]) {
-                minIndex = i;
-            }
-        }
-
-        const hasHistory = months.slice(0, closed).some((value) => value > 0);
-        const maxQty = hasHistory ? months[maxIndex] : 0;
-        const minQty = hasHistory ? months[minIndex] : 0;
-
-        const pending = 0;
-        const transferred = 0;
-        const consolidated = row.stock + row.blocked + transferred + pending;
-        const targetDays = premises.curveDays[curveKey(row.curve)] ?? 0;
-
-        const useLowest = premises.priceCriteria === "lowest";
-        const selectedPrice = useLowest ? (low ? low.price : 0) : base.price;
-        const viaLast = useLowest ? Boolean(low && low.viaLast) : base.viaLast;
-
-        let priceOrigin = "Sem preço";
-
-        if (selectedPrice > 0) {
-            if (viaLast) {
-                priceOrigin = "Última compra";
-            } else {
-                priceOrigin = useLowest && low ? low.company : row.company;
-            }
-        }
-
-        let lowestCompany = "Sem preço";
-
-        if (low) {
-            lowestCompany = low.price === base.price ? "Igual" : low.company;
-        }
-
-        const data = {
-            avgMonth,
-            avgAll,
-            avg6,
-            avg3,
-            maxQty,
-            minQty
-        };
-
-        const refQty = pickReference(premises.periodReference, data);
-        const boxValid = Number.isInteger(row.boxSize) && row.boxSize > 0;
-
-        const suggestedQty = suggestQuantity(
-            avgMonth,
-            targetDays,
-            consolidated,
-            row.boxSize
-        );
-
-        const periodSuggestion = suggestQuantity(
-            refQty,
-            targetDays,
-            consolidated,
-            row.boxSize
-        );
-
-        return {
-            ...row,
-            id: index,
-            avgMonth,
-            avgAll,
-            avg6,
-            avg3,
-            hasHistory,
-            maxPeriod: hasHistory ? MONTH_LABELS[maxIndex] : "Sem histórico",
-            maxQty,
-            minPeriod: hasHistory ? MONTH_LABELS[minIndex] : "Sem histórico",
-            minQty,
-            pending,
-            transferred,
-            consolidated,
-            targetDays,
-            ownPrice: base.price,
-            lowestPrice: low ? low.price : 0,
-            lowestCompany,
-            selectedPrice,
-            priceOrigin,
-            priceViaLast: selectedPrice > 0 ? (viaLast ? "Sim" : "Não") : "",
-            boxValid,
-            boxStatus: boxValid ? "OK" : "Caixa inválida",
-            stockMonths: avgMonth > 0 ? consolidated / avgMonth : 0,
-            refQty,
-            suggestedQty,
-            periodSuggestion,
-            periodValue: periodSuggestion * selectedPrice
-        };
+    return rows.map((r,i) => {
+        const months = Array.from({length:closed},(_,j)=>Number(r.months?.[j])||0);
+        const avg = size => {const values=months.slice(-Math.min(size,closed));return values.reduce((s,v)=>s+v,0)/values.length;};
+        const avgAll=avg(closed), avg6=avg(6), avg3=avg(3);
+        const avgMonth=r.avgMonthSheet==null ? avgAll : r.avgMonthSheet;
+        const hasHistory=months.some(v=>v>0);
+        const maxQty=hasHistory?Math.max(...months):0, minQty=hasHistory?Math.min(...months):0;
+        const peakMonths=hasHistory?months.map((v,j)=>v===maxQty?MONTHS[j]:null).filter(Boolean):[];
+        const lowMonths=hasHistory?months.map((v,j)=>v===minQty?MONTHS[j]:null).filter(Boolean):[];
+        const highMonths=hasHistory?months.map((v,j)=>v>avgAll?MONTHS[j]:null).filter(Boolean):[];
+        const highInfo=highMonths.length ? `Alta: ${highMonths.join(", ")}` : "Sem meses acima da média";
+        const maxPeriod=hasHistory?`${peakMonths.join(", ")} | ${highInfo}`:"Sem histórico";
+        const minPeriod=hasHistory?lowMonths.join(", "):"Sem histórico";
+        const base=prices[i], low=cheapest.get(key(r));
+        const chosen=premises.priceCriteria==="lowest" ? low : {...base,company:r.company};
+        const selectedPrice=chosen?.price||0;
+        const viaLast=Boolean(chosen?.viaLast);
+        const pending=0, transferred=0, consolidated=r.stock+r.blocked;
+        const targetDays=premises.curveDays[curveKey(r.curve)]??0;
+        const refs={max:maxQty,min:minQty,avgMonth,avg3,avg6,avgAll};
+        const refQty=refs[premises.periodReference]??maxQty;
+        const suggestedQty=suggestQuantity(avgMonth,targetDays,consolidated,r.boxSize);
+        const periodSuggestion=suggestQuantity(refQty,targetDays,consolidated,r.boxSize);
+        const boxValid=Number.isInteger(r.boxSize)&&r.boxSize>0;
+        return {...r,id:i,avgMonth,avgAll,avg6,avg3,hasHistory,maxPeriod,maxQty,minPeriod,minQty,highMonths,
+            pending,transferred,consolidated,targetDays,ownPrice:base.price,lowestPrice:low?.price||0,
+            lowestCompany:low?(low.price===base.price?"Igual":low.company):"Sem preço",
+            selectedPrice,priceOrigin:selectedPrice>0?(viaLast?"Última compra":chosen.company):"Sem preço",
+            priceViaLast:selectedPrice>0?(viaLast?"Sim":"Não"):"",boxValid,boxStatus:boxValid?"OK":"Caixa inválida",
+            stockMonths:avgMonth>0?consolidated/avgMonth:0,refQty,suggestedQty,periodSuggestion,periodValue:periodSuggestion*selectedPrice};
     });
 }
-
-export function applyOverrides(rows, overrides) {
-    return rows.map((row) => {
-        const override = overrides[row.id];
-        const manual = override !== undefined;
-        const finalQty = manual ? override : row.suggestedQty;
-
-        return {
-            ...row,
-            manual,
-            finalQty,
-            finalValue: finalQty * row.selectedPrice
-        };
+export function applyOverrides(rows,overrides) {
+    return rows.map(r=>{const manual=overrides[r.id]!==undefined;const finalQty=manual?overrides[r.id]:r.suggestedQty;return {...r,manual,finalQty,finalValue:finalQty*r.selectedPrice};});
+}
+const normalize = value => String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+export function filterRows(rows,f) {
+    const search=normalize(f.search).trim();
+    return rows.filter(r=>{
+        if(f.company&&r.company!==f.company || f.laboratory&&r.lab!==f.laboratory || f.group&&r.group!==f.group || f.curve&&r.curve!==f.curve) return false;
+        const tests={tobuy:r.finalQty>0,nobuy:!(r.finalQty>0),noprice:!(r.selectedPrice>0),invalidbox:!r.boxValid,nohistory:!r.hasHistory,manual:r.manual};
+        if(f.status&&Object.hasOwn(tests,f.status)&&!tests[f.status])return false;
+        return !search||normalize(`${r.company} ${r.productCode} ${r.barcode} ${r.description} ${r.lab}`).includes(search);
     });
 }
-
-function normalizeText(value) {
-    return String(value ?? "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-}
-
-export function filterRows(rows, filters) {
-    const search = normalizeText(filters.search).trim();
-
-    return rows.filter((row) => {
-        if (filters.company && row.company !== filters.company) return false;
-        if (filters.laboratory && row.lab !== filters.laboratory) return false;
-        if (filters.group && row.group !== filters.group) return false;
-        if (filters.curve && row.curve !== filters.curve) return false;
-
-        switch (filters.status) {
-            case "tobuy":
-                if (!(row.finalQty > 0)) return false;
-                break;
-            case "nobuy":
-                if (row.finalQty > 0) return false;
-                break;
-            case "noprice":
-                if (row.selectedPrice > 0) return false;
-                break;
-            case "invalidbox":
-                if (row.boxValid) return false;
-                break;
-            case "nohistory":
-                if (row.hasHistory) return false;
-                break;
-            case "manual":
-                if (!row.manual) return false;
-                break;
-            default:
-                break;
-        }
-
-        if (search) {
-            const haystack = normalizeText(
-                `${row.company} ${row.productCode} ${row.barcode} ${row.description} ${row.lab}`
-            );
-
-            if (!haystack.includes(search)) return false;
-        }
-
-        return true;
-    });
-}
-
 export function summarizeRows(rows) {
-    return rows.reduce(
-        (summary, row) => {
-            summary.products += 1;
-
-            if (row.finalQty > 0) {
-                summary.itemsToBuy += 1;
-                summary.totalQty += row.finalQty;
-            }
-
-            summary.totalValue += row.finalValue;
-            summary.periodValue += row.periodValue;
-
-            if (row.selectedPrice <= 0) summary.noPrice += 1;
-            if (!row.boxValid) summary.invalidBox += 1;
-
-            return summary;
-        },
-        {
-            products: 0,
-            itemsToBuy: 0,
-            totalQty: 0,
-            totalValue: 0,
-            periodValue: 0,
-            noPrice: 0,
-            invalidBox: 0
-        }
-    );
+    return rows.reduce((s,r)=>{s.products++;if(r.finalQty>0){s.itemsToBuy++;s.totalQty+=r.finalQty;}s.totalValue+=r.finalValue;s.periodValue+=r.periodValue;if(r.selectedPrice<=0)s.noPrice++;if(!r.boxValid)s.invalidBox++;return s;},
+        {products:0,itemsToBuy:0,totalQty:0,totalValue:0,periodValue:0,noPrice:0,invalidBox:0});
 }
-
-function groupBy(rows, field) {
-    const groups = new Map();
-
-    rows.forEach((row) => {
-        const key = String(row[field] || "Não informado");
-
-        if (!groups.has(key)) {
-            groups.set(key, { label: key, qty: 0, value: 0, count: 0 });
-        }
-
-        const group = groups.get(key);
-
-        group.qty += row.finalQty;
-        group.value += row.finalValue;
-        group.count += 1;
-    });
-
-    return [...groups.values()]
-        .map((group) => ({
-            ...group,
-            avgPrice: group.qty > 0 ? group.value / group.qty : 0
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+function groupBy(rows,field) {
+    const map=new Map();
+    rows.forEach(r=>{const label=String(r[field]||"Não informado");if(!map.has(label))map.set(label,{label,qty:0,value:0,count:0});const g=map.get(label);g.qty+=r.finalQty;g.value+=r.finalValue;g.count++;});
+    return [...map.values()].map(g=>({...g,avgPrice:g.qty>0?g.value/g.qty:0})).sort((a,b)=>a.label.localeCompare(b.label,"pt-BR"));
 }
-
 export function buildSummaryTables(rows) {
-    const curveOrder = ["A", "B", "C", "D E F (Outros)"];
-    const curves = new Map(
-        curveOrder.map((label) => [
-            label,
-            { label, qty: 0, value: 0, count: 0 }
-        ])
-    );
-
-    rows.forEach((row) => {
-        const key = ["A", "B", "C"].includes(row.curve)
-            ? row.curve
-            : "D E F (Outros)";
-        const group = curves.get(key);
-
-        group.qty += row.finalQty;
-        group.value += row.finalValue;
-        group.count += 1;
-    });
-
-    const curveRows = [...curves.values()];
-    const companyRows = groupBy(rows, "company");
-    const labRows = groupBy(rows, "lab");
-
-    const scenarioRows = [
-        {
-            label: "Menor preço",
-            value: rows.reduce((sum, row) => sum + row.finalQty * row.lowestPrice, 0),
-            extra: null
-        },
-        {
-            label: "Própria empresa",
-            value: rows.reduce((sum, row) => sum + row.finalQty * row.ownPrice, 0),
-            extra: null
-        },
-        {
-            label: "Preço selecionado",
-            value: rows.reduce((sum, row) => sum + row.finalValue, 0),
-            extra: null
-        }
-    ];
-
-    const lowest = scenarioRows[0].value;
-
-    scenarioRows.forEach((row) => {
-        row.diff = row.value - lowest;
-    });
-
-    const originRows = groupBy(rows, "priceOrigin").map((row) => ({
-        ...row,
-        avgPrice: row.qty > 0 ? row.value / row.qty : 0
-    }));
-
-    const viaLastRows = rows.filter((row) => row.priceViaLast === "Sim");
-
-    return {
-        result: {
-            itemsToBuy: rows.filter((row) => row.finalQty > 0).length,
-            totalQty: rows.reduce((sum, row) => sum + row.finalQty, 0),
-            totalValue: rows.reduce((sum, row) => sum + row.finalValue, 0)
-        },
-        curveRows,
-        companyRows,
-        labRows,
-        scenarioRows,
-        originRows,
-        viaLast: {
-            qty: viaLastRows.reduce((sum, row) => sum + row.finalQty, 0),
-            value: viaLastRows.reduce((sum, row) => sum + row.finalValue, 0)
-        },
-        transferred: rows.reduce((sum, row) => sum + row.transferred, 0),
-        invalidBox: rows.filter((row) => !row.boxValid).length,
-        noPriceWithBuy: rows.filter(
-            (row) => row.finalQty > 0 && row.selectedPrice <= 0
-        ).length
-    };
+    const curveRows=["A","B","C","D E F (Outros)"].map(label=>({label,qty:0,value:0,count:0}));
+    rows.forEach(r=>{const i=["A","B","C"].indexOf(r.curve);const g=curveRows[i<0?3:i];g.qty+=r.finalQty;g.value+=r.finalValue;g.count++;});
+    const scenarioRows=[["Menor preço","lowestPrice"],["Própria empresa","ownPrice"],["Preço selecionado","selectedPrice"]].map(([label,key])=>({label,value:rows.reduce((s,r)=>s+r.finalQty*r[key],0),extra:null}));
+    scenarioRows.forEach(r=>r.diff=r.value-scenarioRows[0].value);
+    const via=rows.filter(r=>r.priceViaLast==="Sim");
+    return {result:{itemsToBuy:rows.filter(r=>r.finalQty>0).length,totalQty:rows.reduce((s,r)=>s+r.finalQty,0),totalValue:rows.reduce((s,r)=>s+r.finalValue,0)},curveRows,
+        companyRows:groupBy(rows,"company"),labRows:groupBy(rows,"lab"),scenarioRows,originRows:groupBy(rows,"priceOrigin"),
+        viaLast:{qty:via.reduce((s,r)=>s+r.finalQty,0),value:via.reduce((s,r)=>s+r.finalValue,0)},
+        transferred:rows.reduce((s,r)=>s+r.transferred,0),invalidBox:rows.filter(r=>!r.boxValid).length,noPriceWithBuy:rows.filter(r=>r.finalQty>0&&r.selectedPrice<=0).length};
 }
-
-export function uniqueSorted(rows, field) {
-    return [...new Set(rows.map((row) => row[field]).filter(Boolean))].sort(
-        (a, b) => String(a).localeCompare(String(b), "pt-BR")
-    );
-}
+export function uniqueSorted(rows,field){return [...new Set(rows.map(r=>r[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"pt-BR"));}
