@@ -15,5 +15,9 @@
 .mp-report-card tr:nth-child(even){background:#fafbfc}
 .mp-report-last{grid-column:1/-1}
 .mp-chart-scroll{max-height:360px;overflow:auto;padding:5px}
+.mp-lab-chart-card{width:100%;max-width:760px;justify-self:start;box-sizing:border-box}
+.mp-lab-chart-card .mp-chart-scroll{max-height:230px}
+.mp-lab-chart-card .mp-report-scroll{max-height:180px}
+.mp-chart-filter-info{font-size:10px;color:#5d6d7e;margin:0 0 8px}
 @media(max-width:1150px){.mp-report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.mp-report-grid{grid-template-columns:1fr}.mp-dashboard-tabs{flex-wrap:wrap}}

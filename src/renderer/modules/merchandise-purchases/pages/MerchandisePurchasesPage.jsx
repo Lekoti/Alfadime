@@ -14,7 +14,7 @@ import "../styles/merchandise-dashboard.css";
 const PAGE_SIZE=100;
 const TABS=[["products","Simulação de Compras"],["reports","Filtros e Tabelas"],["charts","Gráficos"]];
 export default function MerchandisePurchasesPage(){
-    const {imported,loading,error,premises,setPremises,filters,setFilters,options,rows,setQuantity,importFile,clearImport}=useMerchandisePurchases();
+    const {imported,loading,error,premises,setPremises,filters,setFilters,options,rows,allRows,setQuantity,importFile,clearImport}=useMerchandisePurchases();
     const [tab,setTab]=useState("reports"),[page,setPage]=useState(1),[selectedIds,setSelectedIds]=useState(()=>new Set());
     const [exporting,setExporting]=useState(false),[exportError,setExportError]=useState(null);
     const columns=useMemo(()=>buildColumns(premises.closedMonth),[premises.closedMonth]);
@@ -25,27 +25,24 @@ export default function MerchandisePurchasesPage(){
     useEffect(()=>{setPage(1);setSelectedIds(new Set());},[filters,imported]);
     function toggle(id){setSelectedIds(old=>{const next=new Set(old);next.has(id)?next.delete(id):next.add(id);return next;});}
     async function handleExport(){
-        const exportRows=selectedIds.size?rows.filter(r=>selectedIds.has(r.id)):rows;
-        if(!exportRows.length){setExportError("Nenhum produto para exportar.");return;}
-        try{setExporting(true);setExportError(null);
-            await new Promise(resolve=>setTimeout(resolve,30));
-            const labels=Object.entries(filters).filter(([,v])=>String(v||"").trim()).map(([k,v])=>`${k}: ${v}`).join(" | ");
-            await exportMerchandiseExcel({rows:exportRows,premises,importInfo:imported,filtersLabel:labels||"Todas as empresas e laboratórios exportados"});
+        if(!allRows.length){setExportError("Nenhum produto importado para exportar.");return;}
+        try{setExporting(true);setExportError(null);await new Promise(resolve=>setTimeout(resolve,30));
+            await exportMerchandiseExcel({rows:allRows,premises,importInfo:imported,filtersLabel:"Exportação completa — todas as empresas, laboratórios e curvas. Filtros do app não limitam este arquivo."});
         }catch(e){console.error(e);setExportError(e.message||"Erro ao exportar.");}finally{setExporting(false);}
     }
     return <main className="mp-page mp-dashboard">
-        <div className="mp-title-bar"><h1>Compras de Mercadorias</h1><button className="mp-action-button" disabled={!rows.length||exporting||loading} onClick={handleExport}>{exporting?"Exportando...":selectedIds.size?`Exportar Excel (${selectedIds.size} selecionados)`:"Exportar Excel (filtrados)"}</button></div>
+        <div className="mp-title-bar"><h1>Compras de Mercadorias</h1><button className="mp-action-button" disabled={!allRows.length||exporting||loading} onClick={handleExport} title="Exporta todos os produtos importados, independentemente dos filtros ou seleção.">{exporting?"Exportando...":`Exportar Excel completo (${allRows.length.toLocaleString("pt-BR")})`}</button></div>
         <MerchandiseImportPanel imported={imported} loading={loading} onFileSelected={importFile} onClear={clearImport}/>
         <nav className="mp-dashboard-tabs" aria-label="Abas de compras">{TABS.map(([key,title])=><button key={key} type="button" className={tab===key?"active":""} aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}>{title}</button>)}</nav>
         {error&&<div className="mp-error">{error}</div>}{exportError&&<div className="mp-error">{exportError}</div>}
         {!imported?<div className="mp-loading">Importe a planilha no padrão 27.10 para iniciar.</div>:loading?<div className="mp-loading">Importando e calculando...</div>:tab==="products"?
-            <section className="mp-card"><div className="mp-card-header"><span>{rows.length.toLocaleString("pt-BR")} produtos filtrados · {selectedIds.size} selecionados</span></div>
+            <section className="mp-card"><div className="mp-card-header"><span>{rows.length.toLocaleString("pt-BR")} produtos filtrados · {selectedIds.size} selecionados · exportação sempre completa</span></div>
                 <MerchandiseTable rows={pageRows} columns={columns} selectedIds={selectedIds} allSelected={allSelected} onToggleSelection={toggle} onToggleAll={()=>setSelectedIds(allSelected?new Set():new Set(rows.map(r=>r.id)))} onQuantityChange={setQuantity}/>
                 <div className="mp-pagination"><span>Página {currentPage} de {totalPages}</span><button disabled={currentPage<=1} onClick={()=>setPage(currentPage-1)}>Anterior</button><button disabled={currentPage>=totalPages} onClick={()=>setPage(currentPage+1)}>Próxima</button></div>
             </section>:
             <section className="mp-dashboard-content">{tab==="reports"?<>
                 <section className="mp-dashboard-controls"><h2>Filtros gerais</h2><MerchandiseFilters filters={filters} options={options} onChange={setFilters}/><h2>Premissas</h2><MerchandisePremises premises={premises} onChange={setPremises}/></section>
                 <MerchandiseSummaryTables reports={reports}/>
-            </>:<MerchandiseCharts reports={reports}/>}</section>}
+            </>:<><p className="mp-chart-filter-info">Gráficos dos {rows.length.toLocaleString("pt-BR")} produtos filtrados em Filtros e Tabelas.</p><MerchandiseCharts reports={reports}/></>}</section>}
     </main>;
 }
