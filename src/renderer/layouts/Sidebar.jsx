@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import useAuth from "../modules/auth/hooks/useAuth.js";
@@ -25,6 +25,7 @@ function Sidebar({ collapsed = false, onToggle }) {
         { key: "/product-corrections", label: "Correções de Produtos", icon: "✎" },
         { key: "/price-pending", label: "Preços e Pendências", icon: "≡" },
         { key: "/purchases", label: "Compras", icon: "↙" },
+        { key: "/merchandise-purchases", label: "Compras de Mercadorias", icon: "\u25A3" },
         { key: "/industry-contacts", label: "Contatos", icon: "☎" },
         { key: "/notifications", label: "Notificações", icon: "!" },
         { key: "/email", label: "E-mail", icon: "✉" }

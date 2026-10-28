@@ -18,6 +18,7 @@ import ProductAuditPage from "./modules/product-audit/pages/ProductAuditPage.jsx
 import ProductCorrectionsPage from "./modules/product-corrections/pages/ProductCorrectionsPage.jsx";
 import PricePendingPage from "./modules/price-pending/pages/PricePendingPage.jsx";
 import PurchasesPage from "./modules/purchases/pages/PurchasesPage.jsx";
+import MerchandisePurchasesPage from "./modules/merchandise-purchases/pages/MerchandisePurchasesPage.jsx";
 import IndustryContactsPage from "./modules/industry-contacts/pages/IndustryContactsPage.jsx";
 import ContactChargeFavoritesPage from "./modules/industry-contacts/pages/ContactChargeFavoritesPage.jsx";
 import NotificationsPage from "./modules/notifications/pages/NotificationsPage.jsx";
@@ -142,8 +143,9 @@ function ApplicationRoutes() {
 
 
 
-                <Route
-                    path="industry-contacts"
+                <Route path="merchandise-purchases" element={<PermissionRoute moduleKey="purchases"><MerchandisePurchasesPage /></PermissionRoute>} />
+
+                <Route path="industry-contacts"
                     element={
                         <PermissionRoute moduleKey="industry-contacts">
                             <IndustryContactsPage />
