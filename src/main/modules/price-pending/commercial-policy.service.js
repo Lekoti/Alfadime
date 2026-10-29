@@ -2,170 +2,556 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const XLSX = require("xlsx");
 const { getFoldersConfig } = require("./price-pending-folders-config.repository");
-const BRANCHES = { "1":"DPR", "2":"AMS", "3":"DMT", "5":"DMS", "6":"DSC" };
+
+const BRANCHES = { "1": "DPR", "2": "AMS", "3": "DMT", "5": "DMS", "6": "DSC" };
+
+const REQUIRED_HEADERS = {
+    ean: "CODIGOBARRAS",
+    price: "PRECOFINAL",
+    company: "EMPRESA",
+    lab: "CODGLOBALLAB",
+    validity: "DATAVALIDADE"
+};
+
 const cache = new Map();
 let inFlight = null;
+
 function normalize(value) {
-    return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toUpperCase();
+    return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, " ")
+        .trim()
+        .toUpperCase();
 }
-function headerKey(value) { return normalize(value).replace(/ /g, ""); }
+
+function headerKey(value) {
+    return normalize(value).replace(/ /g, "");
+}
+
 function code(value) {
-    if (typeof value === "number") return Number.isSafeInteger(value) && value >= 0 ? String(value) : "";
+    if (typeof value === "number") {
+        return Number.isSafeInteger(value) && value >= 0 ? String(value) : "";
+    }
+
     const text = String(value ?? "").trim();
-    if (/^\d+$/.test(text)) return text.replace(/^0+(?=\d)/, "");
-    if (/^\d+(\.\d+)?e\+?\d+$/i.test(text)) { const n = Number(text); return Number.isSafeInteger(n) && n >= 0 ? String(n) : ""; }
+
+    if (/^\d+$/.test(text)) {
+        return text.replace(/^0+(?=\d)/, "");
+    }
+
+    if (/^\d+(\.\d+)?e\+?\d+$/i.test(text)) {
+        const number = Number(text);
+        return Number.isSafeInteger(number) && number >= 0 ? String(number) : "";
+    }
+
     return "";
 }
+
 function number(value) {
-    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-    let text = String(value ?? "").replace(/R\$/gi, "").replace(/\s/g, "");
-    if (text.includes(",")) text = text.replace(/\./g, "").replace(",", ".");
-    const n = Number(text); return Number.isFinite(n) ? n : 0;
-}
-function validDate(y,m,d) {
-    const date = new Date(Date.UTC(y,m-1,d));
-    return date.getUTCFullYear() === y && date.getUTCMonth() === m-1 && date.getUTCDate() === d
-        ? `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}` : "";
-}
-function dateOnly(value) {
-    const parts = value instanceof Date && !Number.isNaN(value.getTime())
-        ? { y:value.getFullYear(),m:value.getMonth()+1,d:value.getDate() }
-        : typeof value === "number" ? XLSX.SSF.parse_date_code(value) : null;
-    if (parts) return validDate(parts.y,parts.m,parts.d);
-    const text = String(value ?? "").trim();
-    const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/), br = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    return iso ? validDate(+iso[1],+iso[2],+iso[3]) : br ? validDate(+br[3],+br[2],+br[1]) : "";
-}
-const HEADER_ALIASES = {
-    ean: ["CODIGOBARRAS"],
-    price: ["PRECOFINAL"],
-    company: ["EMPRESA"],
-    lab: ["CODGLOBALLAB", "COD5LOBALLAB"],
-    validity: ["DATAVALIDADE"]
-};
-function inspectHeader(row) {
-    const keys = row.map(headerKey), index = {};
-    for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
-        const hits = keys.map((key,i) => aliases.includes(key) ? i : -1).filter(i => i >= 0);
-        if (hits.length > 1) return null;
-        index[field] = hits.length ? hits[0] : -1;
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? value : 0;
     }
-    return [index.ean,index.price,index.company,index.lab].every(i => i >= 0) ? index : null;
+
+    let text = String(value ?? "")
+        .replace(/R\$/gi, "")
+        .replace(/\s/g, "");
+
+    if (text.includes(",")) {
+        text = text.replace(/\./g, "").replace(",", ".");
+    }
+
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : 0;
 }
-function shown(value) {
-    const text = String(value ?? "").trim(); return text ? JSON.stringify(text) : "vazio";
+
+function validDate(year, month, day) {
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+    ) {
+        return "";
+    }
+
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
-function parseWorkbook(workbook, metadata) {
-    const records = [], warnings = [];
-    let usableSheets = 0;
-    const rejected = [];
-    for (const sheetName of workbook.SheetNames) {
-        // Keep physical row numbers, including blank rows, for an accurate diagnostic.
-        const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header:1,defval:null,raw:true,blankrows:true});
-        let headerRow = -1, index = null;
-        for (let i=0; i<Math.min(100,matrix.length); i++) {
-            const found = inspectHeader(matrix[i]);
-            if (found) { headerRow=i; index=found; break; }
+
+function dateOnly(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return validDate(
+            value.getFullYear(),
+            value.getMonth() + 1,
+            value.getDate()
+        );
+    }
+
+    if (typeof value === "number") {
+        const parts = XLSX.SSF.parse_date_code(value);
+
+        if (!parts) {
+            return "";
         }
-        if (headerRow < 0) {
-            const first = matrix.find(row => row.some(v => String(v ?? "").trim() !== "")) || [];
-            rejected.push(`${sheetName}: ${first.map(v=>String(v??"").trim()).filter(Boolean).join(" | ") || "aba vazia"}`);
+
+        return validDate(parts.y, parts.m, parts.d);
+    }
+
+    const text = String(value ?? "").trim();
+    const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const brazilian = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+    if (iso) {
+        return validDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+    }
+
+    if (brazilian) {
+        return validDate(
+            Number(brazilian[3]),
+            Number(brazilian[2]),
+            Number(brazilian[1])
+        );
+    }
+
+    return "";
+}
+
+function shown(value) {
+    const text = String(value ?? "").trim();
+    return text ? JSON.stringify(text) : "vazio";
+}
+
+function inspectHeader(row) {
+    const keys = row.map(headerKey);
+    const index = {};
+
+    for (const [field, header] of Object.entries(REQUIRED_HEADERS)) {
+        const found = keys.indexOf(header);
+        index[field] = found;
+    }
+
+    const requiredFields = Object.keys(REQUIRED_HEADERS);
+    return requiredFields.every((field) => index[field] >= 0) ? index : null;
+}
+
+function findHeaderRow(matrix) {
+    const limit = Math.min(100, matrix.length);
+
+    for (let index = 0; index < limit; index += 1) {
+        const header = inspectHeader(matrix[index]);
+
+        if (header) {
+            return {
+                row: index,
+                index: header
+            };
+        }
+    }
+
+    return null;
+}
+
+function parseWorkbook(workbook, metadata) {
+    const records = [];
+    const warnings = [];
+    const issues = [];
+    let usableSheets = 0;
+
+    for (const sheetName of workbook.SheetNames) {
+        const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+            header: 1,
+            defval: null,
+            raw: true,
+            blankrows: true
+        });
+
+        const header = findHeaderRow(matrix);
+
+        if (!header) {
+            const firstRow =
+                matrix.find((row) =>
+                    row.some((value) => String(value ?? "").trim() !== "")
+                ) || [];
+
+            const found = firstRow
+                .map((value) => String(value ?? "").trim())
+                .filter(Boolean)
+                .join(" | ") || "aba vazia";
+
+            issues.push({
+                fileName: metadata.fileName,
+                sheetName,
+                line: null,
+                column: null,
+                type: "CABECALHO",
+                found: found,
+                expected: Object.values(REQUIRED_HEADERS).join(" | "),
+                message: `Aba "${sheetName}" não possui os cabeçalhos obrigatórios.`
+            });
+
             continue;
         }
-        usableSheets++;
-        // Explicitly support the confirmed typo, without guessing or changing the manufacturer code.
-        if (headerKey(matrix[headerRow][index.lab]) === "COD5LOBALLAB") {
-            warnings.push(`${metadata.fileName} / ${sheetName}: cabeçalho COD 5LOBAL LAB reconhecido como COD GLOBAL LAB. Os códigos das linhas foram preservados.`);
-        }
-        for (let i=headerRow+1; i<matrix.length; i++) {
-            const r = matrix[i];
-            if (!r.some(v => String(v ?? "").trim() !== "")) continue;
-            if (inspectHeader(r)) continue;
-            const ean = code(r[index.ean]), companyCode = code(r[index.company]), branch = BRANCHES[companyCode], globalLabCode = code(r[index.lab]);
-            const problems = [];
-            if (!ean || ean === "0") problems.push(`CODIGO BARRAS=${shown(r[index.ean])}`);
-            if (!branch) problems.push(`EMPRESA=${shown(r[index.company])} (esperado: 001, 002, 003, 005 ou 006)`);
-            if (!globalLabCode || globalLabCode === "0") problems.push(`COD GLOBAL LAB=${shown(r[index.lab])}`);
-            if (problems.length) {
-                warnings.push(`${metadata.fileName} / ${sheetName} / linha ${i+1}: ${problems.join("; ")}. Registro não aplicado.`);
+
+        usableSheets += 1;
+        const { row: headerRow, index } = header;
+
+        for (let line = headerRow + 1; line < matrix.length; line += 1) {
+            const row = matrix[line];
+
+            if (!row.some((value) => String(value ?? "").trim() !== "")) {
                 continue;
             }
-            const rawPrice = number(r[index.price]);
-            const rawValidity = index.validity >= 0 ? r[index.validity] : null;
-            const validity = dateOnly(rawValidity);
-            if (String(rawValidity ?? "").trim() && !validity) {
-                warnings.push(`${metadata.fileName} / ${sheetName} / linha ${i+1}: DATA VALIDADE=${shown(rawValidity)} não reconhecida; preço mantido com validade não informada.`);
+
+            if (inspectHeader(row)) {
+                continue;
             }
-            records.push({barcode:ean,branch,companyCode:companyCode.padStart(3,"0"),globalLabCode,
-                price:rawPrice>0?rawPrice:0,validity,...metadata,sheetName,line:i+1});
+
+            const ean = code(row[index.ean]);
+            const companyCode = code(row[index.company]);
+            const branch = BRANCHES[companyCode];
+            const globalLabCode = code(row[index.lab]);
+            const price = number(row[index.price]);
+            const validity = dateOnly(row[index.validity]);
+            const rowIssues = [];
+
+            if (!ean || ean === "0") {
+                rowIssues.push({
+                    column: REQUIRED_HEADERS.ean,
+                    found: shown(row[index.ean]),
+                    expected: "Código de barras numérico válido",
+                    message: "EAN inválido ou não informado."
+                });
+            }
+
+            if (!branch) {
+                rowIssues.push({
+                    column: REQUIRED_HEADERS.company,
+                    found: shown(row[index.company]),
+                    expected: "001, 002, 003, 005 ou 006",
+                    message: "Empresa fora do padrão."
+                });
+            }
+
+            if (!globalLabCode || globalLabCode === "0") {
+                rowIssues.push({
+                    column: REQUIRED_HEADERS.lab,
+                    found: shown(row[index.lab]),
+                    expected: "Código global do fabricante numérico válido",
+                    message: "Código global do fabricante inválido ou não informado."
+                });
+            }
+
+            if (!(price > 0)) {
+                rowIssues.push({
+                    column: REQUIRED_HEADERS.price,
+                    found: shown(row[index.price]),
+                    expected: "Preço final maior que zero",
+                    message: "Preço final inválido ou não informado."
+                });
+            }
+
+            if (!validity) {
+                rowIssues.push({
+                    column: REQUIRED_HEADERS.validity,
+                    found: shown(row[index.validity]),
+                    expected: "Data válida no formato dd/mm/aaaa",
+                    message: "Data de validade inválida ou não informada."
+                });
+            }
+
+            rowIssues.forEach((issue) => {
+                issues.push({
+                    fileName: metadata.fileName,
+                    sheetName,
+                    line: line + 1,
+                    column: issue.column,
+                    type: "DADO",
+                    found: issue.found,
+                    expected: issue.expected,
+                    message: issue.message
+                });
+            });
+
+            if (rowIssues.length) {
+                continue;
+            }
+
+            records.push({
+                barcode: ean,
+                branch,
+                companyCode: companyCode.padStart(3, "0"),
+                globalLabCode,
+                price,
+                validity,
+                ...metadata,
+                sheetName,
+                line: line + 1
+            });
         }
     }
-    if (!usableSheets) throw new Error(
-        "Cabeçalhos não reconhecidos. Esperados: CODIGO BARRAS (ou CODIGOBARRAS), PREÇO FINAL, EMPRESA e COD GLOBAL LAB. Encontrados: " + rejected.join(" / ")
-    );
-    return {records,warnings};
+
+    if (!usableSheets) {
+        warnings.push(
+            `${metadata.fileName}: nenhum cabeçalho padrão reconhecido. Política Comercial não aplicada.`
+        );
+    }
+
+    return {
+        records,
+        warnings,
+        issues,
+        valid: usableSheets > 0 && issues.length === 0
+    };
 }
-function samePrice(a,b) {
-    return Math.abs(Number(a)-Number(b)) <= 1e-9;
+
+function samePrice(first, second) {
+    return Math.abs(Number(first) - Number(second)) <= 1e-9;
 }
+
 function describeRecord(record) {
-    const price = Number(record.price).toLocaleString("pt-BR", {minimumFractionDigits:2,maximumFractionDigits:10});
+    const price = Number(record.price).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 10
+    });
+
     return `${record.fileName} / ${record.sheetName} / linha ${record.line} / PREÇO FINAL R$ ${price} / modificação ${record.fileModifiedAt}`;
 }
+
 function selectLatestRecords(records) {
-    const groups = new Map(), warnings = [], chosen = [];
+    const groups = new Map();
+    const warnings = [];
+    const chosen = [];
+
     for (const record of records) {
-        const key = [record.branch,record.globalLabCode,record.barcode].join("|");
-        if (!groups.has(key)) groups.set(key,[]);
+        const key = [
+            record.branch,
+            record.globalLabCode,
+            record.barcode
+        ].join("|");
+
+        if (!groups.has(key)) {
+            groups.set(key, []);
+        }
+
         groups.get(key).push(record);
     }
+
     for (const [key, candidates] of groups) {
-        const latest = Math.max(...candidates.map(r => Number(r.mtimeMs) || 0));
-        const finalists = candidates.filter(r => (Number(r.mtimeMs) || 0) === latest)
-            .sort((a,b) => a.fileName.localeCompare(b.fileName,"pt-BR") || a.sheetName.localeCompare(b.sheetName,"pt-BR") || a.line-b.line);
+        const latest = Math.max(
+            ...candidates.map((record) => Number(record.mtimeMs) || 0)
+        );
+
+        const finalists = candidates
+            .filter((record) => (Number(record.mtimeMs) || 0) === latest)
+            .sort(
+                (first, second) =>
+                    first.fileName.localeCompare(second.fileName, "pt-BR") ||
+                    first.sheetName.localeCompare(second.sheetName, "pt-BR") ||
+                    first.line - second.line
+            );
+
         const first = finalists[0];
-        const different = finalists.some(r => !samePrice(r.price,first.price));
-        if (different) {
-            // Keep the fallback to purchase history until the conflicting source is resolved.
-            chosen.push({...first,price:0,conflict:true});
-            const detail = [...new Set(finalists.map(describeRecord))];
-            warnings.push(`Conflito de preços para ${key}. ${detail.join(" <> ")}. Política não aplicada; utilizados os históricos disponíveis. Arquivos de origem não foram alterados.`);
-        } else chosen.push(first);
+        const hasConflict = finalists.some(
+            (record) => !samePrice(record.price, first.price)
+        );
+
+        if (hasConflict) {
+            chosen.push({
+                ...first,
+                price: 0,
+                conflict: true
+            });
+
+            const details = [
+                ...new Set(finalists.map(describeRecord))
+            ];
+
+            warnings.push(
+                `Conflito de preços para ${key}. ${details.join(" <> ")}. Política não aplicada; utilizados os históricos disponíveis. Arquivos de origem não foram alterados.`
+            );
+
+            continue;
+        }
+
+        chosen.push(first);
     }
-    return {records:chosen,warnings};
+
+    return {
+        records: chosen,
+        warnings
+    };
 }
-async function scan(force=false) {
+
+function groupIssuesByFile(issues) {
+    const groups = new Map();
+
+    for (const issue of issues) {
+        const key = issue.fileName;
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                fileName: issue.fileName,
+                totalIssues: 0,
+                issues: []
+            });
+        }
+
+        const group = groups.get(key);
+        group.totalIssues += 1;
+        group.issues.push(issue);
+    }
+
+    return [...groups.values()].sort((first, second) =>
+        first.fileName.localeCompare(second.fileName, "pt-BR")
+    );
+}
+
+async function scan(force = false) {
     const folder = String(getFoldersConfig().prices || "").trim();
-    if (!folder) throw new Error("Configure a pasta de preços nas configurações do app.");
-    const entries = await fs.readdir(folder,{withFileTypes:true});
-    const files = entries.filter(e => e.isFile() && !e.name.startsWith("~$") && /\.(xlsx|xlsm|xls)$/i.test(e.name) && /\bPRECOS?\b/.test(normalize(e.name)));
-    const warnings = [], records = [], seen = new Set(); let readFiles=0,reusedFiles=0;
+
+    if (!folder) {
+        throw new Error(
+            "Configure a pasta de preços nas configurações do app."
+        );
+    }
+
+    const entries = await fs.readdir(folder, {
+        withFileTypes: true
+    });
+
+    const files = entries.filter(
+        (entry) =>
+            entry.isFile() &&
+            !entry.name.startsWith("~$") &&
+            /\.(xlsx|xlsm|xls)$/i.test(entry.name) &&
+            /\bPRECOS?\b/.test(normalize(entry.name))
+    );
+
+    const warnings = [];
+    const issues = [];
+    const records = [];
+    const seen = new Set();
+    let readFiles = 0;
+    let reusedFiles = 0;
+
     for (const entry of files) {
-        const filePath = path.join(folder,entry.name); seen.add(filePath);
+        const filePath = path.join(folder, entry.name);
+        seen.add(filePath);
+
         try {
-            const stat = await fs.stat(filePath), signature = `${stat.size}-${stat.mtimeMs}`;
+            const stat = await fs.stat(filePath);
+            const signature = `${stat.size}-${stat.mtimeMs}`;
             let saved = cache.get(filePath);
+
             if (force || !saved || saved.signature !== signature) {
-                const buffer = await fs.readFile(filePath), after = await fs.stat(filePath);
-                if (after.size !== stat.size || after.mtimeMs !== stat.mtimeMs) throw new Error("Arquivo sendo alterado; tente novamente após concluir a gravação.");
-                const workbook = XLSX.read(buffer,{type:"buffer",cellDates:true});
-                const parsed = parseWorkbook(workbook,{fileName:entry.name,fileModifiedAt:stat.mtime.toISOString(),readAt:new Date().toISOString(),mtimeMs:stat.mtimeMs});
-                saved = {signature,...parsed}; cache.set(filePath,saved); readFiles++;
-            } else reusedFiles++;
-            records.push(...saved.records); warnings.push(...saved.warnings);
-        } catch (e) {
-            warnings.push(`${entry.name}: ${e.message}`);
+                const buffer = await fs.readFile(filePath);
+                const after = await fs.stat(filePath);
+
+                if (
+                    after.size !== stat.size ||
+                    after.mtimeMs !== stat.mtimeMs
+                ) {
+                    throw new Error(
+                        "Arquivo sendo alterado; tente novamente após concluir a gravação."
+                    );
+                }
+
+                const workbook = XLSX.read(buffer, {
+                    type: "buffer",
+                    cellDates: true
+                });
+
+                const parsed = parseWorkbook(workbook, {
+                    fileName: entry.name,
+                    fileModifiedAt: stat.mtime.toISOString(),
+                    readAt: new Date().toISOString(),
+                    mtimeMs: stat.mtimeMs
+                });
+
+                saved = {
+                    signature,
+                    ...parsed
+                };
+
+                cache.set(filePath, saved);
+                readFiles += 1;
+            } else {
+                reusedFiles += 1;
+            }
+
+            if (saved.valid) {
+                records.push(...saved.records);
+            }
+
+            warnings.push(...saved.warnings);
+            issues.push(...saved.issues);
+        } catch (error) {
+            warnings.push(`${entry.name}: ${error.message}`);
+            issues.push({
+                fileName: entry.name,
+                sheetName: null,
+                line: null,
+                column: null,
+                type: "LEITURA",
+                found: error.message,
+                expected: "Arquivo Excel válido e não em uso",
+                message: "Não foi possível ler o arquivo."
+            });
+
             const previous = cache.get(filePath);
-            if (previous) records.push(...previous.records.map(r => ({...r,stale:true})));
+
+            if (previous && previous.valid) {
+                records.push(
+                    ...previous.records.map((record) => ({
+                        ...record,
+                        stale: true
+                    }))
+                );
+            }
         }
     }
-    for (const filePath of cache.keys()) if (path.dirname(filePath)===folder && !seen.has(filePath)) cache.delete(filePath);
+
+    for (const cachedPath of cache.keys()) {
+        if (
+            path.dirname(cachedPath) === folder &&
+            !seen.has(cachedPath)
+        ) {
+            cache.delete(cachedPath);
+        }
+    }
+
     const selected = selectLatestRecords(records);
-    return {records:selected.records,folder,scannedAt:new Date().toISOString(),filesFound:files.length,readFiles,reusedFiles,warnings:[...new Set([...warnings,...selected.warnings])]};
+
+    return {
+        records: selected.records,
+        folder,
+        scannedAt: new Date().toISOString(),
+        filesFound: files.length,
+        readFiles,
+        reusedFiles,
+        warnings: [
+            ...new Set([...warnings, ...selected.warnings])
+        ],
+        policyIssues: groupIssuesByFile(issues)
+    };
 }
-function readCommercialPolicies(options={}) {
-    if (inFlight) return inFlight;
-    inFlight = scan(Boolean(options?.force)).finally(() => {inFlight=null;});
+
+function readCommercialPolicies(options = {}) {
+    if (inFlight) {
+        return inFlight;
+    }
+
+    inFlight = scan(Boolean(options?.force)).finally(() => {
+        inFlight = null;
+    });
+
     return inFlight;
 }
-module.exports={readCommercialPolicies,parseWorkbook,dateOnly,selectLatestRecords};
+
+module.exports = {
+    readCommercialPolicies,
+    parseWorkbook,
+    dateOnly,
+    selectLatestRecords
+};

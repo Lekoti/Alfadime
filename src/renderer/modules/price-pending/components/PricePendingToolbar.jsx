@@ -1,18 +1,23 @@
 export default function PricePendingToolbar({
     filtersPanelOpen,
     ignoredFilesCount,
+    policyIssuesCount,
+    policyIssuesLoading,
     canRefresh,
     canViewIgnoredFiles,
     refreshing,
     readOnly,
     onToggleFilters,
     onRefresh,
-    onShowIgnoredFiles
+    onShowIgnoredFiles,
+    onShowPolicyIssues,
+    onReloadPolicyIssues
 }) {
     return (
         <header className="price-pending-toolbar">
             <div className="price-pending-title">
                 <span>Gestão comercial</span>
+
 
                 <h1>Preços e Pendências</h1>
             </div>
@@ -40,6 +45,19 @@ export default function PricePendingToolbar({
                 )}
 
 
+                {policyIssuesCount > 0 && (
+                    <button
+                        type="button"
+                        className="price-pending-policy-button"
+                        onClick={onShowPolicyIssues}
+                        disabled={policyIssuesLoading}
+                        title="Ver arquivos de preços fora do padrão"
+                    >
+                        Fora do padrão ({policyIssuesCount})
+                    </button>
+                )}
+
+
                 {canViewIgnoredFiles && ignoredFilesCount > 0 && (
                     <button
                         type="button"
@@ -50,6 +68,19 @@ export default function PricePendingToolbar({
                         Ignorados ({ignoredFilesCount})
                     </button>
                 )}
+
+
+                <button
+                    type="button"
+                    className="price-pending-filters-toggle"
+                    onClick={onReloadPolicyIssues}
+                    disabled={policyIssuesLoading}
+                    title="Verificar novamente os arquivos de preços"
+                >
+                    {policyIssuesLoading
+                        ? "Verificando..."
+                        : "Verificar padrão"}
+                </button>
             </div>
         </header>
     );
