@@ -195,10 +195,14 @@ export async function exportMerchandiseExcel({
         ["Curva",filters=>filters.curve]
     ];
 
-    filterLabels.forEach(([label],index)=>{
-        panel.getCell(`B${5+index}`).value=label;
-        panel.mergeCells(`C${5+index}:F${5+index}`);
-    });
+    filterLabels.forEach(([label,values],index)=>{
+    const selected=Array.isArray(values(filters))?values(filters):[];
+    const display=selected.length?selected.join(", "):"Todas";
+
+    panel.getCell(`B${5+index}`).value=label;
+    panel.mergeCells(`C${5+index}:F${5+index}`);
+    panel.getCell(`C${5+index}`).value=display;
+});
 
     panel.mergeCells("B9:F9");
     panel.getCell("B9").value="Estes filtros são informativos. A base exportada já corresponde aos filtros aplicados no app.";
@@ -489,7 +493,7 @@ export async function exportMerchandiseExcel({
 
             const output=products.getCell(productRow,columnIndex+1);
             const cell=key=>`${L(1+positions[key])}${productRow}`;
-            let expression=`INDEX(${supportRange(column.key)},${supportRow-5})`;
+            let expression=`INDEX(${supportRange(column.key)},${index+1})`;
 
             if(column.key==="finalValue"){
                 expression=`IF(${cell("company")}="","",${cell("finalQty")}*${cell("selectedPrice")})`;
