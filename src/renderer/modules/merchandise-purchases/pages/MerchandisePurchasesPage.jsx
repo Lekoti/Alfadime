@@ -22,22 +22,7 @@ const TABS=[
 
 export default function MerchandisePurchasesPage(){
     const {
-        imported,
-        loading,
-        error,
-        premises,
-        setPremises,
-        filters,
-        setFilters,
-        options,
-        rows,
-        allRows,
-        setQuantity,
-        importFile,
-        clearImport,
-        policySnapshot,
-        policyLoading,
-        policyError
+        imported,loading,error,premises,setPremises,filters,setFilters,options,rows,allRows,setQuantity,importFile,clearImport,policySnapshot,policyLoading,policyError
     }=useMerchandisePurchases();
 
     const [tab,setTab]=useState("reports");
@@ -46,43 +31,21 @@ export default function MerchandisePurchasesPage(){
     const [exporting,setExporting]=useState(false);
     const [exportError,setExportError]=useState(null);
 
-    const columns=useMemo(
-        ()=>buildColumns(premises.closedMonth),
-        [premises.closedMonth]
-    );
-
-    const reports=useMemo(
-        ()=>buildMerchandiseReports(rows),
-        [rows]
-    );
-
+    const columns=useMemo(()=>buildColumns(premises.closedMonth),[premises.closedMonth]);
+    const reports=useMemo(()=>buildMerchandiseReports(rows),[rows]);
     const totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
     const currentPage=Math.min(page,totalPages);
-
-    const pageRows=useMemo(
-        ()=>rows.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE),
-        [rows,currentPage]
-    );
-
+    const pageRows=useMemo(()=>rows.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE),[rows,currentPage]);
     const allSelected=rows.length>0&&rows.every(row=>selectedIds.has(row.id));
 
-    useEffect(()=>{
-        setPage(1);
-        setSelectedIds(new Set());
-    },[filters,imported]);
+    useEffect(()=>{setPage(1);setSelectedIds(new Set());},[filters,imported]);
 
     const expired=allRows.filter(row=>row.policyExpired).length;
 
     function toggle(id){
         setSelectedIds(current=>{
             const next=new Set(current);
-
-            if(next.has(id)){
-                next.delete(id);
-            }else{
-                next.add(id);
-            }
-
+            next.has(id)?next.delete(id):next.add(id);
             return next;
         });
     }
@@ -101,6 +64,7 @@ export default function MerchandisePurchasesPage(){
             await exportMerchandiseExcel({
                 rows,
                 premises,
+                filters,
                 importInfo:imported,
                 policySnapshot,
                 policyError
@@ -117,79 +81,26 @@ export default function MerchandisePurchasesPage(){
         <main className="mp-page mp-dashboard">
             <div className="mp-title-bar">
                 <h1>Compras de Mercadorias</h1>
-
-                <button
-                    className="mp-action-button"
-                    disabled={!rows.length||exporting||loading||policyLoading}
-                    onClick={handleExport}
-                    title="Exporta exatamente os produtos visíveis após os filtros aplicados no app."
-                >
-                    {exporting
-                        ?"Exportando..."
-                        :`Exportar Excel filtrado (${rows.length.toLocaleString("pt-BR")})`}
+                <button className="mp-action-button" disabled={!rows.length||exporting||loading||policyLoading} onClick={handleExport} title="Exporta exatamente os produtos visíveis após os filtros aplicados no app.">
+                    {exporting?"Exportando...":`Exportar Excel filtrado (${rows.length.toLocaleString("pt-BR")})`}
                 </button>
             </div>
 
-            <MerchandiseImportPanel
-                imported={imported}
-                loading={loading}
-                onFileSelected={importFile}
-                onClear={clearImport}
-            />
+            <MerchandiseImportPanel imported={imported} loading={loading} onFileSelected={importFile} onClear={clearImport}/>
 
-            {loading&&(
-                <div className="mp-policy-toolbar">
-                    <span>
-                        {policyLoading
-                            ?"Lendo Política Comercial para esta importação..."
-                            :"Importando e calculando..."}
-                    </span>
-                </div>
-            )}
+            {loading&&<div className="mp-policy-toolbar"><span>{policyLoading?"Lendo Política Comercial para esta importação...":"Importando e calculando..."}</span></div>}
 
-            {imported&&!loading&&policySnapshot&&(
-                <div className="mp-policy-toolbar">
-                    <span>
-                        {policySnapshot.filesFound} arquivos · {policySnapshot.records.length} preços identificados · leitura na importação em {new Date(policySnapshot.scannedAt).toLocaleString("pt-BR")}
-                    </span>
-                </div>
-            )}
+            {imported&&!loading&&policySnapshot&&<div className="mp-policy-toolbar"><span>{policySnapshot.filesFound} arquivos · {policySnapshot.records.length} preços identificados · leitura na importação em {new Date(policySnapshot.scannedAt).toLocaleString("pt-BR")}</span></div>}
 
-            {policyError&&(
-                <div className="mp-policy-warning">
-                    {policyError}
-                </div>
-            )}
+            {policyError&&<div className="mp-policy-warning">{policyError}</div>}
 
-            {!!expired&&(
-                <div className="mp-policy-warning">
-                    {expired} produtos com Política Comercial vencida. Os preços continuam disponíveis para uso, com aviso.
-                </div>
-            )}
+            {!!expired&&<div className="mp-policy-warning">{expired} produtos com Política Comercial vencida. Os preços continuam disponíveis para uso, com aviso.</div>}
 
-            {!!policySnapshot?.warnings?.length&&(
-                <details className="mp-policy-warning">
-                    <summary>
-                        {policySnapshot.warnings.length} avisos de leitura
-                    </summary>
-
-                    {policySnapshot.warnings.map((warning,index)=>(
-                        <div key={index}>{warning}</div>
-                    ))}
-                </details>
-            )}
+            {!!policySnapshot?.warnings?.length&&<details className="mp-policy-warning"><summary>{policySnapshot.warnings.length} avisos de leitura</summary>{policySnapshot.warnings.map((warning,index)=><div key={index}>{warning}</div>)}</details>}
 
             <nav className="mp-dashboard-tabs" aria-label="Abas de compras">
                 {TABS.map(([key,title])=>(
-                    <button
-                        key={key}
-                        type="button"
-                        className={tab===key?"active":""}
-                        aria-current={tab===key?"page":undefined}
-                        onClick={()=>setTab(key)}
-                    >
-                        {title}
-                    </button>
+                    <button key={key} type="button" className={tab===key?"active":""} aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}>{title}</button>
                 ))}
             </nav>
 
@@ -197,51 +108,19 @@ export default function MerchandisePurchasesPage(){
             {exportError&&<div className="mp-error">{exportError}</div>}
 
             {loading?(
-                <div className="mp-loading">
-                    {policyLoading
-                        ?"Carregando preços da Política Comercial..."
-                        :"Importando e calculando..."}
-                </div>
+                <div className="mp-loading">{policyLoading?"Carregando preços da Política Comercial...":"Importando e calculando..."}</div>
             ):!imported?null:tab==="products"?(
                 <section className="mp-card">
                     <div className="mp-card-header">
-                        <span>
-                            {rows.length.toLocaleString("pt-BR")} produtos filtrados · {selectedIds.size} selecionados · exportação filtrada
-                        </span>
+                        <span>{rows.length.toLocaleString("pt-BR")} produtos filtrados · {selectedIds.size} selecionados · exportação filtrada</span>
                     </div>
 
-                    <MerchandiseTable
-                        rows={pageRows}
-                        columns={columns}
-                        selectedIds={selectedIds}
-                        allSelected={allSelected}
-                        onToggleSelection={toggle}
-                        onToggleAll={()=>setSelectedIds(
-                            allSelected
-                                ?new Set()
-                                :new Set(rows.map(row=>row.id))
-                        )}
-                        onQuantityChange={setQuantity}
-                    />
+                    <MerchandiseTable rows={pageRows} columns={columns} selectedIds={selectedIds} allSelected={allSelected} onToggleSelection={toggle} onToggleAll={()=>setSelectedIds(allSelected?new Set():new Set(rows.map(row=>row.id)))} onQuantityChange={setQuantity}/>
 
                     <div className="mp-pagination">
-                        <span>
-                            Página {currentPage} de {totalPages}
-                        </span>
-
-                        <button
-                            disabled={currentPage<=1}
-                            onClick={()=>setPage(currentPage-1)}
-                        >
-                            Anterior
-                        </button>
-
-                        <button
-                            disabled={currentPage>=totalPages}
-                            onClick={()=>setPage(currentPage+1)}
-                        >
-                            Próxima
-                        </button>
+                        <span>Página {currentPage} de {totalPages}</span>
+                        <button disabled={currentPage<=1} onClick={()=>setPage(currentPage-1)}>Anterior</button>
+                        <button disabled={currentPage>=totalPages} onClick={()=>setPage(currentPage+1)}>Próxima</button>
                     </div>
                 </section>
             ):(
@@ -250,30 +129,16 @@ export default function MerchandisePurchasesPage(){
                         <>
                             <section className="mp-dashboard-controls">
                                 <h2>Filtros gerais</h2>
-
-                                <MerchandiseFilters
-                                    filters={filters}
-                                    options={options}
-                                    onChange={setFilters}
-                                />
-
+                                <MerchandiseFilters filters={filters} options={options} onChange={setFilters}/>
                                 <h2>Premissas</h2>
-
-                                <MerchandisePremises
-                                    premises={premises}
-                                    onChange={setPremises}
-                                />
+                                <MerchandisePremises premises={premises} onChange={setPremises}/>
                             </section>
-
-                            <MerchandiseSummaryTables reports={reports} />
+                            <MerchandiseSummaryTables reports={reports}/>
                         </>
                     ):(
                         <>
-                            <p className="mp-chart-filter-info">
-                                Gráficos dos {rows.length.toLocaleString("pt-BR")} produtos filtrados, com laboratório baseado em Fabr_Global.
-                            </p>
-
-                            <MerchandiseCharts reports={reports} />
+                            <p className="mp-chart-filter-info">Gráficos dos {rows.length.toLocaleString("pt-BR")} produtos filtrados, com laboratório baseado em Fabr_Global.</p>
+                            <MerchandiseCharts reports={reports}/>
                         </>
                     )}
                 </section>
