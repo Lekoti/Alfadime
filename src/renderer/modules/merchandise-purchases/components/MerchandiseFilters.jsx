@@ -1,36 +1,41 @@
 import {DEFAULT_FILTERS,STATUS_OPTIONS} from "../constants/merchandise-purchases.constants";
 
 function MultiSelectField({label,values,allLabel,items=[],onChange}){
+    const selected=Array.isArray(values)?values:[];
+
     function toggle(value){
-        const current=Array.isArray(values)?values:[];
-        const next=current.includes(value)
-            ?current.filter(item=>item!==value)
-            :[...current,value];
+        const next=selected.includes(value)
+            ?selected.filter(item=>item!==value)
+            :[...selected,value];
+
         onChange(next);
     }
 
     return (
-        <div className="mp-filter-field">
+        <div className="mp-filter-field mp-multi-filter">
             <label>{label}</label>
+
             <div className="mp-multi-select">
                 <button
                     type="button"
-                    className={`mp-multi-option${!values.length?" mp-multi-option-active":""}`}
+                    className={`mp-multi-option${!selected.length?" mp-multi-option-active":""}`}
                     onClick={()=>onChange([])}
                 >
                     {allLabel}
                 </button>
 
-                {items.map(item=>(
-                    <button
-                        key={item}
-                        type="button"
-                        className={`mp-multi-option${values.includes(item)?" mp-multi-option-active":""}`}
-                        onClick={()=>toggle(item)}
-                    >
-                        {item}
-                    </button>
-                ))}
+                <div className="mp-multi-options">
+                    {items.map(item=>(
+                        <button
+                            key={item}
+                            type="button"
+                            className={`mp-multi-option${selected.includes(item)?" mp-multi-option-active":""}`}
+                            onClick={()=>toggle(item)}
+                        >
+                            {item}
+                        </button>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -40,8 +45,13 @@ function SelectField({label,value,allLabel,items=[],onChange}){
     return (
         <div className="mp-filter-field">
             <label>{label}</label>
-            <select value={value||""} onChange={event=>onChange(event.target.value)}>
+
+            <select
+                value={value||""}
+                onChange={event=>onChange(event.target.value)}
+            >
                 <option value="">{allLabel}</option>
+
                 {items.map(item=>(
                     <option key={item} value={item}>{item}</option>
                 ))}
@@ -57,6 +67,7 @@ export default function MerchandiseFilters({filters,options,onChange}){
         <section className="mp-filters">
             <div className="mp-search-field">
                 <label>Buscar</label>
+
                 <input
                     type="search"
                     value={filters.search}
@@ -81,14 +92,6 @@ export default function MerchandiseFilters({filters,options,onChange}){
                 onChange={values=>update("laboratory",values)}
             />
 
-            <SelectField
-                label="Tipo de produto"
-                value={filters.group}
-                allLabel="Todos"
-                items={options.groups}
-                onChange={value=>update("group",value)}
-            />
-
             <MultiSelectField
                 label="Curva"
                 values={filters.curve}
@@ -107,9 +110,15 @@ export default function MerchandiseFilters({filters,options,onChange}){
 
             <div className="mp-filter-field">
                 <label>Situação</label>
-                <select value={filters.status} onChange={event=>update("status",event.target.value)}>
+
+                <select
+                    value={filters.status}
+                    onChange={event=>update("status",event.target.value)}
+                >
                     {STATUS_OPTIONS.map(item=>(
-                        <option key={item.value} value={item.value}>{item.label}</option>
+                        <option key={item.value} value={item.value}>
+                            {item.label}
+                        </option>
                     ))}
                 </select>
             </div>
