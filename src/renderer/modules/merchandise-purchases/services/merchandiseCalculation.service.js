@@ -1,41 +1,268 @@
 import {resolvePrice,productPriceKey} from "./merchandisePolicy.service";
+
 const MONTHS=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const curveKey=value=>["A","B","C"].includes(value)?value:"OTHER";
-export function getBoxMultiple(box){return Number.isInteger(box)&&box>0?box:1;}
-export function suggestQuantity(monthly,days,balance,box){const m=getBoxMultiple(box);return Math.ceil(Math.max(Math.ceil(monthly/30*days-1e-9)-balance,0)/m)*m;}
+
+export function getBoxMultiple(box){
+    return Number.isInteger(box)&&box>0?box:1;
+}
+
+export function suggestQuantity(monthly,days,balance,box){
+    const multiple=getBoxMultiple(box);
+    return Math.ceil(Math.max(Math.ceil(monthly/30*days-1e-9)-balance,0)/multiple)*multiple;
+}
+
 export function computeRows(rows,premises){
-    const closed=Math.min(12,Math.max(1,Number(premises.closedMonth)||12)),prices=rows.map(r=>resolvePrice(r,premises.priceSource)),cheapest=new Map();
-    rows.forEach((r,i)=>{const p=prices[i],k=productPriceKey(r);if(p.price>0&&(!cheapest.has(k)||p.price<cheapest.get(k).price))cheapest.set(k,p);});
-    return rows.map((r,i)=>{
-        const months=Array.from({length:closed},(_,j)=>Number(r.months?.[j])||0),avg=size=>{const v=months.slice(-Math.min(size,closed));return v.reduce((s,n)=>s+n,0)/v.length;};
-        const avgAll=avg(closed),avg6=avg(6),avg3=avg(3),avgMonth=r.avgMonthSheet==null?avgAll:r.avgMonthSheet,hasHistory=months.some(v=>v>0);
-        const maxQty=hasHistory?Math.max(...months):0,minQty=hasHistory?Math.min(...months):0;
-        const select=test=>months.map((v,j)=>test(v)?MONTHS[j]:null).filter(Boolean);
-        const highMonths=hasHistory?select(v=>v>avgAll):[],peak=select(v=>v===maxQty),lowMonths=select(v=>v===minQty);
-        const maxPeriod=hasHistory?`${peak.join(", ")} | ${highMonths.length?`Alta: ${highMonths.join(", ")}`:"Sem meses acima da média"}`:"Sem histórico";
-        const base=prices[i],low=cheapest.get(productPriceKey(r)),chosen=premises.priceCriteria==="lowest"?low:base;
-        const selectedPrice=chosen?.price||0,pending=0,transferred=0,consolidated=r.stock+r.blocked,targetDays=premises.curveDays[curveKey(r.curve)]??0;
-        const refs={max:maxQty,min:minQty,avgMonth,avg3,avg6,avgAll},refQty=refs[premises.periodReference]??maxQty;
-        const suggestedQty=suggestQuantity(avgMonth,targetDays,consolidated,r.boxSize),periodSuggestion=suggestQuantity(refQty,targetDays,consolidated,r.boxSize),boxValid=Number.isInteger(r.boxSize)&&r.boxSize>0;
-        return {...r,id:i,avgMonth,avgAll,avg6,avg3,hasHistory,maxPeriod,maxQty,minPeriod:hasHistory?lowMonths.join(", "):"Sem histórico",minQty,highMonths,pending,transferred,consolidated,targetDays,
-            ownPrice:base.price,lowestPrice:low?.price||0,lowestCompany:low?(low.price===base.price?"Igual":low.company):"Sem preço",
-            selectedPrice,priceOrigin:selectedPrice>0?chosen.label:"Sem preço",priceCompany:selectedPrice>0?chosen.company:"",selectedPriceWarning:chosen?.warning||(!selectedPrice?"Sem preço disponível":""),
-            priceViaLast:selectedPrice>0?(chosen.key==="lastPurchase"?"Sim":"Não"):"",boxValid,boxStatus:boxValid?"OK":"Caixa inválida",stockMonths:avgMonth>0?consolidated/avgMonth:0,refQty,suggestedQty,periodSuggestion,periodValue:periodSuggestion*selectedPrice};
+    const closed=Math.min(12,Math.max(1,Number(premises.closedMonth)||12));
+    const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
+    const cheapest=new Map();
+
+    rows.forEach((row,index)=>{
+        const price=prices[index];
+        const key=productPriceKey(row);
+
+        if(price.price>0&&(!cheapest.has(key)||price.price<cheapest.get(key).price)){
+            cheapest.set(key,price);
+        }
+    });
+
+    return rows.map((row,index)=>{
+        const months=Array.from({length:closed},(_,position)=>Number(row.months?.[position])||0);
+        const average=size=>{
+            const values=months.slice(-Math.min(size,closed));
+            return values.reduce((total,value)=>total+value,0)/values.length;
+        };
+
+        const avgAll=average(closed);
+        const avg6=average(6);
+        const avg3=average(3);
+        const avgMonth=row.avgMonthSheet==null?avgAll:row.avgMonthSheet;
+        const hasHistory=months.some(value=>value>0);
+        const maxQty=hasHistory?Math.max(...months):0;
+        const minQty=hasHistory?Math.min(...months):0;
+        const select=test=>months.map((value,position)=>test(value)?MONTHS[position]:null).filter(Boolean);
+        const highMonths=hasHistory?select(value=>value>avgAll):[];
+        const peak=select(value=>value===maxQty);
+        const lowMonths=select(value=>value===minQty);
+        const maxPeriod=hasHistory
+            ?`${peak.join(", ")} | ${highMonths.length?`Alta: ${highMonths.join(", ")}`:"Sem meses acima da média"}`
+            :"Sem histórico";
+
+        const base=prices[index];
+        const low=cheapest.get(productPriceKey(row));
+        const chosen=premises.priceCriteria==="lowest"?low:base;
+        const selectedPrice=chosen?.price||0;
+        const pending=0;
+        const transferred=0;
+        const consolidated=row.stock+row.blocked;
+        const targetDays=premises.curveDays[curveKey(row.curve)]??0;
+        const references={max:maxQty,min:minQty,avgMonth,avg3,avg6,avgAll};
+        const refQty=references[premises.periodReference]??maxQty;
+        const suggestedQty=suggestQuantity(avgMonth,targetDays,consolidated,row.boxSize);
+        const periodSuggestion=suggestQuantity(refQty,targetDays,consolidated,row.boxSize);
+        const boxValid=Number.isInteger(row.boxSize)&&row.boxSize>0;
+
+        return {
+            ...row,
+            id:index,
+            avgMonth,
+            avgAll,
+            avg6,
+            avg3,
+            hasHistory,
+            maxPeriod,
+            maxQty,
+            minPeriod:hasHistory?lowMonths.join(", "):"Sem histórico",
+            minQty,
+            highMonths,
+            pending,
+            transferred,
+            consolidated,
+            targetDays,
+            ownPrice:base.price,
+            lowestPrice:low?.price||0,
+            lowestCompany:low?(low.price===base.price?"Igual":low.company):"Sem preço",
+            selectedPrice,
+            priceOrigin:selectedPrice>0?chosen.label:"Sem preço",
+            priceCompany:selectedPrice>0?chosen.company:"",
+            selectedPriceWarning:chosen?.warning||(!selectedPrice?"Sem preço disponível":""),
+            priceViaLast:selectedPrice>0?(chosen.key==="lastPurchase"?"Sim":"Não"):"",
+            boxValid,
+            boxStatus:boxValid?"OK":"Caixa inválida",
+            stockMonths:avgMonth>0?consolidated/avgMonth:0,
+            refQty,
+            suggestedQty,
+            periodSuggestion,
+            periodValue:periodSuggestion*selectedPrice
+        };
     });
 }
-export function applyOverrides(rows,overrides){return rows.map(r=>{const manual=overrides[r.id]!==undefined,finalQty=manual?overrides[r.id]:r.suggestedQty;return {...r,manual,finalQty,finalValue:finalQty*r.selectedPrice};});}
-const normalize=value=>String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-export function filterRows(rows,f){const search=normalize(f.search).trim();return rows.filter(r=>{
-    if(f.company&&r.company!==f.company||f.laboratory&&r.lab!==f.laboratory||f.group&&r.group!==f.group||f.curve&&r.curve!==f.curve||f.priceOrigin&&r.priceOrigin!==f.priceOrigin)return false;
-    const tests={tobuy:r.finalQty>0,nobuy:!(r.finalQty>0),noprice:!(r.selectedPrice>0),invalidbox:!r.boxValid,nohistory:!r.hasHistory,manual:r.manual,expiredpolicy:r.policyExpired,withpolicy:r.policyPrice>0,withoutpolicy:!(r.policyPrice>0)};
-    if(f.status&&Object.hasOwn(tests,f.status)&&!tests[f.status])return false;
-    return !search||normalize(`${r.company} ${r.productCode} ${r.barcode} ${r.description} ${r.lab}`).includes(search);
-});}
-export function summarizeRows(rows){return rows.reduce((s,r)=>{s.products++;if(r.finalQty>0){s.itemsToBuy++;s.totalQty+=r.finalQty;}s.totalValue+=r.finalValue;s.periodValue+=r.periodValue;if(r.selectedPrice<=0)s.noPrice++;if(!r.boxValid)s.invalidBox++;return s;},{products:0,itemsToBuy:0,totalQty:0,totalValue:0,periodValue:0,noPrice:0,invalidBox:0});}
-function groupBy(rows,key){const map=new Map();rows.forEach(r=>{const label=String(r[key]||"Não informado");if(!map.has(label))map.set(label,{label,qty:0,value:0,count:0});const g=map.get(label);g.qty+=r.finalQty;g.value+=r.finalValue;g.count++;});return [...map.values()].map(g=>({...g,avgPrice:g.qty>0?g.value/g.qty:0})).sort((a,b)=>a.label.localeCompare(b.label,"pt-BR"));}
-export function buildSummaryTables(rows){
-    const curveRows=["A","B","C","D E F (Outros)"].map(label=>({label,qty:0,value:0,count:0}));rows.forEach(r=>{const i=["A","B","C"].indexOf(r.curve),g=curveRows[i<0?3:i];g.qty+=r.finalQty;g.value+=r.finalValue;g.count++;});
-    const scenarioRows=[["Menor preço","lowestPrice"],["Própria empresa","ownPrice"],["Preço selecionado","selectedPrice"]].map(([label,key])=>({label,value:rows.reduce((s,r)=>s+r.finalQty*r[key],0),extra:null}));scenarioRows.forEach(r=>r.diff=r.value-scenarioRows[0].value);
-    const via=rows.filter(r=>r.priceViaLast==="Sim");return {result:{itemsToBuy:rows.filter(r=>r.finalQty>0).length,totalQty:rows.reduce((s,r)=>s+r.finalQty,0),totalValue:rows.reduce((s,r)=>s+r.finalValue,0)},curveRows,companyRows:groupBy(rows,"company"),labRows:groupBy(rows,"lab"),scenarioRows,originRows:groupBy(rows,"priceOrigin"),viaLast:{qty:via.reduce((s,r)=>s+r.finalQty,0),value:via.reduce((s,r)=>s+r.finalValue,0)},transferred:rows.reduce((s,r)=>s+r.transferred,0),invalidBox:rows.filter(r=>!r.boxValid).length,noPriceWithBuy:rows.filter(r=>r.finalQty>0&&r.selectedPrice<=0).length};
+
+export function applyOverrides(rows,overrides){
+    return rows.map(row=>{
+        const manual=overrides[row.id]!==undefined;
+        const finalQty=manual?overrides[row.id]:row.suggestedQty;
+
+        return {
+            ...row,
+            manual,
+            finalQty,
+            finalValue:finalQty*row.selectedPrice
+        };
+    });
 }
-export function uniqueSorted(rows,key){return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"pt-BR"));}
+
+const normalize=value=>String(value??"")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase();
+
+function matchesMultiple(value,selected){
+    const options=Array.isArray(selected)?selected:[];
+
+    return !options.length||options.includes(value);
+}
+
+export function filterRows(rows,filters){
+    const search=normalize(filters.search).trim();
+
+    return rows.filter(row=>{
+        if(!matchesMultiple(row.company,filters.company))return false;
+        if(!matchesMultiple(row.lab,filters.laboratory))return false;
+        if(filters.group&&row.group!==filters.group)return false;
+        if(!matchesMultiple(row.curve,filters.curve))return false;
+        if(filters.priceOrigin&&row.priceOrigin!==filters.priceOrigin)return false;
+
+        const tests={
+            tobuy:row.finalQty>0,
+            nobuy:!(row.finalQty>0),
+            noprice:!(row.selectedPrice>0),
+            invalidbox:!row.boxValid,
+            nohistory:!row.hasHistory,
+            manual:row.manual,
+            expiredpolicy:row.policyExpired,
+            withpolicy:row.policyPrice>0,
+            withoutpolicy:!(row.policyPrice>0)
+        };
+
+        if(filters.status&&Object.hasOwn(tests,filters.status)&&!tests[filters.status]){
+            return false;
+        }
+
+        return !search||normalize(`${row.company} ${row.productCode} ${row.barcode} ${row.description} ${row.lab}`).includes(search);
+    });
+}
+
+export function summarizeRows(rows){
+    return rows.reduce((summary,row)=>{
+        summary.products++;
+
+        if(row.finalQty>0){
+            summary.itemsToBuy++;
+            summary.totalQty+=row.finalQty;
+        }
+
+        summary.totalValue+=row.finalValue;
+        summary.periodValue+=row.periodValue;
+
+        if(row.selectedPrice<=0){
+            summary.noPrice++;
+        }
+
+        if(!row.boxValid){
+            summary.invalidBox++;
+        }
+
+        return summary;
+    },{
+        products:0,
+        itemsToBuy:0,
+        totalQty:0,
+        totalValue:0,
+        periodValue:0,
+        noPrice:0,
+        invalidBox:0
+    });
+}
+
+function groupBy(rows,key){
+    const map=new Map();
+
+    rows.forEach(row=>{
+        const label=String(row[key]||"Não informado");
+
+        if(!map.has(label)){
+            map.set(label,{label,qty:0,value:0,count:0});
+        }
+
+        const group=map.get(label);
+        group.qty+=row.finalQty;
+        group.value+=row.finalValue;
+        group.count++;
+    });
+
+    return [...map.values()]
+        .map(group=>({
+            ...group,
+            avgPrice:group.qty>0?group.value/group.qty:0
+        }))
+        .sort((first,second)=>first.label.localeCompare(second.label,"pt-BR"));
+}
+
+export function buildSummaryTables(rows){
+    const curveRows=["A","B","C","D E F (Outros)"].map(label=>({
+        label,
+        qty:0,
+        value:0,
+        count:0
+    }));
+
+    rows.forEach(row=>{
+        const index=["A","B","C"].indexOf(row.curve);
+        const group=curveRows[index<0?3:index];
+        group.qty+=row.finalQty;
+        group.value+=row.finalValue;
+        group.count++;
+    });
+
+    const scenarioRows=[
+        ["Menor preço","lowestPrice"],
+        ["Própria empresa","ownPrice"],
+        ["Preço selecionado","selectedPrice"]
+    ].map(([label,key])=>({
+        label,
+        value:rows.reduce((total,row)=>total+row.finalQty*row[key],0),
+        extra:null
+    }));
+
+    scenarioRows.forEach(row=>{
+        row.diff=row.value-scenarioRows[0].value;
+    });
+
+    const via=rows.filter(row=>row.priceViaLast==="Sim");
+
+    return {
+        result:{
+            itemsToBuy:rows.filter(row=>row.finalQty>0).length,
+            totalQty:rows.reduce((total,row)=>total+row.finalQty,0),
+            totalValue:rows.reduce((total,row)=>total+row.finalValue,0)
+        },
+        curveRows,
+        companyRows:groupBy(rows,"company"),
+        labRows:groupBy(rows,"lab"),
+        scenarioRows,
+        originRows:groupBy(rows,"priceOrigin"),
+        viaLast:{
+            qty:via.reduce((total,row)=>total+row.finalQty,0),
+            value:via.reduce((total,row)=>total+row.finalValue,0)
+        },
+        transferred:rows.reduce((total,row)=>total+row.transferred,0),
+        invalidBox:rows.filter(row=>!row.boxValid).length,
+        noPriceWithBuy:rows.filter(row=>row.finalQty>0&&row.selectedPrice<=0).length
+    };
+}
+
+export function uniqueSorted(rows,key){
+    return [...new Set(rows.map(row=>row[key]).filter(Boolean))]
+        .sort((first,second)=>String(first).localeCompare(String(second),"pt-BR"));
+}
