@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
 
 import { BRANCHES, COLUMN_GROUPS } from "../constants/price-pending.constants";
@@ -209,41 +209,36 @@ export default function PricePendingFilters({
 
 
                         <div className="price-pending-filter-options">
-                            {canRefresh && (
-                                <button
-                                    type="button"
-                                    className="price-pending-filters-toggle"
-                                    onClick={onRefresh}
-                                    disabled={refreshing || readOnly}
-                                >
-                                    {refreshing ? "Atualizando..." : "Atualizar"}
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={onRefresh}
+                                disabled={!canRefresh || refreshing || readOnly}
+                            >
+                                {refreshing ? "Atualizando..." : "Atualizar"}
+                            </button>
 
 
-                            {policyIssuesCount > 0 && (
-                                <button
-                                    type="button"
-                                    className="price-pending-filters-toggle"
-                                    onClick={onShowPolicyIssues}
-                                    disabled={policyIssuesLoading}
-                                    title="Ver arquivos de preços fora do padrão"
-                                >
-                                    Fora do padrão ({policyIssuesCount})
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={onShowPolicyIssues}
+                                disabled={policyIssuesLoading}
+                                title="Ver arquivos de preços fora do padrão"
+                            >
+                                Fora do padrão ({policyIssuesCount})
+                            </button>
 
 
-                            {canViewIgnoredFiles && ignoredFilesCount > 0 && (
-                                <button
-                                    type="button"
-                                    className="price-pending-filters-toggle"
-                                    onClick={onShowIgnoredFiles}
-                                    title="Ver arquivos ignorados"
-                                >
-                                    Ignorados ({ignoredFilesCount})
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={onShowIgnoredFiles}
+                                disabled={!canViewIgnoredFiles}
+                                title="Ver arquivos ignorados"
+                            >
+                                Ignorados ({ignoredFilesCount})
+                            </button>
 
 
                             <button
