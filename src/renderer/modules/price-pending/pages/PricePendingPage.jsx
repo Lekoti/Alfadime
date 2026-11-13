@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 
+
 import PricePendingToolbar from "../components/PricePendingToolbar";
 import PricePendingFilters from "../components/PricePendingFilters";
 import PricePendingTable from "../components/PricePendingTable";
@@ -9,16 +10,20 @@ import PricePendingPolicyIssuesModal from "../components/PricePendingPolicyIssue
 import ExportExcelModal from "../../../shared/components/ExportExcelModal";
 
 
+
 import usePricePendingPermissions from "../hooks/usePricePendingPermissions";
 import usePricePendingFilters from "../hooks/usePricePendingFilters";
 import usePricePendingRows from "../hooks/usePricePendingRows";
+
 
 
 import { PRICE_PENDING_EXPORT_COLUMNS } from "../constants/price-pending.constants";
 import { isUpdatedPeriod } from "../utils/price-pending.utils";
 
 
+
 import "../styles/price-pending.css";
+
 
 
 function buildSummary(rows, visibleColumnsList) {
@@ -28,9 +33,11 @@ function buildSummary(rows, visibleColumnsList) {
         : [];
 
 
+
     const priceColumns = safeColumns.filter(
         (column) => column.group === "precos_ok"
     );
+
 
 
     const pendingColumns = safeColumns.filter(
@@ -38,13 +45,16 @@ function buildSummary(rows, visibleColumnsList) {
     );
 
 
+
     const countUpdated = (columns) => {
         let updated = 0;
+
 
 
         safeRows.forEach((row) => {
             columns.forEach((column) => {
                 const value = row[column.key];
+
 
 
                 if (
@@ -57,14 +67,17 @@ function buildSummary(rows, visibleColumnsList) {
         });
 
 
+
         return updated;
     };
+
 
 
     const pricesUpdated = countUpdated(priceColumns);
     const pendingUpdated = countUpdated(pendingColumns);
     const pricesTotal = safeRows.length * priceColumns.length;
     const pendingTotal = safeRows.length * pendingColumns.length;
+
 
 
     return {
@@ -76,8 +89,10 @@ function buildSummary(rows, visibleColumnsList) {
 }
 
 
+
 export default function PricePendingPage() {
     const permissions = usePricePendingPermissions();
+
 
 
     const filters = usePricePendingFilters({
@@ -85,10 +100,12 @@ export default function PricePendingPage() {
     });
 
 
+
     const rowsState = usePricePendingRows({
         permissions,
         enabled: !permissions.isLoadingPermissions
     });
+
 
 
     const [newLaboratory, setNewLaboratory] = useState("");
@@ -100,8 +117,10 @@ export default function PricePendingPage() {
     const [policyIssuesError, setPolicyIssuesError] = useState("");
 
 
+
     const tableWrapperRef = useRef(null);
     const scrollTimerRef = useRef(null);
+
 
 
     const rows = useMemo(
@@ -113,6 +132,7 @@ export default function PricePendingPage() {
     );
 
 
+
     const summary = useMemo(
         () => buildSummary(rows, filters.visibleColumnsList),
         [
@@ -122,15 +142,18 @@ export default function PricePendingPage() {
     );
 
 
+
     async function loadPolicyIssues() {
         setPolicyIssuesLoading(true);
         setPolicyIssuesError("");
+
 
 
         try {
             const result = await window.alfadime.ipc.invoke(
                 "commercial-policy:read"
             );
+
 
 
             setPolicyIssues(
@@ -149,9 +172,11 @@ export default function PricePendingPage() {
     }
 
 
+
     useEffect(() => {
         loadPolicyIssues();
     }, []);
+
 
 
     useEffect(() => {
@@ -163,6 +188,7 @@ export default function PricePendingPage() {
         }
 
 
+
         tableWrapperRef.current.scrollTop =
             filters.tableScrollTop;
     }, [
@@ -171,13 +197,16 @@ export default function PricePendingPage() {
     ]);
 
 
+
     function handleTableScroll(event) {
         const nextScrollTop = event.currentTarget.scrollTop;
+
 
 
         if (scrollTimerRef.current) {
             clearTimeout(scrollTimerRef.current);
         }
+
 
 
         scrollTimerRef.current = setTimeout(() => {
@@ -186,10 +215,12 @@ export default function PricePendingPage() {
     }
 
 
+
     async function handleAcceptExternalUpdate({ id, column }) {
         try {
             rowsState.setError("");
             rowsState.setSuccess("");
+
 
 
             const updatedRow =
@@ -197,6 +228,7 @@ export default function PricePendingPage() {
                     id,
                     column
                 });
+
 
 
             if (updatedRow && updatedRow.id === id) {
@@ -210,9 +242,11 @@ export default function PricePendingPage() {
             }
 
 
+
             rowsState.setSuccess("Atualização externa aceita.");
         } catch (acceptError) {
             console.error(acceptError);
+
 
 
             rowsState.setError(
@@ -220,6 +254,7 @@ export default function PricePendingPage() {
             );
         }
     }
+
 
 
     async function handleExport(selectedColumns) {
@@ -231,9 +266,11 @@ export default function PricePendingPage() {
         }
 
 
+
         const fileName = `precos-pendencias-${new Date()
             .toISOString()
             .slice(0, 10)}.xlsx`;
+
 
 
         const {
@@ -254,11 +291,13 @@ export default function PricePendingPage() {
         );
 
 
+
         if (canceled || !filePath) {
             return {
                 cancelled: true
             };
         }
+
 
 
         const result =
@@ -271,13 +310,16 @@ export default function PricePendingPage() {
             });
 
 
+
         rowsState.setSuccess(
             `Exportado com sucesso: ${result.filePath}`
         );
 
 
+
         return result;
     }
+
 
 
     if (
@@ -294,27 +336,18 @@ export default function PricePendingPage() {
     }
 
 
+
     return (
         <main className="price-pending-page">
             <PricePendingToolbar
                 filtersPanelOpen={filters.filtersPanelOpen}
-                ignoredFilesCount={rowsState.ignoredFiles.length}
-                policyIssuesCount={policyIssues.length}
-                policyIssuesLoading={policyIssuesLoading}
-                canRefresh={permissions.canRefresh}
-                canViewIgnoredFiles={permissions.canViewIgnoredFiles}
-                refreshing={rowsState.refreshing}
-                readOnly={rowsState.readOnly}
                 onToggleFilters={() =>
                     filters.setFiltersPanelOpen(
                         !filters.filtersPanelOpen
                     )
                 }
-                onRefresh={rowsState.refreshRows}
-                onShowIgnoredFiles={() => setShowIgnoredModal(true)}
-                onShowPolicyIssues={() => setShowPolicyIssuesModal(true)}
-                onReloadPolicyIssues={loadPolicyIssues}
             />
+
 
 
             {filters.filtersPanelOpen && (
@@ -327,6 +360,13 @@ export default function PricePendingPage() {
                     newLaboratory={newLaboratory}
                     hasActiveFilters={filters.hasActiveFilters}
                     permissions={permissions}
+                    ignoredFilesCount={rowsState.ignoredFiles.length}
+                    policyIssuesCount={policyIssues.length}
+                    policyIssuesLoading={policyIssuesLoading}
+                    canRefresh={permissions.canRefresh}
+                    canViewIgnoredFiles={permissions.canViewIgnoredFiles}
+                    refreshing={rowsState.refreshing}
+                    readOnly={rowsState.readOnly}
                     onSearchTermChange={filters.setSearchTerm}
                     onVisibleColumnsChange={filters.setVisibleColumns}
                     onFilterUpdatedChange={filters.setFilterUpdated}
@@ -337,8 +377,13 @@ export default function PricePendingPage() {
                     onClearFilters={filters.clearFilters}
                     onClose={() => filters.setFiltersPanelOpen(false)}
                     onExport={() => setExportModalOpen(true)}
+                    onRefresh={rowsState.refreshRows}
+                    onShowIgnoredFiles={() => setShowIgnoredModal(true)}
+                    onShowPolicyIssues={() => setShowPolicyIssuesModal(true)}
+                    onReloadPolicyIssues={loadPolicyIssues}
                 />
             )}
+
 
 
             <div className="price-pending-summary">
@@ -348,16 +393,19 @@ export default function PricePendingPage() {
                 </div>
 
 
+
                 <div className="price-pending-summary-item pending">
                     <span>Preços pendentes</span>
                     <strong>{summary.pricesPending}</strong>
                 </div>
 
 
+
                 <div className="price-pending-summary-item">
                     <span>Pendências atualizadas</span>
                     <strong>{summary.pendingUpdated}</strong>
                 </div>
+
 
 
                 <div className="price-pending-summary-item pending">
@@ -367,11 +415,13 @@ export default function PricePendingPage() {
             </div>
 
 
+
             {policyIssuesError && (
                 <div className="price-pending-error">
                     {policyIssuesError}
                 </div>
             )}
+
 
 
             {policyIssues.length > 0 && (
@@ -387,12 +437,14 @@ export default function PricePendingPage() {
                     </strong>
 
 
+
                     <span>
                         Política Comercial não aplicada para estes arquivos.
                         Clique para ver os detalhes.
                     </span>
                 </button>
             )}
+
 
 
             {rowsState.error && (
@@ -402,11 +454,13 @@ export default function PricePendingPage() {
             )}
 
 
+
             {rowsState.success && (
                 <div className="price-pending-success">
                     {rowsState.success}
                 </div>
             )}
+
 
 
             {rowsState.readOnly && (
@@ -421,6 +475,7 @@ export default function PricePendingPage() {
                     </button>
                 </div>
             )}
+
 
 
             <PricePendingTable
@@ -442,11 +497,13 @@ export default function PricePendingPage() {
             />
 
 
+
             <PricePendingIgnoredFilesModal
                 open={showIgnoredModal}
                 files={rowsState.ignoredFiles}
                 onClose={() => setShowIgnoredModal(false)}
             />
+
 
 
             <PricePendingPolicyIssuesModal
@@ -456,6 +513,7 @@ export default function PricePendingPage() {
                 onClose={() => setShowPolicyIssuesModal(false)}
                 onReload={loadPolicyIssues}
             />
+
 
 
             <ExportExcelModal
