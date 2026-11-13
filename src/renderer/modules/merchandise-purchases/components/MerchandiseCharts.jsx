@@ -21,7 +21,8 @@ const REMOVED_CHARTS=new Set([
     "policyValue",
     "origins",
     "scenarios",
-    "policy"
+    "policy",
+    "alerts"
 ]);
 
 function chartData(report){
@@ -90,21 +91,25 @@ export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
                         <div className="mp-chart-scroll">
                             {data.length?(
                                 <div className="mp-chart-bars">
-                                    {data.map((item,index)=>(
-                                        <div key={`${report.id}-${index}`} className="mp-chart-bar">
-                                            <span className="mp-chart-label">{item.label||"Não informado"}</span>
-                                            <div className="mp-chart-track">
-                                                <div
-                                                    className="mp-chart-fill"
-                                                    style={{
-                                                        width:`${Math.max(2,Math.round(Math.abs(item.value)/maxValue*100))}%`,
-                                                        backgroundColor:item.color
-                                                    }}
-                                                ></div>
+                                    {data.map((item,index)=>{
+                                        const percentage=Math.max(1,Math.round(item.value/maxValue*100));
+
+                                        return (
+                                            <div key={`${report.id}-${index}`} className="mp-chart-bar">
+                                                <span className="mp-chart-label">{item.label||"Não informado"}</span>
+                                                <div className="mp-chart-track">
+                                                    <div
+                                                        className="mp-chart-fill"
+                                                        style={{
+                                                            width:`${percentage}%`,
+                                                            backgroundColor:item.color
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="mp-chart-value">{formatReportCell(item.value,item.format)}</span>
                                             </div>
-                                            <span className="mp-chart-value">{formatReportCell(item.value,item.format)}</span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ):(
                                 <p className="mp-chart-empty">Sem dados para exibir.</p>
