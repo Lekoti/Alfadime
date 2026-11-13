@@ -1,47 +1,9 @@
 import {buildMerchandiseReports,formatReportCell,reportValue} from "../services/merchandiseReport.service";
 
-const CHART_COLORS=[
-    "#344B65",
-    "#B45309",
-    "#047857",
-    "#7C3AED",
-    "#0E7490",
-    "#BE123C",
-    "#1D4ED8",
-    "#CA8A04",
-    "#15803D",
-    "#9333EA",
-    "#0891B2",
-    "#DC2626"
-];
-
-const REMOVED_CHARTS=new Set([
-    "viaQty",
-    "viaValue",
-    "policyValue",
-    "origins",
-    "scenarios",
-    "policy",
-    "alerts"
-]);
-
-function chartData(report){
-    const categoryIndex=0;
-    const valueIndex=report.chartColumn||1;
-
-    return report.rows
-        .map((row,index)=>({
-            label:String(row[categoryIndex]??""),
-            value:Number(reportValue(row[valueIndex]))||0,
-            format:report.formats[valueIndex],
-            color:CHART_COLORS[index%CHART_COLORS.length]
-        }))
-        .filter(item=>item.value>0)
-        .sort((first,second)=>second.value-first.value);
-}
+import {visibleReports,chartRows} from "../services/merchandisePresentation.service";
 
 export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
-    const models=(reports||buildMerchandiseReports(rows)).filter(report=>!REMOVED_CHARTS.has(report.id));
+    const models=visibleReports(reports||buildMerchandiseReports(rows));
 
     if(mode==="tables"){
         return (
@@ -82,7 +44,7 @@ export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
     return (
         <div className="mp-chart-grid">
             {models.map(report=>{
-                const data=chartData(report);
+                const data=chartRows(report);
                 const maxValue=Math.max(...data.map(item=>Math.abs(item.value)),1);
 
                 return (

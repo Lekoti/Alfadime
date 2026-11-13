@@ -1,6 +1,6 @@
 import {resolvePrice,productPriceKey} from "./merchandisePolicy.service";
 
-const MONTHS=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+import {getRollingPeriods} from "./merchandisePeriod.service";
 const curveKey=value=>["A","B","C"].includes(value)?value:"OTHER";
 
 export function getBoxMultiple(box){
@@ -15,7 +15,7 @@ export function suggestQuantity(monthly,days,balance,box){
 }
 
 export function computeRows(rows,premises){
-    const closed=Math.min(12,Math.max(1,Number(premises.closedMonth)||12));
+    const periods=getRollingPeriods(premises.closedMonth);
     const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
     const cheapest=new Map();
 
@@ -29,13 +29,13 @@ export function computeRows(rows,premises){
     });
 
     return rows.map((row,index)=>{
-        const months=Array.from({length:closed},(_,position)=>Number(row.months?.[position])||0);
+        const months=periods.map(period=>Number(row.months?.[period.index])||0);
         const average=size=>{
-            const values=months.slice(-Math.min(size,closed));
+            const values=months.slice(-size);
             return values.reduce((total,value)=>total+value,0)/values.length;
         };
 
-        const avgAll=average(closed);
+        const avgAll=average(12);
         const avg12=average(12);
         const avg9=average(9);
         const avg6=average(6);
@@ -46,7 +46,7 @@ export function computeRows(rows,premises){
         const hasHistory=months.some(value=>value>0);
         const maxQty=hasHistory?Math.max(...months):0;
         const minQty=hasHistory?Math.min(...months):0;
-        const select=test=>months.map((value,position)=>test(value)?MONTHS[position]:null).filter(Boolean);
+        const select=test=>months.map((value,position)=>test(value)?periods[position].label:null).filter(Boolean);
         const highMonths=hasHistory?select(value=>value>avgAll):[];
         const peak=select(value=>value===maxQty);
         const lowMonths=select(value=>value===minQty);
@@ -66,8 +66,8 @@ export function computeRows(rows,premises){
         const refQty=references[premises.periodReference]??maxQty;
         const suggestedQty=suggestQuantity(avgMonth,targetDays,consolidated,row.boxSize);
         const periodSuggestion=suggestQuantity(refQty,targetDays,consolidated,row.boxSize);
-        const boxValue=Number(row.boxSize)||0;
-        const boxValid=boxValue===0||(Number.isInteger(boxValue)&&boxValue>0);
+        const boxValue=Number(row.boxSize);
+        const boxValid=Number.isFinite(boxValue)&&(boxValue===0||(Number.isInteger(boxValue)&&boxValue>0));
 
         return {
             ...row,

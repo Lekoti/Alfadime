@@ -5,6 +5,9 @@ import {resolvePrice,productPriceKey} from "./merchandisePolicy.service";
 import {addNativeExcelCharts} from "./merchandiseNativeCharts.service";
 import {addDynamicChartRanges} from "./merchandiseChartRanges.service";
 
+import {visibleReports,chartRows} from "./merchandisePresentation.service";
+import {getRollingRange} from "./merchandisePeriod.service";
+
 const FILTERS="Filtros";
 const TABLES="Tabelas";
 const PRODUCTS="Simulação Compras";
@@ -21,7 +24,7 @@ function head(cell,value,color=BLUE){cell.value=clean(value);cell.font={name:"Ca
 function color(key){if(key.startsWith("policy"))return "FF7C3AED";if(key==="maxPeriod"||key==="maxQty")return "FF047857";if(key==="minPeriod"||key==="minQty")return "FFBE123C";if(/price|Purchase|Company/i.test(key)&&key!=="company")return "FFB45309";if(/stock|blocked|pending|consolidated|transferred/i.test(key))return "FF047857";if(/avg|curve/i.test(key))return "FF0E7490";return BLUE;}
 function excelValue(value,type){if(!value)return type==="date"||type==="datetime"?"":clean(value);if(type==="date"){const match=String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);return match?Date.UTC(Number(match[1]),Number(match[2])-1,Number(match[3]))/86400000+25569:"";}if(type==="datetime"){const date=new Date(value);return Number.isNaN(date.getTime())?"":(date.getTime()-date.getTimezoneOffset()*60000)/86400000+25569;}return clean(value);}
 
-export async function exportMerchandiseExcel({rows,premises,filters,importInfo,policySnapshot,policyError}){
+export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filters={},importInfo={},policySnapshot,policyError}){
     if(!rows?.length)throw new Error("Nenhum produto filtrado para exportar.");
 
     const workbook=new ExcelJS.Workbook();
@@ -35,7 +38,7 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
 
     const columns=buildColumns(premises.closedMonth);
     const positions=Object.fromEntries(columns.map((column,index)=>[column.key,index]));
-    const reports=buildMerchandiseReports(rows);
+    const reports=visibleReports(buildMerchandiseReports(rows));
     const total=rows.length;
     const supportEnd=total+5;
     const productsEnd=total+1;
@@ -130,7 +133,7 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
     filtersSheet.getCell("G11").alignment={wrapText:true,vertical:"top"};
 
     filtersSheet.mergeCells("G15:K15");
-    filtersSheet.getCell("G15").value=`Vendas completas até: ${MONTH_LABELS[Math.max(0,(Number(premises.closedMonth)||1)-1)]}. Para mudar o histórico, ajuste no app e reexporte.`;
+    filtersSheet.getCell("G15").value=`Últimos 12 meses fechados: ${getRollingRange(premises.closedMonth,12)}. Para mudar o histórico, ajuste no app e reexporte.`;
     filtersSheet.getCell("G15").alignment={wrapText:true};
     filtersSheet.getRow(15).height=32;
 
@@ -147,14 +150,27 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
     [3,4,5,8,9,10,13,14,15].forEach(column=>filtersSheet.getColumn(column).width=19);
     [6,11].forEach(column=>filtersSheet.getColumn(column).width=3);
     filtersSheet.views=[{state:"frozen",ySplit:3}];
+    const otherFilters=[["Busca",filters.search],["Tipo de produto",filters.group],["Origem do preço",filters.priceOrigin],["Situação (código)",filters.status]];
+    otherFilters.forEach(([label,value],index)=>{
+        const row=20+index;
+        filtersSheet.getCell(row,2).value=label;
+        filtersSheet.mergeCells(row,3,row,6);
+        filtersSheet.getCell(row,3).value=clean(value||"Todos");
+    });
+    [3,6,9,12].forEach((size,index)=>{
+        const row=20+index;
+        filtersSheet.getCell(row,7).value=`Média ${size}M`;
+        filtersSheet.mergeCells(row,8,row,15);
+        filtersSheet.getCell(row,8).value=getRollingRange(premises.closedMonth,size);
+    });
 
     const alternatives=PRICE_SOURCES.map(source=>rows.map(row=>resolvePrice(row,source.value)));
     const lowestPrices=PRICE_SOURCES.map((source,sourceIndex)=>{
         const map=new Map();
-        rows.forEach((row,index)=>{
-            const price=alternatives[sourceIndex][index];
+        priceRows.forEach(row=>{
+            const price=resolvePrice(row,source.value);
             const key=productPriceKey(row);
-            if(price.price>0&&(!map.has(key)||price.price<map.get(key).price))map.set(key,{...price,index});
+            if(price.price>0&&(!map.has(key)||price.price<map.get(key).price))map.set(key,{...price});
         });
         return map;
     });
@@ -186,12 +202,12 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
                 formula(support.getCell(supportRow,start+3),`IF(AND(ISNUMBER(${reference("policyValidity")}),${reference("policyValidity")}>0,TODAY()>${reference("policyValidity")}),\"Política vencida\",\"\")&${literal(fixed?` · ${fixed}`:"")}`,own.warning);
             }
 
-            if(lowest)formula(support.getCell(supportRow,start+7),`${L(start+3)}${lowest.index+6}`,lowest.warning);
+            // A referência de menor preço inclui filiais fora do filtro; o aviso já foi armazenado.
         });
 
         const box=reference("boxSize");
         const multiple=`IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),${box},1)`;
-        const quantity=base=>`ROUNDUP(MAX(ROUNDUP(${base}/30*${reference("targetDays")},0)-${reference("consolidated")},0)/${multiple},0)*${multiple}`;
+        const quantity=base=>`ROUNDUP(MAX((-INT(-(${base}/30*${reference("targetDays")}-1E-9)))-${reference("consolidated")},0)/${multiple},0)*${multiple}`;
         const periodOptions={max:"maxQty",min:"minQty",avgMonth:"avgMonth",avg3:"avg3",avg6:"avg6",avg9:"avg9",avg12:"avg12"};
         let periodFormula=reference("maxQty");
 
@@ -208,7 +224,7 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
             priceCompany:`IF('${FILTERS}'!$C$17="Menor preço",${select(7)},${select(3)})`,
             selectedPriceWarning:`IF('${FILTERS}'!$C$17="Menor preço",${select(8)},${select(4)})`,
             priceViaLast:`IF(${reference("selectedPrice")}<=0,"",IF(${reference("priceOrigin")}="Última compra","Sim","Não"))`,
-            policyStatus:input.policyPrice>0?`IF(AND(ISNUMBER(${reference("policyValidity")}),${reference("policyValidity")}>0),IF(TODAY()>${reference("policyValidity")},"Política vencida","Vigente"),"Validade não informada")`:literal(input.policyStatus||"Sem Política Comercial"),
+            policyStatus:literal(input.policyStatus||"Sem Política Comercial"),
             consolidated:`SUM(${reference("pending")}:${reference("transferred")})`,
             targetDays:`IF(${reference("curve")}="A",'${FILTERS}'!$C$13,IF(${reference("curve")}="B",'${FILTERS}'!$C$14,IF(${reference("curve")}="C",'${FILTERS}'!$C$15,'${FILTERS}'!$C$16)))`,
             refQty:periodFormula,
@@ -216,7 +232,7 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
             periodSuggestion:quantity(reference("refQty")),
             periodValue:`${reference("periodSuggestion")}*${reference("selectedPrice")}`,
             stockMonths:`IFERROR(${reference("consolidated")}/${reference("avgMonth")},0)`,
-            boxStatus:`IF(AND(ISNUMBER(${box}),${box}>0,MOD(${box},1)=0),"OK","Caixa inválida")`
+            boxStatus:literal(input.boxStatus||"Caixa inválida")
         };
 
         if(!input.manual)expressions.finalQty=quantity(reference("avgMonth"));
@@ -270,6 +286,8 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
     }
 
     function expression(metric){
+        if(metric.op==="sum"&&metric.key==="finalValue")return `SUMIF(${productsRange("finalQty")},">0",${productsRange("finalValue")})`;
+        if(metric.op==="sum"&&metric.key==="periodValue")return `SUMIF(${productsRange("periodSuggestion")},">0",${productsRange("periodValue")})`;
         if(metric.op==="sum")return `SUM(${productsRange(metric.key)})`;
         if(metric.op==="buyCount")return `COUNTIF(${productsRange("finalQty")},">0")`;
         if(metric.op==="scenario")return `SUMPRODUCT(${productsRange("finalQty")},${productsRange(metric.key)})`;
@@ -328,69 +346,43 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
     const chartSpecs=[];
     const dynamicRanges=[];
     let chartRow=4;
-    let chartIndex=0;
-
     for(let index=0;index<reports.length;index+=2){
         const band=reports.slice(index,index+2);
-
+        let largest=0;
         band.forEach((report,position)=>{
+            const data=chartRows(report);
             const start=2+position*12;
-            const tableRow=chartRow+19;
+            const tableRow=chartRow+14;
             const first=tableRow+1;
-            const categoryStart=report.chartColumn||1;
-            const valueStart=report.chartColumn||2;
-            const categoryLetter=L(start+categoryStart-1);
-            const valueLetter=L(start+valueStart-1);
-            const categoryRange=`'${GRAPHS}'!$${categoryLetter}$${first}:$${categoryLetter}$${first+Math.max(0,report.rows.length-1)}`;
-            const valueRange=`'${GRAPHS}'!$${valueLetter}$${first}:$${valueLetter}$${first+Math.max(0,report.rows.length-1)}`;
-            const valueFormat=REPORT_FORMATS[report.formats[valueStart-1]]||"General";
-
+            largest=Math.max(largest,data.length);
             graphs.mergeCells(chartRow,start,chartRow,start+9);
             head(graphs.getCell(chartRow,start),report.title);
-            report.headers.forEach((header,headerIndex)=>head(graphs.getCell(tableRow,start+headerIndex),header));
-
-            report.rows.forEach((cells,rowIndex)=>{
-                cells.forEach((cell,cellIndex)=>{
-                    const target=graphs.getCell(first+rowIndex,start+cellIndex);
-                    if(cell&&typeof cell==="object")formula(target,expression(cell),cell.value);
-                    else target.value=clean(cell);
-                    target.numFmt=REPORT_FORMATS[report.formats[cellIndex]]||"General";
-                });
+            head(graphs.getCell(tableRow,start),report.headers[0]);
+            head(graphs.getCell(tableRow,start+1),report.headers[report.chartColumn||1]);
+            data.forEach((item,rowIndex)=>{
+                graphs.getCell(first+rowIndex,start).value=clean(item.label);
+                const metric=item.cells[report.chartColumn||1];
+                const cell=graphs.getCell(first+rowIndex,start+1);
+                if(metric&&typeof metric==="object")formula(cell,expression(metric),metric.value);
+                else cell.value=clean(item.value);
+                cell.numFmt=REPORT_FORMATS[item.format]||"General";
             });
-
-            if(report.rows.length){
-                chartSpecs.push({
-                    title:report.title,
-                    seriesName:report.headers[valueStart-1]||"Valor",
-                    categoryFormula:categoryRange,
-                    valueFormula:valueRange,
-                    labels:report.rows.map(cells=>clean(cells[categoryStart-1])),
-                    values:report.rows.map(cells=>reportValue(cells[valueStart-1])),
-                    format:valueFormat,
-                    color:"344B65",
-                    fromCol:start-1,
-                    fromRow:chartRow,
-                    toCol:start+6,
-                    toRow:chartRow+11
-                });
-
-                dynamicRanges.push({
-                    name:`MP_Chart_${chartIndex+1}_Categorias`,
-                    sheetIndex:graphs.id-1,
-                    formula:categoryRange
-                });
-
-                dynamicRanges.push({
-                    name:`MP_Chart_${chartIndex+1}_Valores`,
-                    sheetIndex:graphs.id-1,
-                    formula:valueRange
-                });
-
-                chartIndex+=1;
-            }
+            if(!data.length){graphs.getCell(first,start).value="Sem dados para exibir.";return;}
+            const last=first+data.length-1;
+            const categoryRange=`'${GRAPHS}'!$${L(start)}$${first}:$${L(start)}$${last}`;
+            const valueRange=`'${GRAPHS}'!$${L(start+1)}$${first}:$${L(start+1)}$${last}`;
+            chartSpecs.push({
+                title:report.title,seriesName:report.headers[report.chartColumn||1],
+                categoryFormula:categoryRange,valueFormula:valueRange,
+                labels:data.map(item=>item.label),values:data.map(item=>item.value),
+                format:REPORT_FORMATS[report.formats[report.chartColumn||1]]||"General",
+                fromCol:start-1,fromRow:chartRow,toCol:start+6,toRow:chartRow+11
+            });
+            const number=chartSpecs.length;
+            dynamicRanges.push({name:`MP_Chart_${number}_Categorias`,sheetIndex:graphs.id-1,formula:categoryRange});
+            dynamicRanges.push({name:`MP_Chart_${number}_Valores`,sheetIndex:graphs.id-1,formula:valueRange});
         });
-
-        chartRow+=Math.max(...band.map(report=>report.rows.length))+23;
+        chartRow+=largest+19;
     }
 
     graphs.views=[{state:"frozen",ySplit:2}];

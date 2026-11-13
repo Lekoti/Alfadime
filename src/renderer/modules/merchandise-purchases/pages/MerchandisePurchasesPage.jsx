@@ -63,6 +63,7 @@ export default function MerchandisePurchasesPage(){
 
             await exportMerchandiseExcel({
                 rows,
+                priceRows:allRows,
                 premises,
                 filters,
                 importInfo:imported,

@@ -1,3 +1,5 @@
+import {getRollingRange} from "../services/merchandisePeriod.service";
+
 export const MODULE_ID="merchandise-purchases";
 export const MONTH_LABELS=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 export const PRICE_SOURCES=[
@@ -103,7 +105,7 @@ export const FIELD_HEADERS={
 export function buildColumns(closedMonth){
     const closed=Math.min(12,Math.max(1,Number(closedMonth)||12));
     const month=index=>MONTH_LABELS[index-1].toLowerCase();
-    const range=size=>`${month(Math.max(1,closed-size+1))}-${month(closed)}`;
+    const range=size=>getRollingRange(closed,size);
     const column=(key,label,type="text",width=18,extra={})=>({key,label,type,width,...extra});
 
     return [
