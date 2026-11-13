@@ -1,28 +1,12 @@
-﻿const {
+const {
     listRows
 } = require("./price-pending.repository");
-
 
 const XLSX = require("xlsx");
 const fs = require("node:fs");
 const path = require("node:path");
 
-
-const FIXED_COLUMNS = [
-    {
-        key: "industry_global_code",
-        label: "Código Global"
-    },
-    {
-        key: "laboratory",
-        label: "Laboratórios"
-    },
-    {
-        key: "observation",
-        label: "Observação"
-    }
-];
-
+const BRANCHES = ["dpr", "ams", "dmt", "dms", "dsc"];
 
 const COLUMN_GROUPS = {
     env_precos: "Preços Recebidos",
@@ -31,380 +15,208 @@ const COLUMN_GROUPS = {
     pendencias_ok: "Pendências Atualizadas"
 };
 
+const COLUMN_DEFINITIONS = new Map([
+    ["industry_global_code", { label: "Código Global" }],
+    ["laboratory", { label: "Laboratórios" }],
+    ["observation", { label: "Observação" }]
+]);
 
-const BRANCH_LABELS = {
-    dpr: "DPR",
-    ams: "AMS",
-    dmt: "DMT",
-    dms: "DMS",
-    dsc: "DSC"
-};
-
+for (const [group, groupLabel] of Object.entries(COLUMN_GROUPS)) {
+    for (const branch of BRANCHES) {
+        COLUMN_DEFINITIONS.set(`${group}_${branch}`, {
+            label: branch.toUpperCase(),
+            group,
+            groupLabel
+        });
+    }
+}
 
 function normalizeLaboratory(value) {
-    return String(value || "")
+    return String(value ?? "")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toUpperCase()
         .trim();
 }
 
-
-function getColumnGroup(column) {
-    const parts = column.split("_");
-
-    if (parts.length < 3) {
-        return null;
+function validateColumns(includeColumns) {
+    if (!Array.isArray(includeColumns) || !includeColumns.length) {
+        throw new Error("Selecione ao menos uma coluna para exportação.");
     }
 
-    return parts.slice(0, -1).join("_");
-}
-
-
-function getColumnBranch(column) {
-    const parts = column.split("_");
-
-    if (parts.length < 3) {
-        return null;
-    }
-
-    return BRANCH_LABELS[parts[parts.length - 1]] || null;
-}
-
-
-function validateColumns(columns) {
-    if (!Array.isArray(columns) || !columns.length) {
-        throw new Error(
-            "Selecione ao menos uma coluna para exportação."
-        );
-    }
-
-    const invalidColumns = columns.filter((column) => {
-        if (FIXED_COLUMNS.some((fixedColumn) => fixedColumn.key === column)) {
-            return false;
-        }
-
-        const group = getColumnGroup(column);
-        const branch = getColumnBranch(column);
-
-        return !group || !COLUMN_GROUPS[group] || !branch;
+    const invalidColumns = includeColumns.filter((column) => {
+        return typeof column !== "string" || !COLUMN_DEFINITIONS.has(column);
     });
 
     if (invalidColumns.length) {
         throw new Error(
-            `Colunas inválidas para exportação: ${invalidColumns.join(", ")}.`
+            `Colunas inválidas para exportação: ${invalidColumns.map(String).join(", ")}.`
         );
     }
+
+    return [...new Set(includeColumns)];
 }
-
-
-function getCellValue(row, column) {
-    return row[column] || "";
-}
-
-
-function createExportRows(rows, columns) {
-    return rows.map((row) => {
-        const item = {};
-
-        columns.forEach((column) => {
-            item[column] = getCellValue(row, column);
-        });
-
-        return item;
-    });
-}
-
-
-function writeWorkbook(filePath, rows, columns) {
-    const fixedSelectedColumns = FIXED_COLUMNS.filter((fixedColumn) => {
-        return columns.includes(fixedColumn.key);
-    });
-
-    const groupedColumns = columns.filter((column) => {
-        return !FIXED_COLUMNS.some((fixedColumn) => fixedColumn.key === column);
-    });
-
-    const orderedColumns = [
-        ...fixedSelectedColumns,
-        ...groupedColumns
-    ];
-
-    const worksheet = XLSX.utils.aoa_to_sheet([
-        []
-    ]);
-
-    let currentColumn = 0;
-    const merges = [];
-
-    fixedSelectedColumns.forEach((fixedColumn) => {
-        worksheet[XLSX.utils.encode_cell({
-            c: currentColumn,
-            r: 0
-        })] = {
-            t: "s",
-            v: fixedColumn.label
-        };
-
-        merges.push({
-            s: {
-                c: currentColumn,
-                r: 0
-            },
-            e: {
-                c: currentColumn,
-                r: 1
-            }
-        });
-
-        currentColumn += 1;
-    });
-
-    let groupIndex = 0;
-
-    while (groupIndex < groupedColumns.length) {
-        const column = groupedColumns[groupIndex];
-        const group = getColumnGroup(column);
-        const groupColumns = [];
-
-        while (
-            groupIndex < groupedColumns.length &&
-            getColumnGroup(groupedColumns[groupIndex]) === group
-        ) {
-            groupColumns.push(groupedColumns[groupIndex]);
-            groupIndex += 1;
-        }
-
-        const startColumn = currentColumn;
-        const endColumn = currentColumn + groupColumns.length - 1;
-
-        worksheet[XLSX.utils.encode_cell({
-            c: startColumn,
-            r: 0
-        })] = {
-            t: "s",
-            v: COLUMN_GROUPS[group]
-        };
-
-        merges.push({
-            s: {
-                c: startColumn,
-                r: 0
-            },
-            e: {
-                c: endColumn,
-                r: 0
-            }
-        });
-
-        groupColumns.forEach((groupColumn, index) => {
-            worksheet[XLSX.utils.encode_cell({
-                c: startColumn + index,
-                r: 1
-            })] = {
-                t: "s",
-                v: getColumnBranch(groupColumn)
-            };
-        });
-
-        currentColumn = endColumn + 1;
-    }
-
-    const dataRows = createExportRows(
-        rows,
-        orderedColumns
-    );
-
-    dataRows.forEach((dataRow, rowIndex) => {
-        orderedColumns.forEach((column, columnIndex) => {
-            worksheet[XLSX.utils.encode_cell({
-                c: columnIndex,
-                r: rowIndex + 2
-            })] = {
-                t: "s",
-                v: String(dataRow[column] ?? "")
-            };
-        });
-    });
-
-    worksheet["!merges"] = merges;
-    worksheet["!cols"] = orderedColumns.map(() => ({
-        wch: 18
-    }));
-
-    if (rows.length) {
-        worksheet["!autofilter"] = {
-            ref: XLSX.utils.encode_range({
-                s: {
-                    c: 0,
-                    r: 1
-                },
-                e: {
-                    c: orderedColumns.length - 1,
-                    r: rows.length + 1
-                }
-            })
-        };
-    }
-
-    const workbook = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        "Preços e Pendências"
-    );
-
-    const dir = path.dirname(filePath);
-
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, {
-            recursive: true
-        });
-    }
-
-    const excelBuffer = XLSX.write(
-        workbook,
-        {
-            bookType: "xlsx",
-            type: "buffer"
-        }
-    );
-
-    fs.writeFileSync(
-        filePath,
-        excelBuffer
-    );
-}
-
 
 function filterRowsByIds(rows, rowIds) {
-    if (!Array.isArray(rowIds) || rowIds.length === 0) {
+    if (rowIds === undefined) {
         return rows;
     }
 
-    const selectedIds = new Set(
-        rowIds.map((id) => String(id))
-    );
+    if (!Array.isArray(rowIds)) {
+        throw new Error("A lista de registros para exportação é inválida.");
+    }
 
-    return rows.filter((row) =>
-        selectedIds.has(String(row.id))
-    );
+    const selectedIds = new Set(rowIds.map((id) => String(id)));
+
+    return rows.filter((row) => selectedIds.has(String(row.id)));
 }
 
+function writeWorkbook(filePath, rows, columns) {
+    if (typeof filePath !== "string" || !filePath.trim()) {
+        throw new Error("Informe um caminho válido para salvar o arquivo Excel.");
+    }
+
+    const firstHeader = columns.map((column) => {
+        const definition = COLUMN_DEFINITIONS.get(column);
+        return definition.groupLabel || definition.label;
+    });
+
+    const secondHeader = columns.map((column) => {
+        const definition = COLUMN_DEFINITIONS.get(column);
+        return definition.group ? definition.label : "";
+    });
+
+    const values = rows.map((row) => {
+        return columns.map((column) => String(row[column] ?? ""));
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet([
+        firstHeader,
+        secondHeader,
+        ...values
+    ]);
+
+    const merges = [];
+
+    for (let start = 0; start < columns.length;) {
+        const definition = COLUMN_DEFINITIONS.get(columns[start]);
+
+        if (!definition.group) {
+            merges.push({
+                s: { r: 0, c: start },
+                e: { r: 1, c: start }
+            });
+            start += 1;
+            continue;
+        }
+
+        let end = start;
+
+        while (
+            end + 1 < columns.length &&
+            COLUMN_DEFINITIONS.get(columns[end + 1]).group === definition.group
+        ) {
+            end += 1;
+        }
+
+        if (end > start) {
+            merges.push({
+                s: { r: 0, c: start },
+                e: { r: 0, c: end }
+            });
+
+            for (let index = start + 1; index <= end; index += 1) {
+                delete worksheet[XLSX.utils.encode_cell({ r: 0, c: index })];
+            }
+        }
+
+        start = end + 1;
+    }
+
+    worksheet["!merges"] = merges;
+    worksheet["!ref"] = XLSX.utils.encode_range({
+        s: { r: 0, c: 0 },
+        e: { r: rows.length + 1, c: columns.length - 1 }
+    });
+
+    worksheet["!cols"] = columns.map((column, index) => {
+        const definition = COLUMN_DEFINITIONS.get(column);
+        const minimum = definition.group ? 14 : definition.label.length + 2;
+        const width = values.reduce((largest, row) => {
+            const length = row[index].split(/\r?\n/).reduce((max, line) => {
+                return Math.max(max, line.length);
+            }, 0);
+            return Math.max(largest, length + 2);
+        }, minimum);
+
+        return { wch: Math.min(width, 55) };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Preços e Pendências");
+
+    const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "buffer"
+    });
+
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, excelBuffer);
+}
 
 function exportToExcel({
     filePath,
-    includeColumns = [],
-    rowIds = []
+    includeColumns = [...COLUMN_DEFINITIONS.keys()],
+    rowIds
 } = {}) {
+    const columns = validateColumns(includeColumns);
     const allRows = listRows();
 
     if (!allRows.length) {
-        throw new Error(
-            "Nenhuma linha encontrada para exportação."
-        );
+        throw new Error("Nenhuma linha encontrada para exportação.");
     }
 
-    const rows = filterRowsByIds(
-        allRows,
-        rowIds
-    );
+    const rows = filterRowsByIds(allRows, rowIds);
 
     if (!rows.length) {
-        throw new Error(
-            "Nenhum registro filtrado para exportação."
-        );
+        throw new Error("Nenhum registro encontrado para exportação com os filtros atuais.");
     }
 
-    validateColumns(includeColumns);
-
-    writeWorkbook(
-        filePath,
-        rows,
-        includeColumns
-    );
+    writeWorkbook(filePath, rows, columns);
 
     return {
         success: true,
         filePath,
         rows: rows.length,
-        columns: includeColumns.length
-    };
-}
-
-
-function exportToExcelByLaboratory({
-    filePath,
-    laboratory
-}) {
-    const normalizedLaboratory =
-        normalizeLaboratory(laboratory);
-
-    if (!normalizedLaboratory) {
-        throw new Error(
-            "Laboratório obrigatório para exportação."
-        );
-    }
-
-    const rows = listRows();
-
-    const filteredRows = rows.filter((row) => {
-        return normalizeLaboratory(
-            row.laboratory
-        ) === normalizedLaboratory;
-    });
-
-    if (!filteredRows.length) {
-        throw new Error(
-            `Nenhuma linha encontrada para o laboratório: ${laboratory}`
-        );
-    }
-
-    const columns = [
-        "industry_global_code",
-        "laboratory",
-        "observation",
-
-        "env_precos_dpr",
-        "env_precos_ams",
-        "env_precos_dmt",
-        "env_precos_dms",
-        "env_precos_dsc",
-
-        "env_pend_dpr",
-        "env_pend_ams",
-        "env_pend_dmt",
-        "env_pend_dms",
-        "env_pend_dsc",
-
-        "precos_ok_dpr",
-        "precos_ok_ams",
-        "precos_ok_dmt",
-        "precos_ok_dms",
-        "precos_ok_dsc",
-
-        "pendencias_ok_dpr",
-        "pendencias_ok_ams",
-        "pendencias_ok_dmt",
-        "pendencias_ok_dms",
-        "pendencias_ok_dsc"
-    ];
-
-    writeWorkbook(
-        filePath,
-        filteredRows,
-        columns
-    );
-
-    return {
-        success: true,
-        filePath,
-        rows: filteredRows.length,
         columns: columns.length
     };
 }
 
+function exportToExcelByLaboratory({ filePath, laboratory } = {}) {
+    const normalizedLaboratory = normalizeLaboratory(laboratory);
+
+    if (!normalizedLaboratory) {
+        throw new Error("Laboratório obrigatório para exportação.");
+    }
+
+    const rows = listRows().filter((row) => {
+        return normalizeLaboratory(row.laboratory) === normalizedLaboratory;
+    });
+
+    if (!rows.length) {
+        throw new Error(`Nenhuma linha encontrada para o laboratório: ${laboratory}`);
+    }
+
+    const columns = [...COLUMN_DEFINITIONS.keys()];
+    writeWorkbook(filePath, rows, columns);
+
+    return {
+        success: true,
+        filePath,
+        rows: rows.length,
+        columns: columns.length
+    };
+}
 
 module.exports = {
     exportToExcel,
