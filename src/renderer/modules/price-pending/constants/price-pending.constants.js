@@ -1,4 +1,4 @@
-export const BRANCHES = [
+﻿export const BRANCHES = [
     "DPR",
     "AMS",
     "DMT",
@@ -36,7 +36,7 @@ export const PRICE_PENDING_COLUMNS = [
     },
     {
         key: "laboratory",
-        label: "Laboratório",
+        label: "Laboratórios",
         group: null,
         editable: true
     },
@@ -179,34 +179,114 @@ export const EMPTY_PRICE_PENDING_ROW = {
 export const PRICE_PENDING_EXPORT_COLUMNS = [
     {
         key: "industry_global_code",
-        label: "Código Global da Indústria"
+        label: "Código Global"
     },
     {
         key: "laboratory",
-        label: "Laboratório"
+        label: "Laboratórios"
     },
     {
         key: "observation",
         label: "Observação"
     },
-    { key: "env_precos_dpr", label: "Preços DPR" },
-    { key: "env_precos_ams", label: "Preços AMS" },
-    { key: "env_precos_dmt", label: "Preços DMT" },
-    { key: "env_precos_dms", label: "Preços DMS" },
-    { key: "env_precos_dsc", label: "Preços DSC" },
-    { key: "env_pend_dpr", label: "Pendências DPR" },
-    { key: "env_pend_ams", label: "Pendências AMS" },
-    { key: "env_pend_dmt", label: "Pendências DMT" },
-    { key: "env_pend_dms", label: "Pendências DMS" },
-    { key: "env_pend_dsc", label: "Pendências DSC" },
-    { key: "precos_ok_dpr", label: "OK Preços DPR" },
-    { key: "precos_ok_ams", label: "OK Preços AMS" },
-    { key: "precos_ok_dmt", label: "OK Preços DMT" },
-    { key: "precos_ok_dms", label: "OK Preços DMS" },
-    { key: "precos_ok_dsc", label: "OK Preços DSC" },
-    { key: "pendencias_ok_dpr", label: "OK Pendências DPR" },
-    { key: "pendencias_ok_ams", label: "OK Pendências AMS" },
-    { key: "pendencias_ok_dmt", label: "OK Pendências DMT" },
-    { key: "pendencias_ok_dms", label: "OK Pendências DMS" },
-    { key: "pendencias_ok_dsc", label: "OK Pendências DSC" }
+    {
+        key: "env_precos_dpr",
+        label: "DPR",
+        group: "Preços Recebidos"
+    },
+    {
+        key: "env_precos_ams",
+        label: "AMS",
+        group: "Preços Recebidos"
+    },
+    {
+        key: "env_precos_dmt",
+        label: "DMT",
+        group: "Preços Recebidos"
+    },
+    {
+        key: "env_precos_dms",
+        label: "DMS",
+        group: "Preços Recebidos"
+    },
+    {
+        key: "env_precos_dsc",
+        label: "DSC",
+        group: "Preços Recebidos"
+    },
+    {
+        key: "env_pend_dpr",
+        label: "DPR",
+        group: "Pendências Recebidas"
+    },
+    {
+        key: "env_pend_ams",
+        label: "AMS",
+        group: "Pendências Recebidas"
+    },
+    {
+        key: "env_pend_dmt",
+        label: "DMT",
+        group: "Pendências Recebidas"
+    },
+    {
+        key: "env_pend_dms",
+        label: "DMS",
+        group: "Pendências Recebidas"
+    },
+    {
+        key: "env_pend_dsc",
+        label: "DSC",
+        group: "Pendências Recebidas"
+    },
+    {
+        key: "precos_ok_dpr",
+        label: "DPR",
+        group: "Preços Atualizados"
+    },
+    {
+        key: "precos_ok_ams",
+        label: "AMS",
+        group: "Preços Atualizados"
+    },
+    {
+        key: "precos_ok_dmt",
+        label: "DMT",
+        group: "Preços Atualizados"
+    },
+    {
+        key: "precos_ok_dms",
+        label: "DMS",
+        group: "Preços Atualizados"
+    },
+    {
+        key: "precos_ok_dsc",
+        label: "DSC",
+        group: "Preços Atualizados"
+    },
+    {
+        key: "pendencias_ok_dpr",
+        label: "DPR",
+        group: "Pendências Atualizadas"
+    },
+    {
+        key: "pendencias_ok_ams",
+        label: "AMS",
+        group: "Pendências Atualizadas"
+    },
+    {
+        key: "pendencias_ok_dmt",
+        label: "DMT",
+        group: "Pendências Atualizadas"
+    },
+    {
+        key: "pendencias_ok_dms",
+        label: "DMS",
+        group: "Pendências Atualizadas"
+    },
+    {
+        key: "pendencias_ok_dsc",
+        label: "DSC",
+        group: "Pendências Atualizadas"
+    }
 ];
