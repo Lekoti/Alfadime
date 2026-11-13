@@ -107,7 +107,6 @@ export default function PricePendingIgnoredFilesModal({
     return (
         <div
             className="modal-overlay"
-            onClick={onClose}
             style={{ pointerEvents: "auto" }}
         >
             <div
