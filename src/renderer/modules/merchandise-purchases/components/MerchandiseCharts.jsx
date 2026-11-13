@@ -15,20 +15,32 @@ const CHART_COLORS=[
     "#DC2626"
 ];
 
+const REMOVED_CHARTS=new Set([
+    "viaQty",
+    "viaValue",
+    "policyValue",
+    "origins",
+    "scenarios",
+    "policy"
+]);
+
 function chartData(report){
     const categoryIndex=0;
     const valueIndex=report.chartColumn||1;
 
-    return report.rows.map((row,index)=>({
-        label:String(row[categoryIndex]??""),
-        value:Number(reportValue(row[valueIndex]))||0,
-        format:report.formats[valueIndex],
-        color:CHART_COLORS[index%CHART_COLORS.length]
-    }));
+    return report.rows
+        .map((row,index)=>({
+            label:String(row[categoryIndex]??""),
+            value:Number(reportValue(row[valueIndex]))||0,
+            format:report.formats[valueIndex],
+            color:CHART_COLORS[index%CHART_COLORS.length]
+        }))
+        .filter(item=>item.value>0)
+        .sort((first,second)=>second.value-first.value);
 }
 
 export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
-    const models=reports||buildMerchandiseReports(rows);
+    const models=(reports||buildMerchandiseReports(rows)).filter(report=>!REMOVED_CHARTS.has(report.id));
 
     if(mode==="tables"){
         return (
@@ -46,7 +58,13 @@ export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
                                 <tbody>
                                     {report.rows.length?report.rows.map((row,index)=>(
                                         <tr key={index}>
-                                            {row.map((cell,cellIndex)=><td key={cellIndex}>{formatReportCell(cell,report.formats[cellIndex])}</td>)}
+                                            {report.id==="lab"?(
+                                                <>
+                                                    <td>{row[0]}</td>
+                                                    <td>{formatReportCell(row[1],report.formats[1])}</td>
+                                                    <td>{formatReportCell(row[2],report.formats[2])}</td>
+                                                </>
+                                            ):row.map((cell,cellIndex)=><td key={cellIndex}>{formatReportCell(cell,report.formats[cellIndex])}</td>)}
                                         </tr>
                                     )):(
                                         <tr><td colSpan={report.headers.length}>Sem dados.</td></tr>

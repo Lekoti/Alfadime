@@ -45,6 +45,10 @@ export function buildMerchandiseReports(rows){
         metric(row[1].value>0?row[2].value/row[1].value:0,"groupAverage","selectedPrice",{groupKey:"priceOrigin",label:row[0]})
     ]);
 
+    const laboratories=group("lab","Por laboratório (Fabr_Global)","lab");
+    laboratories.chartColumn=2;
+    laboratories.chartMode="value";
+
     return [
         {
             id:"result",
@@ -63,9 +67,10 @@ export function buildMerchandiseReports(rows){
             headers:["Indicador","Valor"],
             formats:[null,"currency"],
             chartColumn:1,
+            chartMode:"value",
             rows:[
-                ["Valor selecionado",sum("finalValue")],
-                ["Valor sugestão período",sum("periodValue")]
+                ["Valor selecionado",metric(rows.filter(row=>row.finalQty>0).reduce((sum,row)=>sum+row.finalValue,0),"sum","finalValue")],
+                ["Valor sugestão período",metric(rows.filter(row=>row.periodSuggestion>0).reduce((sum,row)=>sum+row.periodValue,0),"sum","periodValue")]
             ]
         },
         group("curve","Por curva","curve"),
@@ -95,7 +100,7 @@ export function buildMerchandiseReports(rows){
                 ["Políticas vencidas (usadas com aviso)",metric(rows.filter(row=>row.policyExpired).length,"expiredPolicy","policyStatus")]
             ]
         },
-        group("lab","Por laboratório (Fabr_Global)","lab")
+        laboratories
     ];
 }
 
