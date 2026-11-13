@@ -36,7 +36,7 @@ export default function PricePendingToolbar({
                 {canRefresh && (
                     <button
                         type="button"
-                        className="price-pending-refresh-button"
+                        className="price-pending-filters-toggle"
                         onClick={onRefresh}
                         disabled={refreshing || readOnly}
                     >
@@ -48,7 +48,7 @@ export default function PricePendingToolbar({
                 {policyIssuesCount > 0 && (
                     <button
                         type="button"
-                        className="price-pending-policy-button"
+                        className="price-pending-filters-toggle"
                         onClick={onShowPolicyIssues}
                         disabled={policyIssuesLoading}
                         title="Ver arquivos de preços fora do padrão"
@@ -61,7 +61,7 @@ export default function PricePendingToolbar({
                 {canViewIgnoredFiles && ignoredFilesCount > 0 && (
                     <button
                         type="button"
-                        className="price-pending-ignored-button"
+                        className="price-pending-filters-toggle"
                         onClick={onShowIgnoredFiles}
                         title="Ver arquivos ignorados"
                     >
