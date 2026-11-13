@@ -1,3 +1,6 @@
+import { useState } from "react";
+
+
 export default function PricePendingToolbar({
     filtersPanelOpen,
     ignoredFilesCount,
@@ -13,6 +16,14 @@ export default function PricePendingToolbar({
     onShowPolicyIssues,
     onReloadPolicyIssues
 }) {
+    const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+
+
+    function closeActionsMenu() {
+        setActionsMenuOpen(false);
+    }
+
+
     return (
         <header className="price-pending-toolbar">
             <div className="price-pending-title">
@@ -24,63 +35,93 @@ export default function PricePendingToolbar({
 
 
             <div className="price-pending-toolbar-actions">
-                <button
-                    type="button"
-                    className="price-pending-filters-toggle"
-                    onClick={onToggleFilters}
-                >
-                    {filtersPanelOpen ? "Fechar filtros" : "Filtros"}
-                </button>
-
-
-                {canRefresh && (
+                <div className="price-pending-actions-menu">
                     <button
                         type="button"
                         className="price-pending-filters-toggle"
-                        onClick={onRefresh}
-                        disabled={refreshing || readOnly}
+                        onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
                     >
-                        {refreshing ? "Atualizando..." : "Atualizar"}
+                        Filtros e Ações
                     </button>
-                )}
 
 
-                {policyIssuesCount > 0 && (
-                    <button
-                        type="button"
-                        className="price-pending-filters-toggle"
-                        onClick={onShowPolicyIssues}
-                        disabled={policyIssuesLoading}
-                        title="Ver arquivos de preços fora do padrão"
-                    >
-                        Fora do padrão ({policyIssuesCount})
-                    </button>
-                )}
+                    {actionsMenuOpen && (
+                        <div className="price-pending-actions-dropdown">
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={() => {
+                                    onToggleFilters();
+                                    closeActionsMenu();
+                                }}
+                            >
+                                {filtersPanelOpen ? "Fechar filtros" : "Filtros"}
+                            </button>
 
 
-                {canViewIgnoredFiles && ignoredFilesCount > 0 && (
-                    <button
-                        type="button"
-                        className="price-pending-filters-toggle"
-                        onClick={onShowIgnoredFiles}
-                        title="Ver arquivos ignorados"
-                    >
-                        Ignorados ({ignoredFilesCount})
-                    </button>
-                )}
+                            {canRefresh && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={() => {
+                                        onRefresh();
+                                        closeActionsMenu();
+                                    }}
+                                    disabled={refreshing || readOnly}
+                                >
+                                    {refreshing ? "Atualizando..." : "Atualizar"}
+                                </button>
+                            )}
 
 
-                <button
-                    type="button"
-                    className="price-pending-filters-toggle"
-                    onClick={onReloadPolicyIssues}
-                    disabled={policyIssuesLoading}
-                    title="Verificar novamente os arquivos de preços"
-                >
-                    {policyIssuesLoading
-                        ? "Verificando..."
-                        : "Verificar padrão"}
-                </button>
+                            {policyIssuesCount > 0 && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={() => {
+                                        onShowPolicyIssues();
+                                        closeActionsMenu();
+                                    }}
+                                    disabled={policyIssuesLoading}
+                                    title="Ver arquivos de preços fora do padrão"
+                                >
+                                    Fora do padrão ({policyIssuesCount})
+                                </button>
+                            )}
+
+
+                            {canViewIgnoredFiles && ignoredFilesCount > 0 && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={() => {
+                                        onShowIgnoredFiles();
+                                        closeActionsMenu();
+                                    }}
+                                    title="Ver arquivos ignorados"
+                                >
+                                    Ignorados ({ignoredFilesCount})
+                                </button>
+                            )}
+
+
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={() => {
+                                    onReloadPolicyIssues();
+                                    closeActionsMenu();
+                                }}
+                                disabled={policyIssuesLoading}
+                                title="Verificar novamente os arquivos de preços"
+                            >
+                                {policyIssuesLoading
+                                    ? "Verificando..."
+                                    : "Verificar padrão"}
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </header>
     );
