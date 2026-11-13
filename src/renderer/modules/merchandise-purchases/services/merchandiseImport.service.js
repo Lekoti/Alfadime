@@ -28,6 +28,20 @@ function number(value){
     return Number.isFinite(converted)?converted:0;
 }
 
+function nullableNumber(value){
+    const valueText=text(value);
+
+    if(valueText==="")return null;
+
+    let normalized=valueText;
+
+    if(normalized.includes(","))normalized=normalized.replace(/\./g,"").replace(",",".");
+
+    const converted=Number(normalized);
+
+    return Number.isFinite(converted)?converted:0;
+}
+
 function code(value){
     if(typeof value==="number")return Number.isSafeInteger(value)?String(value):"";
 
@@ -93,8 +107,11 @@ export async function importMerchandiseFile(file){
             globalLabCode:code(get(raw,"globalLabCode")),
             group:text(get(raw,"group")),
             curve:text(get(raw,"curve")).toUpperCase(),
-            avgMonthSheet:indices.avgMonthSheet===undefined?null:number(get(raw,"avgMonthSheet")),
-            months:monthIndices.map(monthIndex=>number(raw[monthIndex]))
+            avgMonthSheet:indices.avgMonthSheet===undefined?null:nullableNumber(get(raw,"avgMonthSheet")),
+            months:monthIndices.map(monthIndex=>number(raw[monthIndex])),
+            lastPurchaseCompany:text(get(raw,"lastPurchaseCompany"))||company,
+            penultPurchaseCompany:text(get(raw,"penultPurchaseCompany"))||company,
+            antePenultPurchaseCompany:text(get(raw,"antePenultPurchaseCompany"))||company
         };
 
         for(const key of ["stock","blocked","pending","transferred","pf","pmc","avgCost","lastPurchase","penultPurchase","antePenultPurchase","suggestedPrice","avgPrice","recompCost","dpcCost"]){
