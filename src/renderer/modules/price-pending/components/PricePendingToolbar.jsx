@@ -1,5 +1,4 @@
-import PricePendingToolbarButton from "./PricePendingToolbarButton";
-
+﻿
 
 export default function PricePendingToolbar({
     filtersPanelOpen,
@@ -8,10 +7,10 @@ export default function PricePendingToolbar({
     return (
         <header className="price-pending-toolbar">
             <div className="price-pending-title">
-                <span>Gestão comercial</span>
+                <span>GestÃ£o comercial</span>
 
 
-                <h1>Preços e Pendências</h1>
+                <h1>PreÃ§os e PendÃªncias</h1>
             </div>
 
 
@@ -22,10 +21,11 @@ export default function PricePendingToolbar({
                     onClick={onToggleFilters}
                 >
                     {filtersPanelOpen
-                        ? "Fechar filtros e ações"
-                        : "Filtros e Ações"}
+                        ? "Fechar filtros e aÃ§Ãµes"
+                        : "Filtros e AÃ§Ãµes"}
                 </button>
             </div>
         </header>
     );
 }
+
