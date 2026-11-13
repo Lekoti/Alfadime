@@ -119,18 +119,6 @@ export default function usePricePendingRows({
         }
 
 
-        const confirmed = window.confirm(
-            "Verificar planilhas de preços e pendências agora?\n\n" +
-            "Serão analisadas as pastas compartilhadas e apenas arquivos " +
-            "novos ou alterados serão processados."
-        );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
         try {
             setRefreshing(true);
             setError("");
@@ -419,16 +407,6 @@ export default function usePricePendingRows({
 
 
         if (readOnly) {
-            return;
-        }
-
-
-        const confirmed = window.confirm(
-            `Remover "${row.laboratory}"?`
-        );
-
-
-        if (!confirmed) {
             return;
         }
 
