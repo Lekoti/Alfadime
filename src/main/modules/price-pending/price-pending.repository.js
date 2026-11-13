@@ -1,15 +1,11 @@
-const {
+﻿const {
     getPricePendingDatabase
-} = require(
-    "./price-pending.database"
-);
+} = require("./price-pending.database");
 
 
 const {
     getDatabase: getLocalDatabase
-} = require(
-    "../../database/connection"
-);
+} = require("../../database/connection");
 
 
 const crypto = require(
@@ -19,9 +15,7 @@ const crypto = require(
 
 const {
     toSafeNumber
-} = require(
-    "../../utils/validation.utils"
-);
+} = require("../../utils/validation.utils");
 
 
 const EDITABLE_COLUMNS = [
@@ -65,6 +59,10 @@ const VALID_BRANCHES = [
     "DMS",
     "DSC"
 ];
+
+
+const MONTHLY_RESET_SETTING_KEY =
+    "price_pending_last_reset_month";
 
 
 let industryGlobalCodeMapCache =
@@ -235,6 +233,114 @@ function getBranchColumn(prefix, branch) {
 }
 
 
+function resetMonthlyPendingMarkers(database) {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    const setting = database.prepare(`
+        SELECT setting_value
+        FROM settings
+        WHERE setting_key = ?
+        LIMIT 1
+    `).get(MONTHLY_RESET_SETTING_KEY);
+
+    if (setting?.setting_value === currentMonth) {
+        return;
+    }
+
+    const update = database.prepare(`
+        UPDATE price_pending_rows
+        SET
+            env_pend_dpr = CASE WHEN UPPER(TRIM(env_pend_dpr)) = 'ZR' THEN '' ELSE env_pend_dpr END,
+            env_pend_ams = CASE WHEN UPPER(TRIM(env_pend_ams)) = 'ZR' THEN '' ELSE env_pend_ams END,
+            env_pend_dmt = CASE WHEN UPPER(TRIM(env_pend_dmt)) = 'ZR' THEN '' ELSE env_pend_dmt END,
+            env_pend_dms = CASE WHEN UPPER(TRIM(env_pend_dms)) = 'ZR' THEN '' ELSE env_pend_dms END,
+            env_pend_dsc = CASE WHEN UPPER(TRIM(env_pend_dsc)) = 'ZR' THEN '' ELSE env_pend_dsc END,
+            updated_at = ?
+    `);
+
+    update.run(new Date().toISOString());
+
+    const rows = database.prepare(`
+        SELECT
+            id,
+            manual_cells,
+            pending_external_updates
+        FROM price_pending_rows
+    `).all();
+
+    const updateRow = database.prepare(`
+        UPDATE price_pending_rows
+        SET
+            manual_cells = ?,
+            pending_external_updates = ?,
+            updated_at = ?
+        WHERE id = ?
+    `);
+
+    for (const row of rows) {
+        const manualCells = parseJsonObject(row.manual_cells);
+        const pendingUpdates = parseJsonObject(row.pending_external_updates);
+        let changed = false;
+
+        for (const branch of VALID_BRANCHES) {
+            const column = `env_pend_${branch.toLowerCase()}`;
+
+            if (manualCells[column]) {
+                delete manualCells[column];
+                changed = true;
+            }
+
+            if (pendingUpdates[column]) {
+                delete pendingUpdates[column];
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            updateRow.run(
+                stringifyJsonObject(manualCells),
+                stringifyJsonObject(pendingUpdates),
+                new Date().toISOString(),
+                row.id
+            );
+        }
+    }
+
+    const existingSetting = database.prepare(`
+        SELECT id
+        FROM settings
+        WHERE setting_key = ?
+        LIMIT 1
+    `).get(MONTHLY_RESET_SETTING_KEY);
+
+    if (existingSetting) {
+        database.prepare(`
+            UPDATE settings
+            SET setting_value = ?,
+                updated_at = ?
+            WHERE setting_key = ?
+        `).run(currentMonth, new Date().toISOString(), MONTHLY_RESET_SETTING_KEY);
+    } else {
+        database.prepare(`
+            INSERT INTO settings (
+                id,
+                setting_key,
+                setting_value,
+                created_at,
+                updated_at
+            ) VALUES (?, ?, ?, ?, ?)
+        `).run(
+            crypto.randomUUID(),
+            MONTHLY_RESET_SETTING_KEY,
+            currentMonth,
+            new Date().toISOString(),
+            new Date().toISOString()
+        );
+    }
+}
+
+
 function getPricePendingValues(laboratory, branch) {
     const database = getPricePendingDatabase();
     const normalizedLaboratory = normalizeLaboratoryName(laboratory);
@@ -286,6 +392,8 @@ function getPricePendingStatus(laboratory, branch, now = new Date()) {
 
 function getPricePendingStatusMap(now = new Date()) {
     const database = getPricePendingDatabase();
+    resetMonthlyPendingMarkers(database);
+
     const rows = database.prepare(`
         SELECT
             laboratory,
@@ -326,6 +434,8 @@ function getPricePendingStatusMap(now = new Date()) {
 
 function listRows() {
     const database = getPricePendingDatabase();
+    resetMonthlyPendingMarkers(database);
+
     const rows = database.prepare(`
         SELECT *
         FROM price_pending_rows

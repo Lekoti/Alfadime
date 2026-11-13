@@ -1,4 +1,4 @@
-const service = require("./industry-contacts.service");
+﻿const service = require("./industry-contacts.service");
 const prices = require("../price-pending/price-pending.repository");
 const history = require("./industry-contacts-charge-history.repository");
 
@@ -8,12 +8,15 @@ function laboratoryKey(value) {
 }
 function isUpdated(value, now = new Date()) {
     const match = String(value ?? "").trim().match(
-        /^(?:Atualizado\s*)?(?:\d{1,2}\/)?(\d{1,2})\/(\d{4})$/i
+        /^(?:Atualizado\s*)?(\d{1,2})\/(\d{1,2})\/(\d{4})$/i
     );
     if (!match) return false;
     const month = Number(match[1]);
     return month >= 1 && month <= 12 &&
         Number(match[2]) * 12 + month >= now.getFullYear() * 12 + now.getMonth() + 1;
+}
+function isNotWorking(value) {
+    return String(value ?? "").trim().toUpperCase() === "NAO TRABALHA";
 }
 function listLaboratories() {
     const result = service.listLaboratories();
@@ -35,8 +38,10 @@ function listLaboratories() {
             const validBranch = ["DPR", "AMS", "DMT", "DMS", "DSC"].includes(branch);
             const priceRow = byLaboratory.get(laboratoryKey(row.laboratory_name));
             const suffix = branch.toLowerCase();
-            const pricesUpdated = validBranch && isUpdated(priceRow?.[`precos_ok_${suffix}`], now);
-            const pendingUpdated = validBranch && isUpdated(priceRow?.[`pendencias_ok_${suffix}`], now);
+            const pricesNotWorking = validBranch && isNotWorking(priceRow?.[`precos_ok_${suffix}`]);
+            const pendingNotWorking = validBranch && isNotWorking(priceRow?.[`pendencias_ok_${suffix}`]);
+            const pricesUpdated = validBranch && (isUpdated(priceRow?.[`precos_ok_${suffix}`], now) || pricesNotWorking);
+            const pendingUpdated = validBranch && (isUpdated(priceRow?.[`pendencias_ok_${suffix}`], now) || pendingNotWorking);
             const chargeStatus = pricesUpdated && pendingUpdated ? "updated" :
                 !pricesUpdated && !pendingUpdated ? "both_missing" :
                     !pricesUpdated ? "prices_missing" : "pending_missing";
@@ -45,14 +50,17 @@ function listLaboratories() {
                 ...row,
                 prices_updated: Boolean(pricesUpdated),
                 pending_updated: Boolean(pendingUpdated),
+                prices_not_working: Boolean(pricesNotWorking),
+                pending_not_working: Boolean(pendingNotWorking),
                 charge_update_status: chargeStatus,
-                charge_status_label: chargeStatus === "updated" ? "Preços e pendências atualizados" :
-                    chargeStatus === "both_missing" ? "Precisa atualizar preços e pendências" :
-                        chargeStatus === "prices_missing" ? "Precisa atualizar preços" : "Precisa atualizar pendências",
+                charge_status_label: pricesNotWorking && pendingNotWorking ? "Não trabalha — isento de cobrança" :
+                    chargeStatus === "updated" ? "Preços e pendências atualizados" :
+                        chargeStatus === "both_missing" ? "Precisa atualizar preços e pendências" :
+                            chargeStatus === "prices_missing" ? "Precisa atualizar preços" : "Precisa atualizar pendências",
                 last_prices_charge_at: last?.last_prices_charge_at || null,
                 last_pending_charge_at: last?.last_pending_charge_at || null
             };
         })
     };
 }
-module.exports = { listLaboratories, isUpdated };
+module.exports = { listLaboratories, isUpdated, isNotWorking };
