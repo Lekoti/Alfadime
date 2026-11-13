@@ -1,7 +1,6 @@
-const {
+﻿const {
     listRows
 } = require("./price-pending.repository");
-
 
 
 const {
@@ -9,11 +8,9 @@ const {
 } = require("./price-pending.database");
 
 
-
 const XLSX = require("xlsx");
 const fs = require("node:fs");
 const path = require("node:path");
-
 
 
 const COLUMN_LABELS = {
@@ -51,7 +48,6 @@ const COLUMN_LABELS = {
 };
 
 
-
 function normalizeLaboratory(value) {
     return String(value || "")
         .normalize("NFD")
@@ -61,62 +57,86 @@ function normalizeLaboratory(value) {
 }
 
 
-
 function createExportItem(row, columns) {
     const item = {};
-
-
 
     for (const column of columns) {
         const label = COLUMN_LABELS[column];
 
-
-
         if (!label) {
             continue;
         }
-
-
 
         if (column === "industry_global_code") {
             item[label] = row.industry_global_code || "";
             continue;
         }
 
-
-
         if (column === "laboratory") {
             item[label] = row.laboratory || "";
             continue;
         }
-
-
 
         if (column === "observation") {
             item[label] = row.observation || "";
             continue;
         }
 
-
-
         item[label] = row[column] || "";
     }
-
-
 
     return item;
 }
 
 
+function getWorksheetColumns(data, columns) {
+    return columns
+        .map((column) => {
+            const header = COLUMN_LABELS[column];
 
-function writeWorkbook(filePath, data) {
+            if (!header) {
+                return null;
+            }
+
+            const values = data.map((item) => String(item[header] ?? ""));
+
+            const maxLength = values.reduce((largest, value) => {
+                return value.length > largest ? value.length : largest;
+            }, header.length);
+
+            return {
+                header,
+                width: Math.min(Math.max(maxLength + 3, 12), 45)
+            };
+        })
+        .filter(Boolean);
+}
+
+
+function writeWorkbook(filePath, data, columns) {
     const worksheet = XLSX.utils.json_to_sheet(data);
 
+    const worksheetColumns = getWorksheetColumns(data, columns);
 
+    if (worksheetColumns.length) {
+        worksheet["!cols"] = worksheetColumns.map((column) => ({
+            wch: column.width
+        }));
+    }
+
+    if (data.length) {
+        worksheet["!autofilter"] = {
+            ref: XLSX.utils.encode_range({
+                s: { c: 0, r: 0 },
+                e: {
+                    c: worksheetColumns.length - 1,
+                    r: data.length
+                }
+            })
+        };
+    }
 
     const workbook = XLSX.utils.book_new();
-
-
 
     XLSX.utils.book_append_sheet(
         workbook,
@@ -124,19 +144,13 @@ function writeWorkbook(filePath, data) {
         "Preços e Pendências"
     );
 
-
-
     const dir = path.dirname(filePath);
-
-
 
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, {
             recursive: true
         });
     }
-
-
 
     const excelBuffer = XLSX.write(
         workbook,
@@ -146,8 +160,6 @@ function writeWorkbook(filePath, data) {
         }
     );
 
-
-
     fs.writeFileSync(
         filePath,
         excelBuffer
@@ -155,25 +167,19 @@ function writeWorkbook(filePath, data) {
 }
 
 
-
 function filterRowsByIds(rows, rowIds) {
     if (!Array.isArray(rowIds) || rowIds.length === 0) {
         return rows;
     }
 
-
-
     const selectedIds = new Set(
         rowIds.map((id) => String(id))
     );
-
-
 
     return rows.filter((row) =>
         selectedIds.has(String(row.id))
     );
 }
-
 
 
 function exportToExcel({
@@ -183,22 +189,16 @@ function exportToExcel({
 } = {}) {
     const allRows = listRows();
 
-
-
     if (!allRows.length) {
         throw new Error(
             "Nenhuma linha encontrada para exportação."
         );
     }
 
-
-
     const rows = filterRowsByIds(
         allRows,
         rowIds
     );
-
-
 
     if (!rows.length) {
         throw new Error(
@@ -206,15 +206,27 @@ function exportToExcel({
         );
     }
 
+    const selectedColumns = Array.isArray(includeColumns)
+        ? includeColumns
+        : [];
 
+    if (!selectedColumns.length) {
+        throw new Error(
+            "Selecione ao menos uma coluna para exportação."
+        );
+    }
 
-    const columns = includeColumns.length
-        ? includeColumns.filter((column) => {
-            return Boolean(COLUMN_LABELS[column]);
-        })
-        : Object.keys(COLUMN_LABELS);
+    const invalidColumns = selectedColumns.filter((column) => {
+        return !COLUMN_LABELS[column];
+    });
 
+    if (invalidColumns.length) {
+        throw new Error(
+            `Colunas inválidas para exportação: ${invalidColumns.join(", ")}.`
+        );
+    }
 
+    const columns = selectedColumns;
 
     const data = rows.map((row) => {
         return createExportItem(
@@ -223,22 +235,19 @@ function exportToExcel({
         );
     });
 
-
-
     writeWorkbook(
         filePath,
-        data
+        data,
+        columns
     );
-
-
 
     return {
         success: true,
         filePath,
-        rows: rows.length
+        rows: rows.length,
+        columns: columns.length
     };
 }
-
 
 
 function exportToExcelByLaboratory({
@@ -247,12 +256,8 @@ function exportToExcelByLaboratory({
 }) {
     const database = getPricePendingDatabase();
 
-
-
     const normalizedLaboratory =
         normalizeLaboratory(laboratory);
-
-
 
     if (!normalizedLaboratory) {
         throw new Error(
@@ -260,11 +265,7 @@ function exportToExcelByLaboratory({
         );
     }
 
-
-
     const rows = listRows();
-
-
 
     const filteredRows = rows.filter((row) => {
         return normalizeLaboratory(
@@ -272,39 +273,34 @@ function exportToExcelByLaboratory({
         ) === normalizedLaboratory;
     });
 
-
-
     if (!filteredRows.length) {
         throw new Error(
             `Nenhuma linha encontrada para o laboratório: ${laboratory}`
         );
     }
 
-
+    const columns = Object.keys(COLUMN_LABELS);
 
     const data = filteredRows.map((row) => {
         return createExportItem(
             row,
-            Object.keys(COLUMN_LABELS)
+            columns
         );
     });
 
-
-
     writeWorkbook(
         filePath,
-        data
+        data,
+        columns
     );
-
-
 
     return {
         success: true,
         filePath,
-        rows: filteredRows.length
+        rows: filteredRows.length,
+        columns: columns.length
     };
 }
-
 
 
 module.exports = {
