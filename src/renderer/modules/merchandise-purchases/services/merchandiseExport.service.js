@@ -11,7 +11,7 @@ const BLUE="FF344B65";
 const FMT={text:"@",int:"#,##0",dec:"#,##0.0",currency:'"R$" #,##0.00',date:"dd/mm/yyyy",datetime:"dd/mm/yyyy hh:mm:ss"};
 
 function L(number){let result="";while(number){number--;result=String.fromCharCode(65+number%26)+result;number=Math.floor(number/26);}return result;}
-function clean(value){if(typeof value==="number")return Number.isFinite(value)?value:0;if(typeof value==="string")return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");return value??"";}
+function clean(value){if(typeof value=="number")return Number.isFinite(value)?value:0;if(typeof value=="string")return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");return value??"";}
 function formula(cell,formula,value){cell.value={formula,result:clean(value)};}
 function literal(value){return '"'+String(value).replace(/"/g,'""')+'"';}
 function quote(value){return literal(String(value).replace(/~/g,"~~").replace(/\*/g,"~*").replace(/\?/g,"~?"));}
@@ -310,16 +310,25 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
     graphs.getCell("B2").value="Esta exportação contém apenas os produtos visíveis no app. Os gráficos acompanham os valores calculados.";
     for(let column=1;column<=25;column++)graphs.getColumn(column).width=13;
 
+    const chartSpecs=[];
+    const dynamicRanges=[];
     let chartRow=4;
+    let chartIndex=0;
+
     for(let index=0;index<reports.length;index+=2){
         const band=reports.slice(index,index+2);
-        let height=24;
 
         band.forEach((report,position)=>{
             const start=2+position*12;
             const tableRow=chartRow+19;
             const first=tableRow+1;
-            const capacity=Math.max(1,report.rows.length);
+            const categoryStart=report.chartColumn||1;
+            const valueStart=report.chartColumn||2;
+            const categoryLetter=L(start+categoryStart-1);
+            const valueLetter=L(start+valueStart-1);
+            const categoryRange=`'Gráficos'!$${categoryLetter}$${first}:$${categoryLetter}$${first+Math.max(0,report.rows.length-1)}`;
+            const valueRange=`'Gráficos'!$${valueLetter}$${first}:$${valueLetter}$${first+Math.max(0,report.rows.length-1)}`;
+            const valueFormat=REPORT_FORMATS[report.formats[valueStart-1]]||"General";
 
             graphs.mergeCells(chartRow,start,chartRow,start+9);
             head(graphs.getCell(chartRow,start),report.title);
@@ -333,6 +342,37 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
                     target.numFmt=REPORT_FORMATS[report.formats[cellIndex]]||"General";
                 });
             });
+
+            if(report.rows.length){
+                chartSpecs.push({
+                    title:report.title,
+                    seriesName:report.headers[valueStart-1]||"Valor",
+                    categoryFormula:categoryRange,
+                    valueFormula:valueRange,
+                    labels:report.rows.map(cells=>clean(cells[categoryStart-1])),
+                    values:report.rows.map(cells=>reportValue(cells[valueStart-1])),
+                    format:valueFormat,
+                    color:"344B65",
+                    fromCol:start-1,
+                    fromRow:chartRow,
+                    toCol:start+9,
+                    toRow:chartRow+17
+                });
+
+                dynamicRanges.push({
+                    name:`MP_Chart_${chartIndex+1}_Categorias`,
+                    sheetIndex:graphs.id-1,
+                    formula:categoryRange
+                });
+
+                dynamicRanges.push({
+                    name:`MP_Chart_${chartIndex+1}_Valores`,
+                    sheetIndex:graphs.id-1,
+                    formula:valueRange
+                });
+
+                chartIndex+=1;
+            }
         });
 
         chartRow+=Math.max(...band.map(report=>report.rows.length))+23;
@@ -366,8 +406,8 @@ export async function exportMerchandiseExcel({rows,premises,filters,importInfo,p
     rules.getColumn(2).width=125;
 
     let buffer=await workbook.xlsx.writeBuffer();
-    buffer=await addNativeExcelCharts(buffer,graphs.id,[]);
-    buffer=await addDynamicChartRanges(buffer,[]);
+    buffer=await addNativeExcelCharts(buffer,graphs.id,chartSpecs);
+    buffer=await addDynamicChartRanges(buffer,dynamicRanges);
 
     const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
     const url=URL.createObjectURL(blob);
