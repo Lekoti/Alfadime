@@ -1425,3 +1425,39 @@
     font-size: 9px;
 }
 
+.price-pending-actions-menu {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.price-pending-actions-menu > .price-pending-filters-toggle {
+    min-width: 118px;
+}
+
+.price-pending-actions-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 30;
+    display: flex;
+    min-width: 168px;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid #cdd6df;
+    border-radius: 5px;
+    padding: 5px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgb(31 41 55 / 12%);
+}
+
+.price-pending-actions-dropdown .price-pending-filters-toggle {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.price-pending-actions-dropdown .price-pending-filters-toggle:hover:not(:disabled) {
+    border-color: #3b5f86;
+    background: #f0f4f8;
+}
