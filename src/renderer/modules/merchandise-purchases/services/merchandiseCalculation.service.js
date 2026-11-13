@@ -4,7 +4,8 @@ const MONTHS=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Ago
 const curveKey=value=>["A","B","C"].includes(value)?value:"OTHER";
 
 export function getBoxMultiple(box){
-    return Number.isInteger(box)&&box>0?box:1;
+    const value=Number(box);
+    return Number.isInteger(value)&&value>0?value:1;
 }
 
 export function suggestQuantity(monthly,days,balance,box){
@@ -36,7 +37,9 @@ export function computeRows(rows,premises){
         const avgAll=average(closed);
         const avg6=average(6);
         const avg3=average(3);
-        const avgMonth=row.avgMonthSheet==null?avgAll:row.avgMonthSheet;
+        const avgMonthSheet=row.avgMonthSheet;
+        const hasSheetAverage=avgMonthSheet!==null&&avgMonthSheet!==undefined&&avgMonthSheet!=="";
+        const avgMonth=hasSheetAverage?Number(avgMonthSheet)||0:avgAll;
         const hasHistory=months.some(value=>value>0);
         const maxQty=hasHistory?Math.max(...months):0;
         const minQty=hasHistory?Math.min(...months):0;
@@ -52,15 +55,16 @@ export function computeRows(rows,premises){
         const low=cheapest.get(productPriceKey(row));
         const chosen=premises.priceCriteria==="lowest"?low:base;
         const selectedPrice=chosen?.price||0;
-        const pending=0;
-        const transferred=0;
-        const consolidated=row.stock+row.blocked;
+        const pending=Number(row.pending)||0;
+        const transferred=Number(row.transferred)||0;
+        const consolidated=Number(row.stock||0)+Number(row.blocked||0)+pending+transferred;
         const targetDays=premises.curveDays[curveKey(row.curve)]??0;
         const references={max:maxQty,min:minQty,avgMonth,avg3,avg6,avgAll};
         const refQty=references[premises.periodReference]??maxQty;
         const suggestedQty=suggestQuantity(avgMonth,targetDays,consolidated,row.boxSize);
         const periodSuggestion=suggestQuantity(refQty,targetDays,consolidated,row.boxSize);
-        const boxValid=Number.isInteger(row.boxSize)&&row.boxSize>0;
+        const boxValue=Number(row.boxSize)||0;
+        const boxValid=boxValue===0||(Number.isInteger(boxValue)&&boxValue>0);
 
         return {
             ...row,
@@ -183,83 +187,6 @@ export function summarizeRows(rows){
         noPrice:0,
         invalidBox:0
     });
-}
-
-function groupBy(rows,key){
-    const map=new Map();
-
-    rows.forEach(row=>{
-        const label=String(row[key]||"Não informado");
-
-        if(!map.has(label)){
-            map.set(label,{label,qty:0,value:0,count:0});
-        }
-
-        const group=map.get(label);
-        group.qty+=row.finalQty;
-        group.value+=row.finalValue;
-        group.count++;
-    });
-
-    return [...map.values()]
-        .map(group=>({
-            ...group,
-            avgPrice:group.qty>0?group.value/group.qty:0
-        }))
-        .sort((first,second)=>first.label.localeCompare(second.label,"pt-BR"));
-}
-
-export function buildSummaryTables(rows){
-    const curveRows=["A","B","C","D E F (Outros)"].map(label=>({
-        label,
-        qty:0,
-        value:0,
-        count:0
-    }));
-
-    rows.forEach(row=>{
-        const index=["A","B","C"].indexOf(row.curve);
-        const group=curveRows[index<0?3:index];
-        group.qty+=row.finalQty;
-        group.value+=row.finalValue;
-        group.count++;
-    });
-
-    const scenarioRows=[
-        ["Menor preço","lowestPrice"],
-        ["Própria empresa","ownPrice"],
-        ["Preço selecionado","selectedPrice"]
-    ].map(([label,key])=>({
-        label,
-        value:rows.reduce((total,row)=>total+row.finalQty*row[key],0),
-        extra:null
-    }));
-
-    scenarioRows.forEach(row=>{
-        row.diff=row.value-scenarioRows[0].value;
-    });
-
-    const via=rows.filter(row=>row.priceViaLast==="Sim");
-
-    return {
-        result:{
-            itemsToBuy:rows.filter(row=>row.finalQty>0).length,
-            totalQty:rows.reduce((total,row)=>total+row.finalQty,0),
-            totalValue:rows.reduce((total,row)=>total+row.finalValue,0)
-        },
-        curveRows,
-        companyRows:groupBy(rows,"company"),
-        labRows:groupBy(rows,"lab"),
-        scenarioRows,
-        originRows:groupBy(rows,"priceOrigin"),
-        viaLast:{
-            qty:via.reduce((total,row)=>total+row.finalQty,0),
-            value:via.reduce((total,row)=>total+row.finalValue,0)
-        },
-        transferred:rows.reduce((total,row)=>total+row.transferred,0),
-        invalidBox:rows.filter(row=>!row.boxValid).length,
-        noPriceWithBuy:rows.filter(row=>row.finalQty>0&&row.selectedPrice<=0).length
-    };
 }
 
 export function uniqueSorted(rows,key){
