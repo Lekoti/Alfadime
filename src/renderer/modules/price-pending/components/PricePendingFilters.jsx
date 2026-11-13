@@ -13,6 +13,13 @@ export default function PricePendingFilters({
     newLaboratory,
     hasActiveFilters,
     permissions,
+    ignoredFilesCount,
+    policyIssuesCount,
+    policyIssuesLoading,
+    canRefresh,
+    canViewIgnoredFiles,
+    refreshing,
+    readOnly,
     onSearchTermChange,
     onVisibleColumnsChange,
     onFilterUpdatedChange,
@@ -22,7 +29,11 @@ export default function PricePendingFilters({
     onAddLaboratory,
     onClearFilters,
     onClose,
-    onExport
+    onExport,
+    onRefresh,
+    onShowIgnoredFiles,
+    onShowPolicyIssues,
+    onReloadPolicyIssues
 }) {
     const [isAdding, setIsAdding] = useState(false);
 
@@ -193,6 +204,63 @@ export default function PricePendingFilters({
 
 
                 <div className="price-pending-panel-right">
+                    <div className="price-pending-filters-section">
+                        <h3>Ações</h3>
+
+
+                        <div className="price-pending-filter-options">
+                            {canRefresh && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={onRefresh}
+                                    disabled={refreshing || readOnly}
+                                >
+                                    {refreshing ? "Atualizando..." : "Atualizar"}
+                                </button>
+                            )}
+
+
+                            {policyIssuesCount > 0 && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={onShowPolicyIssues}
+                                    disabled={policyIssuesLoading}
+                                    title="Ver arquivos de preços fora do padrão"
+                                >
+                                    Fora do padrão ({policyIssuesCount})
+                                </button>
+                            )}
+
+
+                            {canViewIgnoredFiles && ignoredFilesCount > 0 && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={onShowIgnoredFiles}
+                                    title="Ver arquivos ignorados"
+                                >
+                                    Ignorados ({ignoredFilesCount})
+                                </button>
+                            )}
+
+
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={onReloadPolicyIssues}
+                                disabled={policyIssuesLoading}
+                                title="Verificar novamente os arquivos de preços"
+                            >
+                                {policyIssuesLoading
+                                    ? "Verificando..."
+                                    : "Verificar padrão"}
+                            </button>
+                        </div>
+                    </div>
+
+
                     {permissions.canAddLaboratory && (
                         <div className="price-pending-filters-section">
                             <h3>Adicionar laboratório</h3>
