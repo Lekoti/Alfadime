@@ -15,7 +15,8 @@ import "../styles/merchandise-policy.css";
 const PAGE_SIZE=100;
 const TABS=[
     ["products","Simulação de Compras"],
-    ["reports","Filtros e Tabelas"],
+    ["filters","Filtros"],
+    ["reports","Tabelas"],
     ["charts","Gráficos"]
 ];
 
@@ -24,7 +25,7 @@ export default function MerchandisePurchasesPage(){
         imported,loading,error,premises,setPremises,filters,setFilters,options,rows,allRows,setQuantity,importFile,clearImport,policySnapshot,policyLoading,policyError
     }=useMerchandisePurchases();
 
-    const [tab,setTab]=useState("reports");
+    const [tab,setTab]=useState("filters");
     const [page,setPage]=useState(1);
     const [selectedIds,setSelectedIds]=useState(()=>new Set());
     const [exporting,setExporting]=useState(false);
@@ -124,17 +125,19 @@ export default function MerchandisePurchasesPage(){
                 </section>
             ):(
                 <section className="mp-dashboard-content">
-                    {tab==="reports"?(
+                    {tab==="filters"?(
                         <section className="mp-dashboard-controls">
                             <h2>Filtros gerais</h2>
                             <MerchandiseFilters filters={filters} options={options} onChange={setFilters}/>
                             <h2>Premissas</h2>
                             <MerchandisePremises premises={premises} onChange={setPremises}/>
                         </section>
+                    ):tab==="reports"?(
+                        <MerchandiseCharts reports={reports} mode="tables"/>
                     ):(
                         <>
                             <p className="mp-chart-filter-info">Gráficos dos {rows.length.toLocaleString("pt-BR")} produtos filtrados, com laboratório baseado em Fabr_Global.</p>
-                            <MerchandiseCharts reports={reports}/>
+                            <MerchandiseCharts reports={reports} mode="charts"/>
                         </>
                     )}
                 </section>
