@@ -3,48 +3,41 @@
 } = require("./price-pending.repository");
 
 
-const {
-    getPricePendingDatabase
-} = require("./price-pending.database");
-
-
 const XLSX = require("xlsx");
 const fs = require("node:fs");
 const path = require("node:path");
 
 
-const COLUMN_LABELS = {
-    industry_global_code: "Código Global da Indústria",
-    laboratory: "Laboratório",
-    observation: "Observação",
+const FIXED_COLUMNS = [
+    {
+        key: "industry_global_code",
+        label: "Código Global"
+    },
+    {
+        key: "laboratory",
+        label: "Laboratórios"
+    },
+    {
+        key: "observation",
+        label: "Observação"
+    }
+];
 
 
-    env_precos_dpr: "Preços DPR",
-    env_precos_ams: "Preços AMS",
-    env_precos_dmt: "Preços DMT",
-    env_precos_dms: "Preços DMS",
-    env_precos_dsc: "Preços DSC",
+const COLUMN_GROUPS = {
+    env_precos: "Preços Recebidos",
+    env_pend: "Pendências Recebidas",
+    precos_ok: "Preços Atualizados",
+    pendencias_ok: "Pendências Atualizadas"
+};
 
 
-    env_pend_dpr: "Pendências DPR",
-    env_pend_ams: "Pendências AMS",
-    env_pend_dmt: "Pendências DMT",
-    env_pend_dms: "Pendências DMS",
-    env_pend_dsc: "Pendências DSC",
-
-
-    precos_ok_dpr: "OK Preços DPR",
-    precos_ok_ams: "OK Preços AMS",
-    precos_ok_dmt: "OK Preços DMT",
-    precos_ok_dms: "OK Preços DMS",
-    precos_ok_dsc: "OK Preços DSC",
-
-
-    pendencias_ok_dpr: "OK Pendências DPR",
-    pendencias_ok_ams: "OK Pendências AMS",
-    pendencias_ok_dmt: "OK Pendências DMT",
-    pendencias_ok_dms: "OK Pendências DMS",
-    pendencias_ok_dsc: "OK Pendências DSC"
+const BRANCH_LABELS = {
+    dpr: "DPR",
+    ams: "AMS",
+    dmt: "DMT",
+    dms: "DMS",
+    dsc: "DSC"
 };
 
 
@@ -57,80 +50,198 @@ function normalizeLaboratory(value) {
 }
 
 
-function createExportItem(row, columns) {
-    const item = {};
+function getColumnGroup(column) {
+    const parts = column.split("_");
 
-    for (const column of columns) {
-        const label = COLUMN_LABELS[column];
-
-        if (!label) {
-            continue;
-        }
-
-        if (column === "industry_global_code") {
-            item[label] = row.industry_global_code || "";
-            continue;
-        }
-
-        if (column === "laboratory") {
-            item[label] = row.laboratory || "";
-            continue;
-        }
-
-        if (column === "observation") {
-            item[label] = row.observation || "";
-            continue;
-        }
-
-        item[label] = row[column] || "";
+    if (parts.length < 3) {
+        return null;
     }
 
-    return item;
+    return parts.slice(0, -1).join("_");
 }
 
 
-function getWorksheetColumns(data, columns) {
-    return columns
-        .map((column) => {
-            const header = COLUMN_LABELS[column];
+function getColumnBranch(column) {
+    const parts = column.split("_");
 
-            if (!header) {
-                return null;
+    if (parts.length < 3) {
+        return null;
+    }
+
+    return BRANCH_LABELS[parts[parts.length - 1]] || null;
+}
+
+
+function validateColumns(columns) {
+    if (!Array.isArray(columns) || !columns.length) {
+        throw new Error(
+            "Selecione ao menos uma coluna para exportação."
+        );
+    }
+
+    const invalidColumns = columns.filter((column) => {
+        if (FIXED_COLUMNS.some((fixedColumn) => fixedColumn.key === column)) {
+            return false;
+        }
+
+        const group = getColumnGroup(column);
+        const branch = getColumnBranch(column);
+
+        return !group || !COLUMN_GROUPS[group] || !branch;
+    });
+
+    if (invalidColumns.length) {
+        throw new Error(
+            `Colunas inválidas para exportação: ${invalidColumns.join(", ")}.`
+        );
+    }
+}
+
+
+function getCellValue(row, column) {
+    return row[column] || "";
+}
+
+
+function createExportRows(rows, columns) {
+    return rows.map((row) => {
+        const item = {};
+
+        columns.forEach((column) => {
+            item[column] = getCellValue(row, column);
+        });
+
+        return item;
+    });
+}
+
+
+function writeWorkbook(filePath, rows, columns) {
+    const fixedSelectedColumns = FIXED_COLUMNS.filter((fixedColumn) => {
+        return columns.includes(fixedColumn.key);
+    });
+
+    const groupedColumns = columns.filter((column) => {
+        return !FIXED_COLUMNS.some((fixedColumn) => fixedColumn.key === column);
+    });
+
+    const orderedColumns = [
+        ...fixedSelectedColumns,
+        ...groupedColumns
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet([
+        []
+    ]);
+
+    let currentColumn = 0;
+    const merges = [];
+
+    fixedSelectedColumns.forEach((fixedColumn) => {
+        worksheet[XLSX.utils.encode_cell({
+            c: currentColumn,
+            r: 0
+        })] = {
+            t: "s",
+            v: fixedColumn.label
+        };
+
+        merges.push({
+            s: {
+                c: currentColumn,
+                r: 0
+            },
+            e: {
+                c: currentColumn,
+                r: 1
             }
+        });
 
-            const values = data.map((item) => String(item[header] ?? ""));
+        currentColumn += 1;
+    });
 
-            const maxLength = values.reduce((largest, value) => {
-                return value.length > largest ? value.length : largest;
-            }, header.length);
+    let groupIndex = 0;
 
-            return {
-                header,
-                width: Math.min(Math.max(maxLength + 3, 12), 45)
+    while (groupIndex < groupedColumns.length) {
+        const column = groupedColumns[groupIndex];
+        const group = getColumnGroup(column);
+        const groupColumns = [];
+
+        while (
+            groupIndex < groupedColumns.length &&
+            getColumnGroup(groupedColumns[groupIndex]) === group
+        ) {
+            groupColumns.push(groupedColumns[groupIndex]);
+            groupIndex += 1;
+        }
+
+        const startColumn = currentColumn;
+        const endColumn = currentColumn + groupColumns.length - 1;
+
+        worksheet[XLSX.utils.encode_cell({
+            c: startColumn,
+            r: 0
+        })] = {
+            t: "s",
+            v: COLUMN_GROUPS[group]
+        };
+
+        merges.push({
+            s: {
+                c: startColumn,
+                r: 0
+            },
+            e: {
+                c: endColumn,
+                r: 0
+            }
+        });
+
+        groupColumns.forEach((groupColumn, index) => {
+            worksheet[XLSX.utils.encode_cell({
+                c: startColumn + index,
+                r: 1
+            })] = {
+                t: "s",
+                v: getColumnBranch(groupColumn)
             };
-        })
-        .filter(Boolean);
-}
+        });
 
-
-function writeWorkbook(filePath, data, columns) {
-    const worksheet = XLSX.utils.json_to_sheet(data);
-
-    const worksheetColumns = getWorksheetColumns(data, columns);
-
-    if (worksheetColumns.length) {
-        worksheet["!cols"] = worksheetColumns.map((column) => ({
-            wch: column.width
-        }));
+        currentColumn = endColumn + 1;
     }
 
-    if (data.length) {
+    const dataRows = createExportRows(
+        rows,
+        orderedColumns
+    );
+
+    dataRows.forEach((dataRow, rowIndex) => {
+        orderedColumns.forEach((column, columnIndex) => {
+            worksheet[XLSX.utils.encode_cell({
+                c: columnIndex,
+                r: rowIndex + 2
+            })] = {
+                t: "s",
+                v: String(dataRow[column] ?? "")
+            };
+        });
+    });
+
+    worksheet["!merges"] = merges;
+    worksheet["!cols"] = orderedColumns.map(() => ({
+        wch: 18
+    }));
+
+    if (rows.length) {
         worksheet["!autofilter"] = {
             ref: XLSX.utils.encode_range({
-                s: { c: 0, r: 0 },
+                s: {
+                    c: 0,
+                    r: 1
+                },
                 e: {
-                    c: worksheetColumns.length - 1,
-                    r: data.length
+                    c: orderedColumns.length - 1,
+                    r: rows.length + 1
                 }
             })
         };
@@ -206,46 +317,19 @@ function exportToExcel({
         );
     }
 
-    const selectedColumns = Array.isArray(includeColumns)
-        ? includeColumns
-        : [];
-
-    if (!selectedColumns.length) {
-        throw new Error(
-            "Selecione ao menos uma coluna para exportação."
-        );
-    }
-
-    const invalidColumns = selectedColumns.filter((column) => {
-        return !COLUMN_LABELS[column];
-    });
-
-    if (invalidColumns.length) {
-        throw new Error(
-            `Colunas inválidas para exportação: ${invalidColumns.join(", ")}.`
-        );
-    }
-
-    const columns = selectedColumns;
-
-    const data = rows.map((row) => {
-        return createExportItem(
-            row,
-            columns
-        );
-    });
+    validateColumns(includeColumns);
 
     writeWorkbook(
         filePath,
-        data,
-        columns
+        rows,
+        includeColumns
     );
 
     return {
         success: true,
         filePath,
         rows: rows.length,
-        columns: columns.length
+        columns: includeColumns.length
     };
 }
 
@@ -254,8 +338,6 @@ function exportToExcelByLaboratory({
     filePath,
     laboratory
 }) {
-    const database = getPricePendingDatabase();
-
     const normalizedLaboratory =
         normalizeLaboratory(laboratory);
 
@@ -279,18 +361,39 @@ function exportToExcelByLaboratory({
         );
     }
 
-    const columns = Object.keys(COLUMN_LABELS);
+    const columns = [
+        "industry_global_code",
+        "laboratory",
+        "observation",
 
-    const data = filteredRows.map((row) => {
-        return createExportItem(
-            row,
-            columns
-        );
-    });
+        "env_precos_dpr",
+        "env_precos_ams",
+        "env_precos_dmt",
+        "env_precos_dms",
+        "env_precos_dsc",
+
+        "env_pend_dpr",
+        "env_pend_ams",
+        "env_pend_dmt",
+        "env_pend_dms",
+        "env_pend_dsc",
+
+        "precos_ok_dpr",
+        "precos_ok_ams",
+        "precos_ok_dmt",
+        "precos_ok_dms",
+        "precos_ok_dsc",
+
+        "pendencias_ok_dpr",
+        "pendencias_ok_ams",
+        "pendencias_ok_dmt",
+        "pendencias_ok_dms",
+        "pendencias_ok_dsc"
+    ];
 
     writeWorkbook(
         filePath,
-        data,
+        filteredRows,
         columns
     );
 
