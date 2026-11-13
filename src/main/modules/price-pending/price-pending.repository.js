@@ -61,10 +61,6 @@ const VALID_BRANCHES = [
 ];
 
 
-const MONTHLY_RESET_SETTING_KEY =
-    "price_pending_last_reset_month";
-
-
 let industryGlobalCodeMapCache =
     null;
 
@@ -233,22 +229,36 @@ function getBranchColumn(prefix, branch) {
 }
 
 
+function ensureMonthlyResetTable(database) {
+    database.exec(`
+        CREATE TABLE IF NOT EXISTS price_pending_monthly_reset (
+            id TEXT PRIMARY KEY,
+            reset_month TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+    `);
+}
+
+
 function resetMonthlyPendingMarkers(database) {
+    ensureMonthlyResetTable(database);
+
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    const setting = database.prepare(`
-        SELECT setting_value
-        FROM settings
-        WHERE setting_key = ?
+    const existing = database.prepare(`
+        SELECT id
+        FROM price_pending_monthly_reset
+        WHERE reset_month = ?
         LIMIT 1
-    `).get(MONTHLY_RESET_SETTING_KEY);
+    `).get(currentMonth);
 
-    if (setting?.setting_value === currentMonth) {
+    if (existing) {
         return;
     }
 
-    const update = database.prepare(`
+    database.prepare(`
         UPDATE price_pending_rows
         SET
             env_pend_dpr = CASE WHEN UPPER(TRIM(env_pend_dpr)) = 'ZR' THEN '' ELSE env_pend_dpr END,
@@ -257,9 +267,7 @@ function resetMonthlyPendingMarkers(database) {
             env_pend_dms = CASE WHEN UPPER(TRIM(env_pend_dms)) = 'ZR' THEN '' ELSE env_pend_dms END,
             env_pend_dsc = CASE WHEN UPPER(TRIM(env_pend_dsc)) = 'ZR' THEN '' ELSE env_pend_dsc END,
             updated_at = ?
-    `);
-
-    update.run(new Date().toISOString());
+    `).run(now.toISOString());
 
     const rows = database.prepare(`
         SELECT
@@ -301,43 +309,25 @@ function resetMonthlyPendingMarkers(database) {
             updateRow.run(
                 stringifyJsonObject(manualCells),
                 stringifyJsonObject(pendingUpdates),
-                new Date().toISOString(),
+                now.toISOString(),
                 row.id
             );
         }
     }
 
-    const existingSetting = database.prepare(`
-        SELECT id
-        FROM settings
-        WHERE setting_key = ?
-        LIMIT 1
-    `).get(MONTHLY_RESET_SETTING_KEY);
-
-    if (existingSetting) {
-        database.prepare(`
-            UPDATE settings
-            SET setting_value = ?,
-                updated_at = ?
-            WHERE setting_key = ?
-        `).run(currentMonth, new Date().toISOString(), MONTHLY_RESET_SETTING_KEY);
-    } else {
-        database.prepare(`
-            INSERT INTO settings (
-                id,
-                setting_key,
-                setting_value,
-                created_at,
-                updated_at
-            ) VALUES (?, ?, ?, ?, ?)
-        `).run(
-            crypto.randomUUID(),
-            MONTHLY_RESET_SETTING_KEY,
-            currentMonth,
-            new Date().toISOString(),
-            new Date().toISOString()
-        );
-    }
+    database.prepare(`
+        INSERT INTO price_pending_monthly_reset (
+            id,
+            reset_month,
+            created_at,
+            updated_at
+        ) VALUES (?, ?, ?, ?)
+    `).run(
+        crypto.randomUUID(),
+        currentMonth,
+        now.toISOString(),
+        now.toISOString()
+    );
 }
 
 
