@@ -1,4 +1,4 @@
-const fs = require("node:fs/promises");
+﻿const fs = require("node:fs/promises");
 const path = require("node:path");
 const XLSX = require("xlsx");
 const { getFoldersConfig } = require("./price-pending-folders-config.repository");
@@ -228,7 +228,7 @@ function parseWorkbook(workbook, metadata) {
                 rowIssues.push({
                     column: REQUIRED_HEADERS.company,
                     found: shown(row[index.company]),
-                    expected: "001, 002, 003, 005 ou 006",
+                    expected: "1, 2, 3, 5 ou 6 — também aceita 001, 002, 003, 005 ou 006",
                     message: "Empresa fora do padrão."
                 });
             }
