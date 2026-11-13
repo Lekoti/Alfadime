@@ -10,7 +10,8 @@ export function getBoxMultiple(box){
 
 export function suggestQuantity(monthly,days,balance,box){
     const multiple=getBoxMultiple(box);
-    return Math.ceil(Math.max(Math.ceil(monthly/30*days-1e-9)-balance,0)/multiple)*multiple;
+    const need=Math.max(Math.ceil(monthly/30*days-1e-9)-balance,0);
+    return Math.ceil(need/multiple)*multiple;
 }
 
 export function computeRows(rows,premises){
@@ -35,6 +36,8 @@ export function computeRows(rows,premises){
         };
 
         const avgAll=average(closed);
+        const avg12=average(12);
+        const avg9=average(9);
         const avg6=average(6);
         const avg3=average(3);
         const avgMonthSheet=row.avgMonthSheet;
@@ -59,7 +62,7 @@ export function computeRows(rows,premises){
         const transferred=Number(row.transferred)||0;
         const consolidated=Number(row.stock||0)+Number(row.blocked||0)+pending+transferred;
         const targetDays=premises.curveDays[curveKey(row.curve)]??0;
-        const references={max:maxQty,min:minQty,avgMonth,avg3,avg6,avgAll};
+        const references={max:maxQty,min:minQty,avgMonth,avg3,avg6,avg9,avg12};
         const refQty=references[premises.periodReference]??maxQty;
         const suggestedQty=suggestQuantity(avgMonth,targetDays,consolidated,row.boxSize);
         const periodSuggestion=suggestQuantity(refQty,targetDays,consolidated,row.boxSize);
@@ -71,6 +74,8 @@ export function computeRows(rows,premises){
             id:index,
             avgMonth,
             avgAll,
+            avg12,
+            avg9,
             avg6,
             avg3,
             hasHistory,

@@ -22,7 +22,8 @@ export const PERIOD_REFERENCES=[
     {value:"avgMonth",label:"Média Mês"},
     {value:"avg3",label:"Média 3M"},
     {value:"avg6",label:"Média 6M"},
-    {value:"avgAll",label:"Média do período fechado"}
+    {value:"avg9",label:"Média 9M"},
+    {value:"avg12",label:"Média 12M"}
 ];
 export const STATUS_OPTIONS=[
     {value:"",label:"Todas"},
@@ -116,9 +117,10 @@ export function buildColumns(closedMonth){
         column("curve","Curva","text",8),
         column("boxSize","Cx Padrao","int",10),
         column("avgMonth","Média Mês","dec",11),
-        column("avgAll",`Média ${closed}M (jan-${month(closed)})`,"dec",16),
-        column("avg6",`Média ${Math.min(6,closed)}M (${range(6)})`,"dec",16),
-        column("avg3",`Média ${Math.min(3,closed)}M (${range(3)})`,"dec",16),
+        column("avg12",`Média 12M (${range(12)})`,"dec",16),
+        column("avg9",`Média 9M (${range(9)})`,"dec",16),
+        column("avg6",`Média 6M (${range(6)})`,"dec",16),
+        column("avg3",`Média 3M (${range(3)})`,"dec",16),
         column("maxPeriod","Período Maior Venda","text",50),
         column("maxQty","Qtde Maior Venda","int",13),
         column("minPeriod","Período Menor Venda","text",35),
