@@ -2,7 +2,6 @@ import {useEffect,useMemo,useState} from "react";
 import MerchandiseFilters from "../components/MerchandiseFilters";
 import MerchandiseImportPanel from "../components/MerchandiseImportPanel";
 import MerchandisePremises from "../components/MerchandisePremises";
-import MerchandiseSummaryTables from "../components/MerchandiseSummaryTables";
 import MerchandiseCharts from "../components/MerchandiseCharts";
 import MerchandiseTable from "../components/MerchandiseTable";
 import {buildColumns} from "../constants/merchandise-purchases.constants";
@@ -126,15 +125,12 @@ export default function MerchandisePurchasesPage(){
             ):(
                 <section className="mp-dashboard-content">
                     {tab==="reports"?(
-                        <>
-                            <section className="mp-dashboard-controls">
-                                <h2>Filtros gerais</h2>
-                                <MerchandiseFilters filters={filters} options={options} onChange={setFilters}/>
-                                <h2>Premissas</h2>
-                                <MerchandisePremises premises={premises} onChange={setPremises}/>
-                            </section>
-                            <MerchandiseSummaryTables reports={reports}/>
-                        </>
+                        <section className="mp-dashboard-controls">
+                            <h2>Filtros gerais</h2>
+                            <MerchandiseFilters filters={filters} options={options} onChange={setFilters}/>
+                            <h2>Premissas</h2>
+                            <MerchandisePremises premises={premises} onChange={setPremises}/>
+                        </section>
                     ):(
                         <>
                             <p className="mp-chart-filter-info">Gráficos dos {rows.length.toLocaleString("pt-BR")} produtos filtrados, com laboratório baseado em Fabr_Global.</p>
