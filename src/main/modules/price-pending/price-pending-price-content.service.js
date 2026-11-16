@@ -82,7 +82,7 @@ function groupRecords(records) {
     return [...groups.values()];
 }
 
-function processPriceFile(file) {
+function processPriceFile(file, context = {}) {
     const before = fs.statSync(file.path);
     const buffer = fs.readFileSync(file.path);
     const after = fs.statSync(file.path);
@@ -111,14 +111,18 @@ function processPriceFile(file) {
 
     const groups = groupRecords(parsed.records);
     getIndustryGlobalCodeMap({ forceRefresh: true });
-    const rows = listRows();
-    const rowsByCode = new Map();
-    for (const row of rows) {
-        const code = normalizeCode(row.industry_global_code);
-        if (!code || code === "0") continue;
-        if (!rowsByCode.has(code)) rowsByCode.set(code, []);
-        rowsByCode.get(code).push(row);
+    if (!context.rowsByCode) {
+        const rows = listRows();
+        const rowsByCode = new Map();
+        for (const row of rows) {
+            const code = normalizeCode(row.industry_global_code);
+            if (!code || code === "0") continue;
+            if (!rowsByCode.has(code)) rowsByCode.set(code, []);
+            rowsByCode.get(code).push(row);
+        }
+        context.rowsByCode = rowsByCode;
     }
+    const rowsByCode = context.rowsByCode;
     const plans = groups.map((group) => {
         const matches = rowsByCode.get(group.globalCode) || [];
         if (matches.length !== 1) {
@@ -160,9 +164,13 @@ function processPriceFile(file) {
             const value = formatDate(plan.validity);
             const manual = parseObject(current.manual_cells);
             const pendingValue = pending[priceColumn]?.value;
-            const needsPriceUpdate = manual[priceColumn] && String(current.price_value ?? "").trim()
-                ? pendingValue !== value && (current.price_value !== value || Boolean(pending[priceColumn]))
-                : current.price_value !== value || Boolean(pending[priceColumn]);
+            const isManualPrice = Boolean(manual[priceColumn]) &&
+                String(current.price_value ?? "").trim() !== "";
+            const needsPriceUpdate = isManualPrice
+                ? pendingValue !== value &&
+                  (current.price_value !== value || Boolean(pending[priceColumn]))
+                : current.price_value !== value ||
+                  Boolean(pending[priceColumn]);
 
             if (needsPriceUpdate) {
                 const result = applyExternalCellUpdate({
@@ -175,12 +183,18 @@ function processPriceFile(file) {
 
             const receiptValue = formatDate(received);
             const pendingReceiptValue = pending[receiptColumn]?.value;
-            const needsReceiptUpdate = manual[receiptColumn] && String(current.receipt_value ?? "").trim()
-                ? pendingReceiptValue !== receiptValue && (current.receipt_value !== receiptValue || Boolean(pending[receiptColumn]))
-                : current.receipt_value !== receiptValue || Boolean(pending[receiptColumn]);
+            const isManualReceipt = Boolean(manual[receiptColumn]) &&
+                String(current.receipt_value ?? "").trim() !== "";
+            const needsReceiptUpdate = isManualReceipt
+                ? pendingReceiptValue !== receiptValue &&
+                  (current.receipt_value !== receiptValue ||
+                    Boolean(pending[receiptColumn]))
+                : current.receipt_value !== receiptValue ||
+                  Boolean(pending[receiptColumn]);
+
             if (needsReceiptUpdate) {
                 const result = applyExternalCellUpdate({
-                    id: plan.rowId, column: receiptColumn, value: formatDate(received),
+                    id: plan.rowId, column: receiptColumn, value: receiptValue,
                     fileName: file.name, fileMtimeMs: file.fileMtimeMs
                 });
                 updated += 1;
@@ -193,7 +207,7 @@ function processPriceFile(file) {
         processed: true,
         fileName: file.name,
         type: "prices",
-        source: "workbook-content-v1",
+        source: "workbook-content-v2",
         rows: new Set(plans.map((plan) => plan.rowId)).size,
         branches: [...new Set(plans.map((plan) => plan.branch))],
         records: parsed.records.length,

@@ -588,9 +588,9 @@ function appOwnerName() {
 }
 
 
-function processCurrentFile(file, expectedType) {
+function processCurrentFile(file, expectedType, context = {}) {
     if (expectedType === "prices") {
-        return processPriceFile(file);
+        return processPriceFile(file, context);
     }
 
     const fileType = getFileType(file.name);
@@ -725,6 +725,9 @@ function refreshFromFolders() {
         ];
 
 
+        const context = {
+            rowsByCode: null
+        };
         const results = [];
         let newFiles = 0;
         let changedFiles = 0;
@@ -764,7 +767,8 @@ function refreshFromFolders() {
             try {
                 const result = processCurrentFile(
                     file,
-                    file.expectedType
+                    file.expectedType,
+                    context
                 );
 
 
