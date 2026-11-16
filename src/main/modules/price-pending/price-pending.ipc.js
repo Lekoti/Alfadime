@@ -1,4 +1,18 @@
-const { ipcMain } = require("electron");
+const { ipcMain: originalIpcMain } = require("electron");
+const access = require("./price-pending-access");
+const readOnlyChannels = new Set([
+    "commercial-policy:read", "price-pending:list", "price-pending:get-by-id",
+    "price-pending:get-db-config", "price-pending:get-folders-config"
+]);
+const ipcMain = {
+    handle(channel, handler) {
+        originalIpcMain.handle(channel, (event, ...args) => {
+            if (readOnlyChannels.has(channel)) access.requireUser();
+            else access.requireEditor();
+            return handler(event, ...args);
+        });
+    }
+};
 const path = require("node:path");
 const repository = require("./price-pending.repository");
 const { exportToExcel, exportToExcelByLaboratory } = require("./price-pending-export.service");
