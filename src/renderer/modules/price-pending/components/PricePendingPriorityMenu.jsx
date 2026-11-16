@@ -11,25 +11,37 @@ const OPTIONS = [
 export default function PricePendingPriorityMenu({ row, disabled, onSelect }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
+    const current = OPTIONS.find((option) => option.value === (row.priority_label || ""));
 
     useEffect(() => {
-        function handleClick(event) {
+        function handleOutside(event) {
             if (ref.current && !ref.current.contains(event.target)) setOpen(false);
         }
-        document.addEventListener("mousedown", handleClick);
-        return () => document.removeEventListener("mousedown", handleClick);
+        document.addEventListener("mousedown", handleOutside);
+        return () => document.removeEventListener("mousedown", handleOutside);
     }, []);
-
-    const current = OPTIONS.find(option => option.value === (row.priority_label || ""));
 
     return (
         <div className="price-pending-priority" ref={ref}>
             {current?.value && <span className={`priority-tag ${current.className}`}>{current.label}</span>}
-            <button type="button" className="priority-button" disabled={disabled} onClick={() => setOpen(!open)} title="Escolher prioridade">▾</button>
+            <button
+                type="button"
+                className="priority-button"
+                disabled={disabled}
+                title={disabled ? "Sem permissao para alterar a prioridade" : "Escolher prioridade"}
+                onClick={() => setOpen(!open)}
+            >
+                ▾
+            </button>
             {open && (
                 <div className="priority-menu">
-                    {OPTIONS.map(option => (
-                        <button key={option.value || "none"} type="button" onClick={() => { setOpen(false); onSelect(row, option.value); }}>
+                    <strong className="priority-menu-title">Escolher prioridade</strong>
+                    {OPTIONS.map((option) => (
+                        <button
+                            key={option.value || "none"}
+                            type="button"
+                            onClick={() => { setOpen(false); onSelect(row, option.value); }}
+                        >
                             {option.label}
                         </button>
                     ))}

@@ -1,4 +1,4 @@
-/* Arquivo original preservado + ajustes de prioridade */
+/* Layout original do modulo Presos e Pendencias preservado + ajustes de prioridade */
 .price-pending-page { display: flex; height: 100%; min-height: 0; box-sizing: border-box; flex-direction: column; overflow: hidden; padding: 10px 12px; background: #eef1f5; color: #263241; }
 .price-pending-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
 .price-pending-title h1 { margin: 0; color: #263241; font-size: 17px; font-weight: 700; }
@@ -55,19 +55,19 @@
 .price-pending-table thead tr:nth-child(2) th { top: 20px; height: 18px; font-size: 9px; }
 .price-pending-table .industry-global-code-header, .price-pending-table tbody td.industry-global-code-cell { left: 0; width: 70px; min-width: 70px; max-width: 70px; }
 .price-pending-table .industry-global-code-header { z-index: 7; }
-.price-pending-table .laboratory-header, .price-pending-table tbody td.laboratory-cell { left: 70px; width: 170px; min-width: 170px; max-width: 170px; }
+.price-pending-table .laboratory-header, .price-pending-table tbody td.laboratory-cell { left: 70px; width: 180px; min-width: 180px; max-width: 180px; }
 .price-pending-table .laboratory-header { z-index: 7; }
 .price-pending-table .observation-header, .price-pending-table tbody td.observation-cell { width: 140px; min-width: 140px; max-width: 140px; }
 .price-pending-table .actions-header, .price-pending-table .actions-cell { width: 64px; min-width: 64px; max-width: 64px; }
 .price-pending-table th.group-header { width: auto; min-width: 0; max-width: none; }
 .price-pending-table th.branch-header, .price-pending-table tbody td.editable-cell { width: auto; min-width: 0; max-width: none; padding-left: 2px; padding-right: 2px; text-align: center; white-space: nowrap; }
-.price-pending-table tbody tr, .price-pending-table tbody td { height: 23px; }
+.price-pending-table tbody tr, .price-pending-table tbody td { height: 24px; }
 .price-pending-table tbody td { padding: 2px 3px; font-size: 9px; white-space: nowrap; }
 .price-pending-table tbody td.laboratory-cell, .price-pending-table tbody td.industry-global-code-cell { position: sticky; z-index: 2; background: #fff; }
 .price-pending-table tbody td.industry-global-code-cell { left: 0; font-weight: 600; text-align: center; }
 .price-pending-table tbody td.laboratory-cell { left: 70px; }
 .price-pending-table td input { box-sizing: border-box; width: 100%; min-width: 0; height: 21px; border: 0; outline: none; padding: 0 3px; background: transparent; color: #263241; font-family: inherit; font-size: 9px; text-align: center; }
-.price-pending-table .laboratory-cell input { width: calc(100% - 18px); padding: 0 5px; font-weight: 600; text-align: left; }
+.price-pending-table .laboratory-cell input { width: calc(100% - 22px); padding: 0 5px; font-weight: 600; text-align: left; }
 .price-pending-table .observation-cell input { width: 100%; padding: 0 5px; text-align: left; }
 .price-pending-table td input:focus { background: #fff; box-shadow: inset 0 0 0 1px #3b5f86; }
 .price-pending-table td.editable-cell { position: relative; }
@@ -147,13 +147,16 @@
 .price-pending-actions-dropdown { position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; display: flex; min-width: 168px; flex-direction: column; gap: 4px; border: 1px solid #cdd6df; border-radius: 5px; padding: 5px; background: #fff; box-shadow: 0 4px 12px rgb(31 41 55 / 12%); }
 .price-pending-actions-dropdown .price-pending-filters-toggle { width: 100%; box-sizing: border-box; justify-content: flex-start; text-align: left; }
 .price-pending-actions-dropdown .price-pending-filters-toggle:hover:not(:disabled) { border-color: #3b5f86; background: #f0f4f8; }
-.price-pending-priority { position: absolute; top: 2px; right: 2px; display: flex; align-items: center; gap: 2px; }
+.price-pending-priority { position: absolute; top: 2px; right: 2px; display: flex; align-items: center; gap: 2px; z-index: 6; }
 .priority-tag { border-radius: 999px; padding: 0 4px; font-size: 7px; font-weight: 700; line-height: 13px; white-space: nowrap; }
 .priority-maxima { background: #f8d9dc; color: #8b2635; }
 .priority-alta { background: #ffe9c7; color: #8a5a12; }
 .priority-media { background: #e7f0fb; color: #23527c; }
 .priority-baixa { background: #e7f6ec; color: #176b2c; }
-.priority-button { width: 14px; height: 14px; border: 0; border-radius: 3px; background: #eef1f5; color: #45515e; cursor: pointer; font-size: 8px; line-height: 1; }
-.priority-menu { position: absolute; z-index: 50; top: 100%; right: 0; display: flex; min-width: 130px; flex-direction: column; border: 1px solid #cdd6df; border-radius: 4px; background: #fff; box-shadow: 0 4px 12px rgb(31 41 55 / 12%); }
-.priority-menu button { border: 0; background: transparent; color: #263241; cursor: pointer; font-family: inherit; font-size: 9px; padding: 4px 6px; text-align: left; }
+.priority-button { width: 18px; height: 18px; border: 1px solid #cdd6df; border-radius: 4px; background: #fff; color: #344b65; cursor: pointer; font-size: 10px; line-height: 1; }
+.priority-button:hover:not(:disabled) { border-color: #3b5f86; background: #f0f4f8; }
+.priority-button:disabled { cursor: not-allowed; opacity: .55; }
+.priority-menu { position: absolute; z-index: 9999; top: calc(100% + 2px); right: 0; display: flex; min-width: 150px; flex-direction: column; border: 1px solid #cdd6df; border-radius: 5px; background: #fff; box-shadow: 0 6px 18px rgb(31 41 55 / 18%); }
+.priority-menu-title { padding: 5px 7px; border-bottom: 1px solid #e6ebf2; color: #344b65; font-size: 9px; }
+.priority-menu button { border: 0; background: transparent; color: #263241; cursor: pointer; font-family: inherit; font-size: 10px; padding: 6px 8px; text-align: left; }
 .priority-menu button:hover { background: #f0f4f8; }
