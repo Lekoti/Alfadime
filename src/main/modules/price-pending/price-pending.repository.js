@@ -247,87 +247,116 @@ function resetMonthlyPendingMarkers(database) {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    const existing = database.prepare(`
+    const getReset = database.prepare(`
         SELECT id
         FROM price_pending_monthly_reset
         WHERE reset_month = ?
         LIMIT 1
-    `).get(currentMonth);
+    `);
 
-    if (existing) {
+    if (getReset.get(currentMonth)) {
         return;
     }
 
-    database.prepare(`
-        UPDATE price_pending_rows
-        SET
-            env_pend_dpr = CASE WHEN UPPER(TRIM(env_pend_dpr)) = 'ZR' THEN '' ELSE env_pend_dpr END,
-            env_pend_ams = CASE WHEN UPPER(TRIM(env_pend_ams)) = 'ZR' THEN '' ELSE env_pend_ams END,
-            env_pend_dmt = CASE WHEN UPPER(TRIM(env_pend_dmt)) = 'ZR' THEN '' ELSE env_pend_dmt END,
-            env_pend_dms = CASE WHEN UPPER(TRIM(env_pend_dms)) = 'ZR' THEN '' ELSE env_pend_dms END,
-            env_pend_dsc = CASE WHEN UPPER(TRIM(env_pend_dsc)) = 'ZR' THEN '' ELSE env_pend_dsc END,
-            updated_at = ?
-    `).run(now.toISOString());
+    const pendingColumns = VALID_BRANCHES.map((branch) => {
+        return `env_pend_${branch.toLowerCase()}`;
+    });
 
-    const rows = database.prepare(`
-        SELECT
-            id,
-            manual_cells,
-            pending_external_updates
-        FROM price_pending_rows
-    `).all();
-
-    const updateRow = database.prepare(`
-        UPDATE price_pending_rows
-        SET
-            manual_cells = ?,
-            pending_external_updates = ?,
-            updated_at = ?
-        WHERE id = ?
-    `);
-
-    for (const row of rows) {
-        const manualCells = parseJsonObject(row.manual_cells);
-        const pendingUpdates = parseJsonObject(row.pending_external_updates);
-        let changed = false;
-
-        for (const branch of VALID_BRANCHES) {
-            const column = `env_pend_${branch.toLowerCase()}`;
-
-            if (manualCells[column]) {
-                delete manualCells[column];
-                changed = true;
-            }
-
-            if (pendingUpdates[column]) {
-                delete pendingUpdates[column];
-                changed = true;
-            }
+    const resetMonth = database.transaction(() => {
+        if (getReset.get(currentMonth)) {
+            return;
         }
 
-        if (changed) {
-            updateRow.run(
-                stringifyJsonObject(manualCells),
-                stringifyJsonObject(pendingUpdates),
-                now.toISOString(),
+        const changedAt = now.toISOString();
+        const conditions = pendingColumns.map((column) => {
+            return `UPPER(TRIM("${column}")) = 'ZR'`;
+        }).join(" OR ");
+
+        const rows = database.prepare(`
+            SELECT
+                id,
+                manual_cells,
+                pending_external_updates,
+                ${pendingColumns.map((column) => `"${column}"`).join(", ")}
+            FROM price_pending_rows
+            WHERE ${conditions}
+        `).all();
+
+        for (const row of rows) {
+            const resetColumns = pendingColumns.filter((column) => {
+                return String(row[column] ?? "")
+                    .replace(/^ +| +$/g, "")
+                    .toUpperCase() === "ZR";
+            });
+
+            if (!resetColumns.length) {
+                continue;
+            }
+
+            let manualCellsJson = row.manual_cells;
+            let pendingUpdatesJson = row.pending_external_updates;
+            let manualCellsChanged = false;
+            let pendingUpdatesChanged = false;
+
+            const manualCells = parseJsonObject(manualCellsJson);
+            const pendingUpdates = parseJsonObject(pendingUpdatesJson);
+
+            for (const column of resetColumns) {
+                if (Object.prototype.hasOwnProperty.call(manualCells, column)) {
+                    delete manualCells[column];
+                    manualCellsChanged = true;
+                }
+
+                if (Object.prototype.hasOwnProperty.call(pendingUpdates, column)) {
+                    delete pendingUpdates[column];
+                    pendingUpdatesChanged = true;
+                }
+            }
+
+            if (manualCellsChanged) {
+                manualCellsJson = stringifyJsonObject(manualCells);
+            }
+
+            if (pendingUpdatesChanged) {
+                pendingUpdatesJson = stringifyJsonObject(pendingUpdates);
+            }
+
+            const assignments = resetColumns.map((column) => {
+                return `"${column}" = ''`;
+            }).join(", ");
+
+            database.prepare(`
+                UPDATE price_pending_rows
+                SET
+                    ${assignments},
+                    manual_cells = ?,
+                    pending_external_updates = ?,
+                    updated_at = ?
+                WHERE id = ?
+            `).run(
+                manualCellsJson,
+                pendingUpdatesJson,
+                changedAt,
                 row.id
             );
         }
-    }
 
-    database.prepare(`
-        INSERT INTO price_pending_monthly_reset (
-            id,
-            reset_month,
-            created_at,
-            updated_at
-        ) VALUES (?, ?, ?, ?)
-    `).run(
-        crypto.randomUUID(),
-        currentMonth,
-        now.toISOString(),
-        now.toISOString()
-    );
+        database.prepare(`
+            INSERT INTO price_pending_monthly_reset (
+                id,
+                reset_month,
+                created_at,
+                updated_at
+            ) VALUES (?, ?, ?, ?)
+        `).run(
+            crypto.randomUUID(),
+            currentMonth,
+            changedAt,
+            changedAt
+        );
+    });
+
+    resetMonth.immediate();
 }
 
 
