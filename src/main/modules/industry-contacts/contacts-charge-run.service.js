@@ -29,6 +29,7 @@ function getRunSummary(runId) {
     const run = getRun(runId);
 
     return {
+        ...run,
         id: run.id,
         favorite_id: run.favorite_id,
         favorite_name: run.favorite_name,
@@ -45,7 +46,7 @@ function getRunSummary(runId) {
         progress: run.total > 0
             ? Math.round(((run.sent + run.failed + run.ignored + run.cancelled) / run.total) * 100)
             : 0,
-        items: run.items
+        items: require("./contacts-charge-coordination").expandedItems(run.id, run.items)
     };
 }
 

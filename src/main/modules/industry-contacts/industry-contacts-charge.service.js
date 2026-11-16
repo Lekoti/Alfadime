@@ -259,6 +259,11 @@ function finishHistory(attempts, result) {
 
 
 async function executePlan(plan, token) {
+    const coordination = require("./contacts-charge-coordination");
+    return coordination.sendPlan(plan, token, executeUncoordinatedPlanV4);
+}
+
+async function executeUncoordinatedPlanV4(plan, token) {
     const config = getEmailConfig();
     for (const [file, expected] of plan.fingerprints) {
         if (fingerprint(file) !== expected) {

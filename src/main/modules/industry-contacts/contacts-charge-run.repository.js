@@ -55,6 +55,7 @@ function ensureSchema(database) {
 
 function mapRun(row) {
     return {
+        ...require("./contacts-charge-coordination").metadata(row.id),
         id: row.id,
         favorite_id: row.favorite_id,
         favorite_name: row.favorite_name,
@@ -150,6 +151,7 @@ function createRun(data = {}) {
         );
     }
 
+    require("./contacts-charge-coordination").recordRun(id);
     return getRun(id);
 }
 

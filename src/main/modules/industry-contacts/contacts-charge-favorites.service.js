@@ -428,6 +428,11 @@ function getEmailConfig() {
 }
 
 async function executePlan(plan, token) {
+    const coordination = require("./contacts-charge-coordination");
+    return coordination.sendPlan(plan, token, executeUncoordinatedPlanV4);
+}
+
+async function executeUncoordinatedPlanV4(plan, token) {
     const config = getEmailConfig();
 
     for (const [file, expected] of plan.fingerprints) {
@@ -698,3 +703,6 @@ module.exports = {
     cancelCharge,
     retryFailedCharge
 };
+// Preserva o contexto do usuário em toda a execução, inclusive criação do histórico.
+const originalSendFavoriteV4 = module.exports.sendFavoriteCharge;
+module.exports.sendFavoriteCharge = payload => require("./contacts-charge-coordination").manual(() => originalSendFavoriteV4(payload));

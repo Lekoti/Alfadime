@@ -1,5 +1,6 @@
 const repository = require("./price-pending-automatic-charge.repository");
 const favoritesService = require("../industry-contacts/contacts-charge-favorites.service");
+const coordination = require("../industry-contacts/contacts-charge-coordination");
 let timer = null;
 let executing = false;
 let stopping = false;
@@ -35,7 +36,7 @@ async function runCharge() {
             }
         }, 30000);
         if (stopping || !repository.getStatus().enabled) throw new Error("Automação desativada antes do envio.");
-        result = await favoritesService.sendFavoriteCharge({ preview_token: activePreview });
+        result = await coordination.automatic(() => favoritesService.sendFavoriteCharge({ preview_token: activePreview }));
         if (failure) throw failure;
         return result;
     } catch (error) {

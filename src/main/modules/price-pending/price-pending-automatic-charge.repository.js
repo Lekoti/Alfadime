@@ -4,10 +4,12 @@ const { getDatabase: getContactsDatabase } = require("../industry-contacts/indus
 
 const INTERVAL_MS = 48 * 60 * 60 * 1000;
 const LEASE_MS = 5 * 60 * 1000;
+const ensuredDatabasesV4 = new WeakSet();
 const KEY = "automatic-charge-v3";
 function iso() { return new Date().toISOString(); }
 function db() {
     const database = getPricePendingDatabase();
+    if (ensuredDatabasesV4.has(database)) return database;
     database.exec(`
         CREATE TABLE IF NOT EXISTS price_pending_auto_v3 (
             id TEXT PRIMARY KEY CHECK(id = 'automatic-charge-v3'),
@@ -23,6 +25,7 @@ function db() {
         );
     `);
     database.prepare("INSERT OR IGNORE INTO price_pending_auto_v3(id, updated_at) VALUES (?, ?)").run(KEY, iso());
+    ensuredDatabasesV4.add(database);
     return database;
 }
 function event(kind, actor, detail = "") {
@@ -44,7 +47,8 @@ function latestSentMs() {
 }
 function getStatus() {
     const row = db().prepare("SELECT * FROM price_pending_auto_v3 WHERE id=?").get(KEY);
-    const lastSent = latestSentMs();
+    // O intervalo por destinatário é conferido no ponto comum do envio.
+    const lastSent = 0;
     const lastAttempt = Number(row.last_attempt_ms || 0);
     const nextMs = Math.max(lastSent ? lastSent + INTERVAL_MS : 0, lastAttempt ? lastAttempt + INTERVAL_MS : 0);
     return {
@@ -57,6 +61,14 @@ function getStatus() {
     };
 }
 function setEnabled(enabled, actor) {
+    if (!enabled) {
+        const database=db();
+        database.transaction(()=>{
+            database.prepare("UPDATE price_pending_auto_v3 SET enabled=0, updated_at=? WHERE id=?").run(iso(),KEY);
+            event("desativada",actor);
+        }).immediate();
+        return { ...getStatus(), enabled:false };
+    }
     const status = getStatus();
     if (enabled && status.running) throw new Error("Existe execução ou bloqueio pendente. Confira o histórico antes de reativar; não há desbloqueio automático de envio incerto.");
     db().transaction(() => {
