@@ -1,4 +1,4 @@
-﻿const fs = require("node:fs");
+const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
@@ -156,7 +156,7 @@ function getFileYear(fileName, fileMtimeMs) {
     }
 
 
-    return new Date().getFullYear();
+    return fileDate.getFullYear();
 }
 
 
@@ -190,6 +190,23 @@ function getFileDateParts(fileName, fileMtimeMs) {
 
     const formattedDay = String(day).padStart(2, "0");
     const formattedMonth = String(month).padStart(2, "0");
+
+
+    const parsedDate = new Date(
+        Date.UTC(year, month - 1, day)
+    );
+
+
+    if (
+        parsedDate.getUTCFullYear() !== year ||
+        parsedDate.getUTCMonth() !== month - 1 ||
+        parsedDate.getUTCDate() !== day
+    ) {
+        throw new Error(
+            `Data inválida para o arquivo: ${formattedDay}/${formattedMonth}/${year}. ` +
+            "Confira o mês informado no nome do arquivo e a data de modificação."
+        );
+    }
 
 
     return {
@@ -344,13 +361,18 @@ function ensureRefreshControlTables(database) {
 
 function getFileSignature(filePath) {
     const stats = fs.statSync(filePath);
+    const content = fs.readFileSync(filePath);
+    const contentHash = crypto
+        .createHash("sha256")
+        .update(content)
+        .digest("hex");
 
 
     return {
         fileSize: stats.size,
         fileMtimeMs: Math.floor(stats.mtimeMs),
         signature:
-            `${stats.size}-${Math.floor(stats.mtimeMs)}`
+            `${stats.size}-${Math.floor(stats.mtimeMs)}-${contentHash}`
     };
 }
 
@@ -427,7 +449,6 @@ function saveProcessedFile(
     ownerId
 ) {
     const now = new Date().toISOString();
-
 
     const existing = getProcessedFile(
         database,
@@ -509,61 +530,66 @@ function acquireRefreshLock(database, ownerId) {
     ).toISOString();
 
 
-    database
-        .prepare(`
-            DELETE FROM price_pending_refresh_locks
-            WHERE expires_at <= ?
-        `)
-        .run(nowIso);
+    const acquire = database.transaction(() => {
+        database
+            .prepare(`
+                DELETE FROM price_pending_refresh_locks
+                WHERE expires_at <= ?
+            `)
+            .run(nowIso);
 
 
-    const existingLock = database
-        .prepare(`
-            SELECT
-                owner_id,
-                owner_name,
-                acquired_at,
-                expires_at
-            FROM price_pending_refresh_locks
-            WHERE lock_key = ?
-            LIMIT 1
-        `)
-        .get(REFRESH_LOCK_KEY);
+        const existingLock = database
+            .prepare(`
+                SELECT
+                    owner_id,
+                    owner_name,
+                    acquired_at,
+                    expires_at
+                FROM price_pending_refresh_locks
+                WHERE lock_key = ?
+                LIMIT 1
+            `)
+            .get(REFRESH_LOCK_KEY);
 
 
-    if (existingLock) {
+        if (existingLock) {
+            return {
+                acquired: false,
+                lock: existingLock
+            };
+        }
+
+
+        database
+            .prepare(`
+                INSERT INTO price_pending_refresh_locks (
+                    lock_key,
+                    owner_id,
+                    owner_name,
+                    acquired_at,
+                    expires_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+            `)
+            .run(
+                REFRESH_LOCK_KEY,
+                ownerId,
+                appOwnerName(),
+                nowIso,
+                expiresAt,
+                nowIso
+            );
+
+
         return {
-            acquired: false,
-            lock: existingLock
+            acquired: true,
+            expiresAt
         };
-    }
+    });
 
 
-    database
-        .prepare(`
-            INSERT INTO price_pending_refresh_locks (
-                lock_key,
-                owner_id,
-                owner_name,
-                acquired_at,
-                expires_at,
-                updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        `)
-        .run(
-            REFRESH_LOCK_KEY,
-            ownerId,
-            appOwnerName(),
-            nowIso,
-            expiresAt,
-            nowIso
-        );
-
-
-    return {
-        acquired: true,
-        expiresAt
-    };
+    return acquire.immediate();
 }
 
 
@@ -664,7 +690,6 @@ function refreshFromFolders() {
 
     ensureRefreshControlTables(database);
 
-
     const lockResult = acquireRefreshLock(
         database,
         ownerId
@@ -704,10 +729,6 @@ function refreshFromFolders() {
             getFolders().pending
         );
 
-
-        for (const file of priceFiles) {
-            file.signature += ":workbook-content-v1";
-        }
 
         const allFiles = [
             ...priceFiles.map((file) => {
@@ -757,13 +778,6 @@ function refreshFromFolders() {
             }
 
 
-            if (previous) {
-                changedFiles += 1;
-            } else {
-                newFiles += 1;
-            }
-
-
             try {
                 const result = processCurrentFile(
                     file,
@@ -776,6 +790,13 @@ function refreshFromFolders() {
 
 
                 if (result.processed) {
+                    if (previous) {
+                        changedFiles += 1;
+                    } else {
+                        newFiles += 1;
+                    }
+
+
                     saveProcessedFile(
                         database,
                         file,
@@ -838,13 +859,48 @@ function forceRefreshFromFolders() {
 
     ensureRefreshControlTables(database);
 
+    const lockResult = acquireRefreshLock(
+        database,
+        crypto.randomUUID()
+    );
 
-    database
-        .prepare("DELETE FROM price_pending_processed_files")
-        .run();
+
+    if (!lockResult.acquired) {
+        const expiresAt = lockResult.lock?.expires_at
+            ? new Date(
+                lockResult.lock.expires_at
+            ).toLocaleTimeString("pt-BR")
+            : "em breve";
 
 
-    return refreshFromFolders();
+        return {
+            success: false,
+            code: "REFRESH_IN_PROGRESS",
+            message:
+                "Outra atualização de Preços e Pendências " +
+                "está em andamento em outro computador. " +
+                "Tente novamente em alguns instantes.",
+            lockedBy:
+                lockResult.lock?.owner_name ||
+                "outro computador",
+            expiresAt
+        };
+    }
+
+
+    try {
+        database
+            .prepare("DELETE FROM price_pending_processed_files")
+            .run();
+
+
+        return refreshFromFolders();
+    } finally {
+        releaseRefreshLock(
+            database,
+            lockResult.lock?.owner_id || ""
+        );
+    }
 }
 
 

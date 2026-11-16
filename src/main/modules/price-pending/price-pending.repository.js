@@ -196,6 +196,19 @@ function resetMonthlyPendingMarkers(database) {
     resetMonth.immediate();
 }
 
+function findActiveRowByLaboratory(database, laboratory) {
+    const normalizedLaboratory = normalizeLaboratoryName(laboratory);
+    if (!normalizedLaboratory) return null;
+
+    const rows = database.prepare(`
+        SELECT *
+        FROM price_pending_rows
+        WHERE active = 1
+    `).all();
+
+    return rows.find((row) => normalizeLaboratoryName(row.laboratory) === normalizedLaboratory) || null;
+}
+
 function getPricePendingValues(laboratory, branch) {
     const database = getPricePendingDatabase();
     const normalizedLaboratory = normalizeLaboratoryName(laboratory);
@@ -205,20 +218,19 @@ function getPricePendingValues(laboratory, branch) {
         return { laboratory, branch: normalizedBranch, pricesValue: "", pendingValue: "" };
     }
 
+    const row = findActiveRowByLaboratory(database, normalizedLaboratory);
+    if (!row) {
+        return { laboratory, branch: normalizedBranch, pricesValue: "", pendingValue: "" };
+    }
+
     const priceColumn = getBranchColumn("precos_ok", normalizedBranch);
     const pendingColumn = getBranchColumn("pendencias_ok", normalizedBranch);
-    const row = database.prepare(`
-        SELECT laboratory, "${priceColumn}" AS prices_value, "${pendingColumn}" AS pending_value
-        FROM price_pending_rows
-        WHERE active = 1 AND UPPER(TRIM(laboratory)) = ?
-        LIMIT 1
-    `).get(normalizedLaboratory);
 
     return {
-        laboratory,
+        laboratory: row.laboratory,
         branch: normalizedBranch,
-        pricesValue: row?.prices_value ?? "",
-        pendingValue: row?.pending_value ?? ""
+        pricesValue: row[priceColumn] ?? "",
+        pendingValue: row[pendingColumn] ?? ""
     };
 }
 
@@ -379,6 +391,27 @@ function integrityUnsafe_applyExternalCellUpdate({ id, column, value, fileName =
         updatedAt: now
     };
 
+    const isProtectedManualCell = Boolean(manualCells[column]) &&
+        String(row.current_column_value ?? "").trim() !== "";
+
+    if (isProtectedManualCell) {
+        pendingUpdates[column] = externalUpdate;
+
+        database.prepare(`
+            UPDATE price_pending_rows
+            SET pending_external_updates = ?, external_updated_at = ?, updated_at = ?
+            WHERE id = ? AND active = 1
+        `).run(stringifyJsonObject(pendingUpdates), now, now, id);
+
+        return {
+            ...getRowById(id),
+            externalUpdatePending: true,
+            column,
+            update: externalUpdate,
+            changes: 0
+        };
+    }
+
     delete pendingUpdates[column];
     delete manualCells[column];
 
@@ -469,10 +502,7 @@ function integrityUnsafe_updateEmailReceiptStatus({ laboratory, branch, type, pr
     const column = getEmailReceiptColumn(type, branch);
     const value = formatEmailReceiptDate(processedAt);
     const database = getPricePendingDatabase();
-    const row = database.prepare(`
-        SELECT id, laboratory, manual_cells, pending_external_updates, "${column}" AS current_value
-        FROM price_pending_rows WHERE active = 1 AND UPPER(TRIM(laboratory)) = ? LIMIT 1
-    `).get(normalizedLaboratory);
+    const row = findActiveRowByLaboratory(database, normalizedLaboratory);
 
     if (!row) {
         return { success: false, updated: false, reason: "laboratory_not_found", laboratory, branch, type, column, value };
@@ -481,7 +511,7 @@ function integrityUnsafe_updateEmailReceiptStatus({ laboratory, branch, type, pr
     const manualCells = parseJsonObject(row.manual_cells);
     const pendingUpdates = parseJsonObject(row.pending_external_updates);
 
-    if (manualCells[column] && String(row.current_value || "").trim() !== "") {
+    if (manualCells[column] && String(row[column] || "").trim() !== "") {
         pendingUpdates[column] = {
             value,
             fileName: "e-mail",
