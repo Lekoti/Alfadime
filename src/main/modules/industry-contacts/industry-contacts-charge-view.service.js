@@ -11,9 +11,25 @@ function isUpdated(value, now = new Date()) {
         /^(?:Atualizado\s*)?(\d{1,2})\/(\d{1,2})\/(\d{4})$/i
     );
     if (!match) return false;
-    const month = Number(match[1]);
-    return month >= 1 && month <= 12 &&
-        Number(match[2]) * 12 + month >= now.getFullYear() * 12 + now.getMonth() + 1;
+
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1000) {
+        return false;
+    }
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+    ) {
+        return false;
+    }
+
+    return year * 12 + month >= now.getFullYear() * 12 + now.getMonth() + 1;
 }
 function isNotWorking(value) {
     return String(value ?? "").trim().toUpperCase() === "NAO TRABALHA";
