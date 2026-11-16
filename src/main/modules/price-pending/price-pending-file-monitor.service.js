@@ -220,17 +220,30 @@ function getLaboratoryName(row) {
 
 
 function findMatchingRows(fileName) {
-    const normalizedFileName = normalize(fileName);
+    const normalizedFileName = ` ${normalize(fileName)} `;
     const rows = listRows();
 
-
-    return rows.filter((row) => {
+    const matchingRows = rows.filter((row) => {
         const laboratoryName = getLaboratoryName(row);
 
-
-        return laboratoryName &&
-            normalizedFileName.includes(laboratoryName);
+        return Boolean(laboratoryName) &&
+            normalizedFileName.includes(` ${laboratoryName} `);
     });
+
+    if (matchingRows.length > 1) {
+        const laboratories = matchingRows.map((row) => {
+            return `${String(row.laboratory ?? "")} [ID: ${String(row.id ?? "")}]`;
+        }).join("; ");
+
+        throw new Error(
+            `Arquivo com laboratório ambíguo: ${fileName}. ` +
+            `Correspondências: ${laboratories}. ` +
+            "Nenhuma célula foi atualizada por este arquivo. " +
+            "Confira o nome do arquivo e os cadastros dos laboratórios."
+        );
+    }
+
+    return matchingRows;
 }
 
 
