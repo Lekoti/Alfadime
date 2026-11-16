@@ -856,14 +856,14 @@ function refreshFromFolders() {
 function forceRefreshFromFolders() {
     const database = getPricePendingDatabase();
 
-
     ensureRefreshControlTables(database);
+
+    const ownerId = crypto.randomUUID();
 
     const lockResult = acquireRefreshLock(
         database,
-        crypto.randomUUID()
+        ownerId
     );
-
 
     if (!lockResult.acquired) {
         const expiresAt = lockResult.lock?.expires_at
@@ -871,7 +871,6 @@ function forceRefreshFromFolders() {
                 lockResult.lock.expires_at
             ).toLocaleTimeString("pt-BR")
             : "em breve";
-
 
         return {
             success: false,
@@ -887,18 +886,16 @@ function forceRefreshFromFolders() {
         };
     }
 
-
     try {
         database
             .prepare("DELETE FROM price_pending_processed_files")
             .run();
 
-
         return refreshFromFolders();
     } finally {
         releaseRefreshLock(
             database,
-            lockResult.lock?.owner_id || ""
+            ownerId
         );
     }
 }
