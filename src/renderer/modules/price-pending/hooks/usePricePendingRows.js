@@ -1,537 +1,207 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getFriendlyErrorMessage, isDatabaseBusyError } from "../utils/price-pending.utils";
+import { PricePendingEditJournal } from "../utils/price-pending-edit-journal";
 
-
-import {
-    getFriendlyErrorMessage,
-    isDatabaseBusyError
-} from "../utils/price-pending.utils";
-
-
-export default function usePricePendingRows({
-    permissions,
-    enabled = true
-}) {
-    const [allRows, setAllRows] = useState([]);
+export default function usePricePendingRows({ permissions, enabled = true }) {
+    const [allRows, setRenderedRows] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [structuralSaving, setStructuralSaving] = useState(false);
     const [savingCell, setSavingCell] = useState(null);
+    const [pendingSaves, setPendingSaves] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [ignoredFiles, setIgnoredFiles] = useState([]);
     const [sharedDbMode, setSharedDbMode] = useState(false);
     const [readOnly, setReadOnly] = useState(false);
+    const serverRowsRef = useRef([]);
+    const journalRef = useRef(new PricePendingEditJournal());
+    const loadingRef = useRef(false);
+    const pendingRef = useRef(0);
+    const structuralRef = useRef(false);
+    const epochRef = useRef(0);
+    const mountedRef = useRef(true);
+    const queueRef = useRef(Promise.resolve());
+    const queuedVersionsRef = useRef(new Set());
+    const permissionsRef = useRef(permissions);
+    const readOnlyRef = useRef(readOnly);
+    permissionsRef.current = permissions;
+    readOnlyRef.current = readOnly;
 
-    const editingCellRef = useRef(null);
-    const originalValuesRef = useRef(new Map());
-    const isLoadingRowsRef = useRef(false);
-
+    const publish = useCallback(() => {
+        if (mountedRef.current) setRenderedRows(journalRef.current.apply(serverRowsRef.current));
+    }, []);
+    const setAllRows = useCallback(next => {
+        epochRef.current += 1;
+        serverRowsRef.current = typeof next === "function" ? next(serverRowsRef.current) : next;
+        if (!Array.isArray(serverRowsRef.current)) serverRowsRef.current = [];
+        publish();
+    }, [publish]);
+    const report = useCallback((failure, fallback) => {
+        if (!mountedRef.current) return;
+        if (isDatabaseBusyError(failure)) {
+            readOnlyRef.current = true;
+            setReadOnly(true);
+        }
+        setError(getFriendlyErrorMessage(failure, failure?.message || fallback));
+    }, []);
 
     const loadRows = useCallback(async ({ silent = false } = {}) => {
+        if (loadingRef.current || pendingRef.current || structuralRef.current) return { skipped: true };
+        loadingRef.current = true;
+        const epoch = epochRef.current;
+        if (!silent && mountedRef.current) setLoading(true);
         try {
-            if (isLoadingRowsRef.current) {
-                return;
-            }
-
-
-            isLoadingRowsRef.current = true;
-
-
-            if (!silent) {
-                setLoading(true);
-            }
-
-
-            setError("");
-
-
-            const result =
-                await window.alfadime.pricePending.list();
-
-
-            const data = Array.isArray(result)
-                ? result
-                : [];
-
-
-            const editingCell = editingCellRef.current;
-
-
-            const nextRows = editingCell
-                ? data.map((row) => {
-                    return row.id === editingCell.id
-                        ? {
-                            ...row,
-                            [editingCell.column]:
-                                editingCell.value
-                        }
-                        : row;
-                })
-                : data;
-
-
-            setAllRows(nextRows);
+            const result = await window.alfadime.pricePending.list();
+            if (!Array.isArray(result)) throw new Error("O aplicativo retornou uma lista de laboratórios inválida.");
+            if (!mountedRef.current || epoch !== epochRef.current) return { skipped: true };
+            serverRowsRef.current = result;
+            publish();
+            readOnlyRef.current = false;
             setReadOnly(false);
-        } catch (loadError) {
-            console.error(loadError);
-
-
-            if (isDatabaseBusyError(loadError)) {
-                setReadOnly(true);
-            }
-
-
-            setError(
-                getFriendlyErrorMessage(
-                    loadError,
-                    "Não foi possível carregar os laboratórios."
-                )
-            );
+            if (!silent) setError("");
+            return { success: true };
+        } catch (failure) {
+            report(failure, "Não foi possível carregar os laboratórios.");
+            return { success: false, error: failure };
         } finally {
-            isLoadingRowsRef.current = false;
-
-
-            if (!silent) {
-                setLoading(false);
-            }
+            loadingRef.current = false;
+            if (!silent && mountedRef.current) setLoading(false);
         }
-    }, []);
-
-
-    const retryConnection = useCallback(async () => {
-        await loadRows();
-    }, [loadRows]);
-
-
-    const refreshRows = useCallback(async () => {
-        if (!permissions.canRefresh) {
-            setError("Você não tem permissão para atualizar as planilhas.");
-            return;
-        }
-
-
-        if (readOnly) {
-            setError(
-                "O banco compartilhado está em modo somente leitura. " +
-                "Clique em “Tentar novamente” antes de atualizar."
-            );
-            return;
-        }
-
-
-        try {
-            setRefreshing(true);
-            setError("");
-            setSuccess("");
-
-
-            const result =
-                await window.alfadime.pricePending.refresh();
-
-
-            if (result?.code === "REFRESH_IN_PROGRESS") {
-                setError(
-                    result.message ||
-                    "Outra atualização está em andamento em outro computador."
-                );
-
-                return;
-            }
-
-
-            if (!result?.success) {
-                setError(
-                    result?.message ||
-                    "Não foi possível atualizar os dados."
-                );
-
-                return;
-            }
-
-
-            setIgnoredFiles(result.ignored || []);
-            await loadRows();
-
-
-            setSuccess(
-                [
-                    "Atualização concluída.",
-                    `${result.filesFound || 0} arquivo(s) encontrado(s).`,
-                    `${result.newFiles || 0} novo(s).`,
-                    `${result.changedFiles || 0} alterado(s).`,
-                    `${result.processed || 0} processado(s).`,
-                    `${result.alreadyProcessed || 0} já processado(s).`,
-                    `${result.failures || 0} falha(s).`
-                ].join(" ")
-            );
-        } catch (refreshError) {
-            console.error(refreshError);
-
-
-            if (isDatabaseBusyError(refreshError)) {
-                setReadOnly(true);
-            }
-
-
-            setError(
-                getFriendlyErrorMessage(
-                    refreshError,
-                    "Não foi possível atualizar os dados."
-                )
-            );
-        } finally {
-            setRefreshing(false);
-        }
-    }, [
-        loadRows,
-        permissions.canRefresh,
-        readOnly
-    ]);
-
+    }, [publish, report]);
+    const retryConnection = useCallback(() => loadRows(), [loadRows]);
 
     const updateLocalValue = useCallback((id, column, value) => {
-        const cellKey = `${id}:${column}`;
+        if (readOnlyRef.current) return;
+        journalRef.current.write(id, column, value);
+        publish();
+    }, [publish]);
 
-
-        if (!originalValuesRef.current.has(cellKey)) {
-            setAllRows((currentRows) => {
-                const currentRow = currentRows.find(
-                    (row) => row.id === id
-                );
-
-
-                originalValuesRef.current.set(
-                    cellKey,
-                    currentRow?.[column] ?? ""
-                );
-
-
-                return currentRows;
-            });
+    const saveCell = useCallback((row, column) => {
+        const permission = permissionsRef.current;
+        const allowed = column === "laboratory" ? permission.canEditLaboratory
+            : column === "observation" ? permission.canEditObservation
+            : permission.canEditValues && permission.canEditFunction(permission.moduleKey, column);
+        const draft = journalRef.current.get(row.id, column);
+        if (!draft) return Promise.resolve({ unchanged: true });
+        if (!allowed || readOnlyRef.current) {
+            journalRef.current.removeVersion(row.id, column, draft.version);
+            publish();
+            if (mountedRef.current) setError("Alteração não salva: sem permissão ou banco em modo somente leitura.");
+            return Promise.resolve({ success: false });
         }
-
-
-        editingCellRef.current = {
-            id,
-            column,
-            value
-        };
-
-
-        setAllRows((currentRows) => {
-            return currentRows.map((row) => {
-                return row.id === id
-                    ? {
-                        ...row,
-                        [column]: value
-                    }
-                    : row;
-            });
+        const taskKey = JSON.stringify([row.id, column, draft.version]);
+        if (queuedVersionsRef.current.has(taskKey)) return queueRef.current;
+        queuedVersionsRef.current.add(taskKey);
+        pendingRef.current += 1;
+        epochRef.current += 1;
+        if (mountedRef.current) setPendingSaves(pendingRef.current);
+        const task = queueRef.current.then(async () => {
+            try {
+                if (readOnlyRef.current) throw new Error("O banco está em modo somente leitura. Tente conectar novamente.");
+                const currentPermission = permissionsRef.current;
+                const canSave = column === "laboratory" ? currentPermission.canEditLaboratory
+                    : column === "observation" ? currentPermission.canEditObservation
+                    : currentPermission.canEditValues && currentPermission.canEditFunction(currentPermission.moduleKey, column);
+                if (!canSave) throw new Error("Sua permissão de edição foi alterada. A alteração não foi salva.");
+                const current = serverRowsRef.current.find(item => item.id === row.id);
+                if (!current) throw new Error("Registro não encontrado na lista atual.");
+                if (String(current[column] ?? "") === draft.value) {
+                    journalRef.current.removeVersion(row.id, column, draft.version);
+                    publish();
+                    return { unchanged: true };
+                }
+                if (mountedRef.current) { setSavingCell(`${row.id}:${column}`); setError(""); }
+                const saved = await window.alfadime.pricePending.updateCell(row.id, column, draft.value);
+                if (!saved || saved.id !== row.id) throw new Error("Resposta de salvamento inválida. Confira o registro antes de editar novamente.");
+                serverRowsRef.current = serverRowsRef.current.map(item => item.id === saved.id ? { ...item, ...saved } : item);
+                journalRef.current.removeVersion(row.id, column, draft.version);
+                publish();
+                return { success: true };
+            } catch (failure) {
+                journalRef.current.removeVersion(row.id, column, draft.version);
+                publish();
+                report(failure, "Não foi possível salvar a alteração.");
+                return { success: false };
+            } finally {
+                queuedVersionsRef.current.delete(taskKey);
+                pendingRef.current -= 1;
+                epochRef.current += 1;
+                if (mountedRef.current) { setPendingSaves(pendingRef.current); setSavingCell(null); }
+            }
         });
-    }, []);
+        queueRef.current = task.catch(failure => report(failure, "Falha na fila de salvamento."));
+        return task;
+    }, [publish, report]);
 
-
-    const saveCell = useCallback(async (row, column) => {
-        if (readOnly) {
-            return;
-        }
-
-
-        if (
-            column === "laboratory" &&
-            !permissions.canEditLaboratory
-        ) {
-            return;
-        }
-
-
-        if (
-            column === "observation" &&
-            !permissions.canEditObservation
-        ) {
-            return;
-        }
-
-
-        if (
-            column !== "laboratory" &&
-            column !== "observation" &&
-            !permissions.canEditValues
-        ) {
-            return;
-        }
-
-
-        const cellKey = `${row.id}:${column}`;
-
-
-        if (
-            String(originalValuesRef.current.get(cellKey) ?? "") ===
-            String(row[column] ?? "")
-        ) {
-            editingCellRef.current = null;
-            return;
-        }
-
-
+    const refreshRows = useCallback(async () => {
+        if (!permissionsRef.current.canRefresh) { setError("Você não tem permissão para atualizar as planilhas."); return; }
+        if (readOnlyRef.current) { setError("Reconecte o banco antes de atualizar."); return; }
+        if (pendingRef.current || journalRef.current.size || structuralRef.current) { setError("Conclua as edições antes de atualizar as planilhas."); return; }
+        setRefreshing(true); setError(""); setSuccess("");
         try {
-            setSavingCell(cellKey);
-            setError("");
+            const result = await window.alfadime.pricePending.refresh();
+            if (!result?.success) throw new Error(result?.message || "Não foi possível atualizar os dados.");
+            setIgnoredFiles(Array.isArray(result.ignored) ? result.ignored : []);
+            const loaded = await loadRows();
+            if (!loaded.success) { if (loaded.skipped) setError("Atualização processada. Recarregue a lista após concluir a operação atual."); return; }
+            setSuccess(`Atualização concluída. ${result.filesFound || 0} arquivo(s); ${result.processed || 0} processado(s); ${result.alreadyProcessed || 0} já processado(s); ${result.failures || 0} falha(s).`);
+        } catch (failure) { report(failure, "Não foi possível atualizar os dados."); }
+        finally { if (mountedRef.current) setRefreshing(false); }
+    }, [loadRows, report]);
 
-
-            const savedRow =
-                await window.alfadime.pricePending.updateCell(
-                    row.id,
-                    column,
-                    row[column] || ""
-                );
-
-
-            originalValuesRef.current.set(
-                cellKey,
-                savedRow?.[column] ?? ""
-            );
-
-
-            editingCellRef.current = null;
-
-
-            if (savedRow && savedRow.id === row.id) {
-                setAllRows((currentRows) => {
-                    return currentRows.map((currentRow) => {
-                        return currentRow.id === savedRow.id
-                            ? savedRow
-                            : currentRow;
-                    });
-                });
-            }
-        } catch (saveError) {
-            console.error(saveError);
-
-
-            await loadRows({ silent: true });
-
-
-            if (isDatabaseBusyError(saveError)) {
-                setReadOnly(true);
-            }
-
-
-            setError(
-                getFriendlyErrorMessage(
-                    saveError,
-                    "Não foi possível salvar a alteração."
-                )
-            );
-        } finally {
-            setSavingCell(null);
-        }
-    }, [
-        loadRows,
-        permissions,
-        readOnly
-    ]);
-
-
-    const addLaboratory = useCallback(async (laboratoryName) => {
-        if (!permissions.canAddLaboratory) {
-            setError("Você não tem permissão para adicionar laboratórios.");
-            return false;
-        }
-
-
-        if (readOnly) {
-            return false;
-        }
-
-
+    const addLaboratory = useCallback(async laboratoryName => {
+        if (!permissionsRef.current.canAddLaboratory) { setError("Você não tem permissão para adicionar laboratórios."); return false; }
+        if (readOnlyRef.current || pendingRef.current || structuralRef.current || journalRef.current.size) { setError("Conclua as edições e verifique a conexão antes de adicionar."); return false; }
         const laboratory = String(laboratoryName || "").trim();
-
-
-        if (!laboratory) {
-            setError("Digite o nome do laboratório e o código.");
-            return false;
-        }
-
-
+        if (!laboratory) { setError("Digite o nome do laboratório e o código."); return false; }
+        structuralRef.current = true; epochRef.current += 1; setStructuralSaving(true); setError("");
         try {
-            setSaving(true);
-            setError("");
-
-
-            const createdRow =
-                await window.alfadime.pricePending.create({
-                    laboratory
-                });
-
-
-            setAllRows((currentRows) => [
-                ...currentRows,
-                createdRow
-            ]);
-
-
+            const created = await window.alfadime.pricePending.create({ laboratory });
+            if (!created?.id) throw new Error("Resposta de criação inválida.");
+            setAllRows(current => [...current, created]);
             return true;
-        } catch (createError) {
-            console.error(createError);
-
-
-            if (isDatabaseBusyError(createError)) {
-                setReadOnly(true);
-            }
-
-
-            setError(
-                getFriendlyErrorMessage(
-                    createError,
-                    "Não foi possível adicionar o laboratório."
-                )
-            );
-
-
-            return false;
-        } finally {
-            setSaving(false);
-        }
-    }, [
-        permissions.canAddLaboratory,
-        readOnly
-    ]);
-
-
-    const removeLaboratory = useCallback(async (row) => {
-        if (!permissions.canRemoveLaboratory) {
-            setError("Você não tem permissão para remover laboratórios.");
-            return;
-        }
-
-
-        if (readOnly) {
-            return;
-        }
-
-
+        } catch (failure) { report(failure, "Não foi possível adicionar o laboratório."); return false; }
+        finally { structuralRef.current = false; if (mountedRef.current) setStructuralSaving(false); }
+    }, [setAllRows, report]);
+    const removeLaboratory = useCallback(async row => {
+        if (!permissionsRef.current.canRemoveLaboratory) { setError("Você não tem permissão para remover laboratórios."); return; }
+        if (readOnlyRef.current || pendingRef.current || structuralRef.current || journalRef.current.size) { setError("Conclua as edições e verifique a conexão antes de remover."); return; }
+        structuralRef.current = true; epochRef.current += 1; setStructuralSaving(true); setError("");
         try {
-            setSaving(true);
-            setError("");
-
-
             await window.alfadime.pricePending.remove(row.id);
-
-
-            setAllRows((currentRows) => {
-                return currentRows.filter(
-                    (currentRow) => currentRow.id !== row.id
-                );
-            });
-        } catch (removeError) {
-            console.error(removeError);
-
-
-            if (isDatabaseBusyError(removeError)) {
-                setReadOnly(true);
-            }
-
-
-            setError(
-                getFriendlyErrorMessage(
-                    removeError,
-                    "Não foi possível remover o laboratório."
-                )
-            );
-        } finally {
-            setSaving(false);
-        }
-    }, [
-        permissions.canRemoveLaboratory,
-        readOnly
-    ]);
-
+            journalRef.current.removeRow(row.id);
+            setAllRows(current => current.filter(item => item.id !== row.id));
+        } catch (failure) { report(failure, "Não foi possível remover o laboratório."); }
+        finally { structuralRef.current = false; if (mountedRef.current) setStructuralSaving(false); }
+    }, [setAllRows, report]);
 
     useEffect(() => {
-        if (!enabled) {
-            return;
-        }
-
-
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
+    }, []);
+    useEffect(() => {
+        if (!enabled) return;
         loadRows();
-
-
-        window.alfadime.pricePending
-            .getDbConfig?.()
-            .then((config) => {
-                setSharedDbMode(config?.mode === "shared");
-            })
-            .catch(() => {
-                setSharedDbMode(false);
-            });
-    }, [
-        enabled,
-        loadRows
-    ]);
-
-
+        let cancelled = false;
+        Promise.resolve().then(() => window.alfadime.pricePending.getDbConfig?.())
+            .then(config => { if (!cancelled) setSharedDbMode(config?.mode === "shared"); })
+            .catch(() => { if (!cancelled) setSharedDbMode(false); });
+        return () => { cancelled = true; };
+    }, [enabled, loadRows]);
     useEffect(() => {
-        if (!sharedDbMode) {
-            return undefined;
-        }
-
-
-        const intervalId = setInterval(() => {
-            if (
-                editingCellRef.current ||
-                savingCell !== null ||
-                isLoadingRowsRef.current
-            ) {
-                return;
-            }
-
-
-            const activeElement = document.activeElement;
-
-
-            if (
-                activeElement instanceof HTMLInputElement &&
-                activeElement.closest(".price-pending-table")
-            ) {
-                return;
-            }
-
-
+        if (!sharedDbMode || !enabled) return undefined;
+        const interval = setInterval(() => {
+            if (journalRef.current.size || pendingRef.current || structuralRef.current || loadingRef.current) return;
+            if (document.activeElement?.closest?.(".price-pending-table")) return;
             loadRows({ silent: true });
         }, 20000);
-
-
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [
-        loadRows,
-        savingCell,
-        sharedDbMode
-    ]);
-
-
+        return () => clearInterval(interval);
+    }, [enabled, sharedDbMode, loadRows]);
     return {
-        allRows,
-        setAllRows,
-        loading,
-        saving,
-        savingCell,
-        refreshing,
-        error,
-        success,
-        ignoredFiles,
-        sharedDbMode,
-        readOnly,
-        loadRows,
-        retryConnection,
-        refreshRows,
-        updateLocalValue,
-        saveCell,
-        addLaboratory,
-        removeLaboratory,
-        setError,
-        setSuccess
+        allRows, setAllRows, loading, saving: structuralSaving || pendingSaves > 0,
+        savingCell, refreshing, error, success, ignoredFiles, sharedDbMode, readOnly,
+        loadRows, retryConnection, refreshRows, updateLocalValue, saveCell,
+        addLaboratory, removeLaboratory, setError, setSuccess
     };
 }

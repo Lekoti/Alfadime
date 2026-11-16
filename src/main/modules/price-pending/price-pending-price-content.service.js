@@ -157,6 +157,10 @@ function processPriceFile(file, context = {}) {
             const currentValidity = storedDate(current.price_value);
             const pendingValidity = storedDate(pending[priceColumn]?.value);
             if (currentValidity > plan.validity || pendingValidity > plan.validity) {
+                applyExternalCellUpdate({
+                    id: plan.rowId, column: receiptColumn, value: formatDate(received),
+                    fileName: file.name, fileMtimeMs: file.fileMtimeMs
+                });
                 skipped += 1;
                 continue;
             }

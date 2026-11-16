@@ -231,80 +231,30 @@ export default function usePricePendingFilters({
 
 
     function filterRows(rowsToFilter) {
-        let filtered = Array.isArray(rowsToFilter)
-            ? rowsToFilter
-            : [];
-
-
-
-        if (
-            permissions.canSearch &&
-            searchTerm.trim()
-        ) {
-            const term = searchTerm.toLowerCase().trim();
-
-
-            filtered = filtered.filter((row) =>
-                String(row.laboratory || "")
-                    .toLowerCase()
-                    .includes(term)
+        let filtered = Array.isArray(rowsToFilter) ? rowsToFilter : [];
+        if (permissions.canSearch && searchTerm.trim()) {
+            const term = searchTerm.toLocaleLowerCase("pt-BR").trim();
+            filtered = filtered.filter(row =>
+                String(row.laboratory || "").toLocaleLowerCase("pt-BR").includes(term)
             );
         }
-
-
-
-        if (
-            permissions.canFilterBranch &&
-            filterBranch
-        ) {
-            filtered = filtered.filter((row) => {
-                return visibleColumnsList.some((column) => {
-                    return isBranchColumn(column, filterBranch) &&
-                        String(row[column.key] || "").trim() !== "";
-                });
-            });
+        const statusColumns = PRICE_PENDING_COLUMNS.filter(column =>
+            ["precos_ok", "pendencias_ok"].includes(column.group) &&
+            (!filterBranch || isBranchColumn(column, filterBranch)) &&
+            permissions.canViewFunction(permissions.moduleKey, column.group) &&
+            permissions.canViewFunction(permissions.moduleKey, column.key)
+        );
+        const updated = permissions.canFilterUpdated && filterUpdated;
+        const outdated = permissions.canFilterOutdated && filterOutdated;
+        if (updated || outdated) {
+            filtered = filtered.filter(row => statusColumns.some(column =>
+                (updated && isUpdatedPeriod(row[column.key])) ||
+                (outdated && isOutdatedPeriod(row[column.key]))
+            ));
         }
-
-
-
-        const datePredicates = [];
-
-
-
-        if (
-            permissions.canFilterUpdated &&
-            filterUpdated
-        ) {
-            datePredicates.push(isUpdatedPeriod);
-        }
-
-
-
-        if (
-            permissions.canFilterOutdated &&
-            filterOutdated
-        ) {
-            datePredicates.push(isOutdatedPeriod);
-        }
-
-
-
-        if (datePredicates.length > 0) {
-            filtered = filtered.filter((row) => {
-                return visibleColumnsList.some((column) => {
-                    return datePredicates.some((predicate) =>
-                        predicate(row[column.key])
-                    );
-                });
-            });
-        }
-
-
-
+        // A filial seleciona colunas e critérios, sem esconder indústrias cujos valores estão vazios.
         return filtered;
     }
-
-
 
     const hasActiveFilters = Boolean(
         searchTerm.trim() ||

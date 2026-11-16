@@ -532,7 +532,7 @@ function createRow(data = {}) {
 }
 
 
-function updateCell(id, column, value) {
+function integrityUnsafe_updateCell(id, column, value) {
     if (!EDITABLE_COLUMNS.includes(column)) {
         throw new Error(`Coluna não permitida para edição: ${column}`);
     }
@@ -587,7 +587,7 @@ function updateCell(id, column, value) {
 }
 
 
-function applyExternalCellUpdate({ id, column, value, fileName = "", fileMtimeMs = null }) {
+function integrityUnsafe_applyExternalCellUpdate({ id, column, value, fileName = "", fileMtimeMs = null }) {
     if (!EXTERNAL_COLUMNS.includes(column)) {
         throw new Error(`Coluna externa não permitida: ${column}`);
     }
@@ -659,7 +659,7 @@ function applyExternalCellUpdate({ id, column, value, fileName = "", fileMtimeMs
 }
 
 
-function acceptExternalCellUpdate({ id, column }) {
+function integrityUnsafe_acceptExternalCellUpdate({ id, column }) {
     if (!EXTERNAL_COLUMNS.includes(column)) {
         throw new Error(`Coluna externa não permitida: ${column}`);
     }
@@ -786,7 +786,7 @@ function formatEmailReceiptDate(dateValue = new Date()) {
 }
 
 
-function updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new Date() }) {
+function integrityUnsafe_updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new Date() }) {
     const normalizedLaboratory = normalizeLaboratoryName(laboratory);
     if (!normalizedLaboratory) throw new Error("Laboratório obrigatório para atualizar o status do recebimento.");
 
@@ -877,6 +877,31 @@ function updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new 
     };
 }
 
+
+
+function updateCell(id, column, value) {
+    if (EXTERNAL_COLUMNS.includes(column)) require("./price-pending-validation").validateManualDate(value);
+    const database = getPricePendingDatabase();
+    return database.transaction(() => integrityUnsafe_updateCell(id, column, value)).immediate();
+}
+
+
+function applyExternalCellUpdate(payload) {
+    const database = getPricePendingDatabase();
+    return database.transaction(() => integrityUnsafe_applyExternalCellUpdate(payload)).immediate();
+}
+
+
+function acceptExternalCellUpdate(payload) {
+    const database = getPricePendingDatabase();
+    return database.transaction(() => integrityUnsafe_acceptExternalCellUpdate(payload)).immediate();
+}
+
+
+function updateEmailReceiptStatus(payload) {
+    const database = getPricePendingDatabase();
+    return database.transaction(() => integrityUnsafe_updateEmailReceiptStatus(payload)).immediate();
+}
 
 module.exports = {
     listRows,

@@ -3,7 +3,8 @@ const VALID_PRIORITIES = ["", "maxima", "alta", "media", "baixa"];
 
 function normalizePriority(value) {
     const priority = String(value || "").trim().toLowerCase();
-    return VALID_PRIORITIES.includes(priority) ? priority : "";
+    if (!VALID_PRIORITIES.includes(priority)) throw new Error("Prioridade inválida. Selecione uma opção da lista.");
+    return priority;
 }
 
 function updatePriority(id, priority) {
