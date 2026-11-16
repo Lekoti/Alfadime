@@ -81,14 +81,9 @@
 .price-pending-table tbody tr:hover td.laboratory-cell, .price-pending-table tbody tr:hover td.industry-global-code-cell { background: #f1f5f9; }
 .price-pending-table td.updated-current-month, .price-pending-table td.updated-future-month { background-color: #d9f2df !important; color: #176b2c !important; font-weight: 700; }
 .price-pending-table td.updated-previous-month { background-color: #f8d9dc !important; color: #8b2635 !important; font-weight: 700; }
-.price-pending-table td.manual-update { background-color: #fff1cf !important; color: #765b20 !important; font-weight: 700; }
-.price-pending-table td.external-update-pending { background-color: #e3f0fb !important; color: #23527c !important; box-shadow: inset 0 0 0 2px #7fb2df; }
 .price-pending-table thead th.group-header { background-color: #d9eaf7 !important; border-color: #9bbbd3 !important; color: #1f2937 !important; }
 .price-pending-table thead th.branch-header { background-color: #edf5fb !important; border-color: #b8cfdf !important; color: #1f2937 !important; }
 .price-pending-table thead th.laboratory-header, .price-pending-table thead th.industry-global-code-header, .price-pending-table thead th.observation-header, .price-pending-table thead th.actions-header { background-color: #e5e7eb !important; border-color: #b7bdc5 !important; color: #1f2937 !important; }
-.accept-external-update-button { position: absolute; top: 1px; right: 1px; display: grid; width: 14px; height: 14px; place-items: center; border: 0; border-radius: 3px; background: #23527c; color: #fff; cursor: pointer; font-size: 8px; line-height: 1; }
-.accept-external-update-button:hover { background: #173a56; }
-.accept-external-update-button:disabled { cursor: not-allowed; opacity: .6; }
 .actions-cell { padding: 2px !important; background: inherit; text-align: center; }
 .remove-button { border: 0; border-radius: 3px; padding: 2px 4px; background: #a85b63; color: #fff; cursor: pointer; font-size: 8px; font-weight: 600; }
 .remove-button:hover { background: #8f464e; }
@@ -122,8 +117,6 @@
 .color-dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; border: 1px solid rgb(0 0 0 / 15%); }
 .color-green { background: #d9f2df; }
 .color-red { background: #f8d9dc; }
-.color-yellow { background: #fff1cf; }
-.color-blue { background: #e3f0fb; }
 @media (max-width: 992px) { .price-pending-panel-content { grid-template-columns: 1fr; } .price-pending-panel-left { border-bottom: 1px solid #e6ebf2; border-right: 0; } .price-pending-summary { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 @media (max-width: 640px) { .price-pending-panel-left, .price-pending-panel-right { grid-template-columns: 1fr; } }
 .price-pending-policy-button { border: 1px solid #e2b8bd; background: #fff7f8; color: #9f414c; }
