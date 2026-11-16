@@ -66,6 +66,7 @@ let industryGlobalCodeMapCache =
 
 
 function parseJsonObject(value) {
+    if (value && typeof value === "object" && !Array.isArray(value)) return value;
     if (!value) return {};
 
     try {
@@ -118,18 +119,7 @@ function normalizeBranch(value) {
 
 
 function isUpdatedPeriod(value, now = new Date()) {
-    const match = String(value ?? "").trim().match(
-        /^(?:Atualizado\s*)?(?:\d{1,2}\/)?(\d{1,2})\/(\d{4})$/i
-    );
-
-    if (!match) return false;
-
-    const month = Number(match[1]);
-    const year = Number(match[2]);
-
-    if (month < 1 || month > 12) return false;
-
-    return year * 12 + month >= now.getFullYear() * 12 + now.getMonth() + 1;
+    return require("./price-pending-validation").isUpdatedPeriod(value, now);
 }
 
 
@@ -217,6 +207,8 @@ function decorateRow(database, row, codeMap) {
 
     return {
         ...row,
+        manual_cells: parseJsonObject(row.manual_cells),
+        pending_external_updates: parseJsonObject(row.pending_external_updates),
         industry_global_code: getIndustryGlobalCode(database, row.laboratory, codeMap)
     };
 }

@@ -72,7 +72,7 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
     const retryConnection = useCallback(() => loadRows(), [loadRows]);
 
     const updateLocalValue = useCallback((id, column, value) => {
-        if (readOnlyRef.current) return;
+        if (readOnlyRef.current || structuralRef.current) return;
         journalRef.current.write(id, column, value);
         publish();
     }, [publish]);
@@ -84,7 +84,7 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
             : permission.canEditValues && permission.canEditFunction(permission.moduleKey, column);
         const draft = journalRef.current.get(row.id, column);
         if (!draft) return Promise.resolve({ unchanged: true });
-        if (!allowed || readOnlyRef.current) {
+        if (!allowed || readOnlyRef.current || structuralRef.current) {
             journalRef.current.removeVersion(row.id, column, draft.version);
             publish();
             if (mountedRef.current) setError("Alteração não salva: sem permissão ou banco em modo somente leitura.");
@@ -133,6 +133,41 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
         queueRef.current = task.catch(failure => report(failure, "Falha na fila de salvamento."));
         return task;
     }, [publish, report]);
+
+    const runExclusive = useCallback(async (allowed, work) => {
+        if (!allowed) throw new Error("Você não tem permissão para executar esta operação.");
+        if (readOnlyRef.current) throw new Error("Banco em modo somente leitura. Reconecte antes de continuar.");
+        if (pendingRef.current || journalRef.current.size || structuralRef.current) throw new Error("Conclua os salvamentos antes de executar esta operação.");
+        structuralRef.current = true;
+        epochRef.current += 1;
+        if (mountedRef.current) setStructuralSaving(true);
+        try { return await work(); }
+        catch (failure) { report(failure, "A operação não foi concluída."); throw failure; }
+        finally {
+            structuralRef.current = false;
+            epochRef.current += 1;
+            if (mountedRef.current) setStructuralSaving(false);
+        }
+    }, [report]);
+    const acceptExternalUpdate = useCallback(payload => {
+        const permission = permissionsRef.current;
+        const allowed = permission.canEditValues && permission.canEditFunction(permission.moduleKey, payload.column);
+        return runExclusive(allowed, async () => {
+            const saved = await window.alfadime.pricePending.acceptExternalUpdate(payload);
+            if (!saved || saved.id !== payload.id) throw new Error("Resposta inválida ao processar a proposta externa. Recarregue para conferir.");
+            setAllRows(current => current.map(row => row.id === saved.id ? { ...row, ...saved } : row));
+            return saved;
+        });
+    }, [runExclusive, setAllRows]);
+    const updatePriority = useCallback((row, priority) => runExclusive(
+        permissionsRef.current.canEditLaboratory,
+        async () => {
+            const saved = await window.alfadime.ipc.invoke("price-pending:update-priority", { id: row.id, priority });
+            if (!saved || saved.id !== row.id) throw new Error("Resposta inválida ao salvar prioridade. Recarregue para conferir.");
+            setAllRows(current => current.map(item => item.id === saved.id ? { ...item, ...saved } : item));
+            return saved;
+        }
+    ), [runExclusive, setAllRows]);
 
     const refreshRows = useCallback(async () => {
         if (!permissionsRef.current.canRefresh) { setError("Você não tem permissão para atualizar as planilhas."); return; }
@@ -201,6 +236,7 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
     return {
         allRows, setAllRows, loading, saving: structuralSaving || pendingSaves > 0,
         savingCell, refreshing, error, success, ignoredFiles, sharedDbMode, readOnly,
+        interactionLocked: structuralSaving, acceptExternalUpdate, updatePriority,
         loadRows, retryConnection, refreshRows, updateLocalValue, saveCell,
         addLaboratory, removeLaboratory, setError, setSuccess
     };

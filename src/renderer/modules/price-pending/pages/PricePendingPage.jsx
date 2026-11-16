@@ -85,18 +85,15 @@ export default function PricePendingPage() {
         scrollTimerRef.current = setTimeout(() => filters.setTableScrollTop(next), 300);
     }
     async function handleSelectPriority(row, priority) {
-        if (!permissions.canEditLaboratory) {
-            rowsState.setError("Voce nao tem permissao para alterar a prioridade.");
-            return;
-        }
+        rowsState.setError(""); rowsState.setSuccess("");
         try {
-            rowsState.setError(""); rowsState.setSuccess("");
-            const updatedRow = await window.alfadime.ipc.invoke("price-pending:update-priority", { id: row.id, priority });
-            if (updatedRow?.id === row.id) rowsState.setAllRows((current) => current.map((r) => r.id === updatedRow.id ? { ...r, ...updatedRow } : r));
+            await rowsState.updatePriority(row, priority);
             rowsState.setSuccess(priority ? "Prioridade atualizada." : "Prioridade removida.");
+            return { success: true };
         } catch (error) {
-            console.error(error);
-            rowsState.setError(error?.message || "Nao foi possivel atualizar a prioridade.");
+            const message = error?.message || "Não foi possível atualizar a prioridade.";
+            rowsState.setError(message);
+            return { success: false, error: message };
         }
     }
     async function handleToggleAutomaticCharge() {
@@ -119,14 +116,12 @@ export default function PricePendingPage() {
     }
 
     async function handleAcceptExternalUpdate({ id, column }) {
+        rowsState.setError(""); rowsState.setSuccess("");
         try {
-            rowsState.setError(""); rowsState.setSuccess("");
-            const updatedRow = await window.alfadime.pricePending.acceptExternalUpdate({ id, column });
-            if (updatedRow && updatedRow.id === id) rowsState.setAllRows((current) => current.map((r) => r.id === updatedRow.id ? { ...r, ...updatedRow } : r));
-            rowsState.setSuccess("Atualizacao externa aceita.");
+            await rowsState.acceptExternalUpdate({ id, column });
+            rowsState.setSuccess("Proposta externa processada. Valores protegidos foram preservados.");
         } catch (error) {
-            console.error(error);
-            rowsState.setError("Nao foi possivel aceitar a atualizacao externa.");
+            rowsState.setError(error?.message || "Não foi possível processar a proposta externa.");
         }
     }
     async function handleExport(selectedColumns) {
@@ -186,7 +181,7 @@ export default function PricePendingPage() {
                 rows={rows} allRowsCount={rowsState.allRows.length} searchTerm={filters.searchTerm}
                 headerGroups={filters.headerGroups} visibleColumnsList={filters.visibleColumnsList}
                 permissions={permissions} savingCell={rowsState.savingCell} saving={rowsState.saving}
-                readOnly={rowsState.readOnly} tableWrapperRef={tableWrapperRef} onScroll={handleTableScroll}
+                readOnly={rowsState.readOnly} interactionLocked={rowsState.interactionLocked} tableWrapperRef={tableWrapperRef} onScroll={handleTableScroll}
                 onUpdateValue={rowsState.updateLocalValue} onSaveCell={rowsState.saveCell}
                 onRemoveLaboratory={rowsState.removeLaboratory} onAcceptExternalUpdate={handleAcceptExternalUpdate}
                 onSelectPriority={handleSelectPriority}

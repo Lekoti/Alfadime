@@ -4,7 +4,7 @@ import { getPendingExternalUpdate, getUpdateDateClass } from "../utils/price-pen
 
 export default function PricePendingTable({
     rows = [], allRowsCount = 0, searchTerm = "", headerGroups = [], visibleColumnsList = [],
-    permissions, savingCell = null, saving = false, readOnly = false, tableWrapperRef, onScroll,
+    permissions, savingCell = null, saving = false, readOnly = false, interactionLocked = false, tableWrapperRef, onScroll,
     onUpdateValue, onSaveCell, onRemoveLaboratory, onAcceptExternalUpdate, onSelectPriority
 }) {
     const safeRows = Array.isArray(rows) ? rows : [];
@@ -50,15 +50,15 @@ export default function PricePendingTable({
                                 {permissions.canViewIndustryGlobalCode && <td className="industry-global-code-cell">{row.industry_global_code || ""}</td>}
                                 {permissions.canViewLaboratory && (
                                     <td className="laboratory-cell">
-                                        <PricePendingPriorityMenu row={row} disabled={readOnly || !permissions.canEditLaboratory} onSelect={onSelectPriority} />
-                                        <input type="text" value={row.laboratory || ""} disabled={readOnly || !permissions.canEditLaboratory}
+                                        <PricePendingPriorityMenu row={row} disabled={readOnly || interactionLocked || !permissions.canEditLaboratory} onSelect={onSelectPriority} />
+                                        <input type="text" value={row.laboratory || ""} disabled={readOnly || interactionLocked || !permissions.canEditLaboratory}
                                             onChange={event => onUpdateValue(row.id, "laboratory", event.target.value)}
                                             onBlur={() => onSaveCell(row, "laboratory")} title="Edite e clique fora para salvar" />
                                     </td>
                                 )}
                                 {permissions.canViewObservation && (
                                     <td className="observation-cell">
-                                        <input type="text" value={row.observation || ""} disabled={readOnly || !permissions.canEditObservation}
+                                        <input type="text" value={row.observation || ""} disabled={readOnly || interactionLocked || !permissions.canEditObservation}
                                             onChange={event => onUpdateValue(row.id, "observation", event.target.value)}
                                             onBlur={() => onSaveCell(row, "observation")} title={row.observation || ""} />
                                     </td>
@@ -66,16 +66,16 @@ export default function PricePendingTable({
                                 {visibleColumnsList.map(column => {
                                     const pendingUpdate = getPendingExternalUpdate(row, column.key);
                                     const isManualUpdate = Boolean(row.manual_cells?.[column.key]);
-                                    const canAcceptExternalUpdate = Boolean(pendingUpdate && permissions.canEditValues);
+                                    const canAcceptExternalUpdate = Boolean(pendingUpdate && permissions.canEditValues && permissions.canEditFunction(permissions.moduleKey, column.key));
                                     const canEditColumn = permissions.canEditValues && permissions.canEditFunction(permissions.moduleKey, column.key);
                                     return (
                                         <td key={column.key} className={`editable-cell group-${column.group} ${getUpdateDateClass(row[column.key])}${pendingUpdate ? " external-update-pending" : ""}${isManualUpdate ? " manual-update" : ""}`}>
-                                            <input type="text" value={row[column.key] || ""} disabled={readOnly || !canEditColumn}
+                                            <input type="text" value={row[column.key] || ""} disabled={readOnly || interactionLocked || !canEditColumn}
                                                 onChange={event => onUpdateValue(row.id, column.key, event.target.value)}
                                                 onBlur={() => onSaveCell(row, column.key)}
                                                 title={pendingUpdate ? `Atualizacao externa pendente: ${String(pendingUpdate.value ?? "")}` : isManualUpdate ? `Atualizado manualmente: ${row[column.key] || ""}` : row[column.key] || ""} />
                                             {canAcceptExternalUpdate && (
-                                                <button type="button" className="accept-external-update-button" disabled={savingCell !== null}
+                                                <button type="button" className="accept-external-update-button" disabled={readOnly || interactionLocked || saving || savingCell !== null}
                                                     onClick={() => onAcceptExternalUpdate({ id: row.id, column: column.key })}
                                                     title={`Aceitar atualizacao externa: ${String(pendingUpdate.value ?? "")}`}>✓</button>
                                             )}
