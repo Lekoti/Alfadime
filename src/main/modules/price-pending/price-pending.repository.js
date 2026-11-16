@@ -197,7 +197,7 @@ function resetMonthlyPendingMarkers(database) {
 }
 
 function findActiveRowByLaboratory(database, laboratory) {
-    const normalizedLaboratory = normalizeLaboratoryName(laboratory);
+    const normalizedLaboratory = normalizeDatabaseText(laboratory);
     if (!normalizedLaboratory) return null;
 
     const rows = database.prepare(`
@@ -206,12 +206,12 @@ function findActiveRowByLaboratory(database, laboratory) {
         WHERE active = 1
     `).all();
 
-    return rows.find((row) => normalizeLaboratoryName(row.laboratory) === normalizedLaboratory) || null;
+    return rows.find((row) => normalizeDatabaseText(row.laboratory) === normalizedLaboratory) || null;
 }
 
 function getPricePendingValues(laboratory, branch) {
     const database = getPricePendingDatabase();
-    const normalizedLaboratory = normalizeLaboratoryName(laboratory);
+    const normalizedLaboratory = normalizeDatabaseText(laboratory);
     const normalizedBranch = normalizeBranch(branch);
 
     if (!normalizedLaboratory || !normalizedBranch) {
@@ -293,10 +293,19 @@ function getRowById(id) {
 
 function createRow(data = {}) {
     const database = getPricePendingDatabase();
+    const laboratory = String(data.laboratory || "").trim();
+
+    if (!laboratory) throw new Error("Laboratório obrigatório para criar o cadastro.");
+
+    const existingRow = findActiveRowByLaboratory(database, laboratory);
+    if (existingRow) {
+        throw new Error(`Já existe um cadastro ativo para o laboratório: ${existingRow.laboratory}.`);
+    }
+
     const now = new Date().toISOString();
     const row = {
         id: crypto.randomUUID(),
-        laboratory: String(data.laboratory || ""),
+        laboratory,
         observation: String(data.observation || ""),
         manual_cells: "{}",
         pending_external_updates: "{}",
@@ -496,7 +505,7 @@ function formatEmailReceiptDate(dateValue = new Date()) {
 }
 
 function integrityUnsafe_updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new Date() }) {
-    const normalizedLaboratory = normalizeLaboratoryName(laboratory);
+    const normalizedLaboratory = normalizeDatabaseText(laboratory);
     if (!normalizedLaboratory) throw new Error("Laboratório obrigatório para atualizar o status do recebimento.");
 
     const column = getEmailReceiptColumn(type, branch);

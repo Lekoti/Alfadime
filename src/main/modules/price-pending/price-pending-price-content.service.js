@@ -82,6 +82,20 @@ function groupRecords(records) {
     return [...groups.values()];
 }
 
+function buildRowsByCode() {
+    const rows = listRows();
+    const rowsByCode = new Map();
+
+    for (const row of rows) {
+        const code = normalizeCode(row.industry_global_code);
+        if (!code || code === "0") continue;
+        if (!rowsByCode.has(code)) rowsByCode.set(code, []);
+        rowsByCode.get(code).push(row);
+    }
+
+    return rowsByCode;
+}
+
 function processPriceFile(file, context = {}) {
     const before = fs.statSync(file.path);
     const buffer = fs.readFileSync(file.path);
@@ -111,18 +125,9 @@ function processPriceFile(file, context = {}) {
 
     const groups = groupRecords(parsed.records);
     getIndustryGlobalCodeMap({ forceRefresh: true });
-    if (!context.rowsByCode) {
-        const rows = listRows();
-        const rowsByCode = new Map();
-        for (const row of rows) {
-            const code = normalizeCode(row.industry_global_code);
-            if (!code || code === "0") continue;
-            if (!rowsByCode.has(code)) rowsByCode.set(code, []);
-            rowsByCode.get(code).push(row);
-        }
-        context.rowsByCode = rowsByCode;
-    }
-    const rowsByCode = context.rowsByCode;
+    const rowsByCode = buildRowsByCode();
+    context.rowsByCode = rowsByCode;
+
     const plans = groups.map((group) => {
         const matches = rowsByCode.get(group.globalCode) || [];
         if (matches.length !== 1) {
