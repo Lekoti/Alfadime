@@ -180,6 +180,19 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
             setIgnoredFiles(Array.isArray(result.ignored) ? result.ignored : []);
             const loaded = await loadRows();
             if (!loaded.success) { if (loaded.skipped) setError("Atualização processada. Recarregue a lista após concluir a operação atual."); return; }
+            const invalidFiles = (Array.isArray(result.ignored) ? result.ignored : [])
+                .filter(item => item?.reason === "nome_fora_do_padrao")
+                .map(item => item?.fileName)
+                .filter(Boolean);
+
+            if (invalidFiles.length) {
+                setError(
+                    `Nome de arquivo fora do padrão: ${invalidFiles.join(", ")}. ` +
+                    "O arquivo contém Preços e Pendências no nome e nenhuma atualização foi aplicada."
+                );
+                return;
+            }
+
             setSuccess(`Atualização concluída. ${result.filesFound || 0} arquivo(s); ${result.processed || 0} processado(s); ${result.alreadyProcessed || 0} já processado(s); ${result.failures || 0} falha(s).`);
         } catch (failure) { report(failure, "Não foi possível atualizar os dados."); }
         finally { if (mountedRef.current) setRefreshing(false); }

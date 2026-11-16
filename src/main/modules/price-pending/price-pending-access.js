@@ -8,7 +8,7 @@ function requireUser() {
 function requireEditor() {
     const user = requireUser();
     const role = String(user.role || "").toLowerCase();
-    if (![USER_ROLES.CREATOR, USER_ROLES.ADMIN, USER_ROLES.EDITOR].includes(role)) throw new Error("Apenas Editor, Staff e Administrador podem executar esta operação.");
+    if (![USER_ROLES.CREATOR, USER_ROLES.ADMIN, USER_ROLES.EDITOR].includes(role)) throw new Error("Apenas Criador, Administrador e Editor podem executar esta operação.");
     return user;
 }
 function name(user) { return String(user?.username || user?.name || user?.id || "Não registrado"); }

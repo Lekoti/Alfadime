@@ -103,8 +103,6 @@ export default function PricePendingFilters({
                         <div className="price-pending-color-legend">
                             <div className="price-pending-color-legend-item"><span className="color-dot color-green"></span>Atualizado — mes atual ou futuro</div>
                             <div className="price-pending-color-legend-item"><span className="color-dot color-red"></span>Desatualizado — mes anterior</div>
-                            <div className="price-pending-color-legend-item"><span className="color-dot color-yellow"></span>Atualizado manualmente</div>
-                            <div className="price-pending-color-legend-item"><span className="color-dot color-blue"></span>Atualizacao externa pendente</div>
                         </div>
                     </div>
                 </div>

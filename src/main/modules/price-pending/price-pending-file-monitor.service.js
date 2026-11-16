@@ -81,25 +81,34 @@ function normalize(value) {
 }
 
 
-function getFileType(fileName) {
+function getFileTypeFlags(fileName) {
     const normalizedName = normalize(fileName);
 
+    return {
+        prices:
+            normalizedName.includes("PRECOS") ||
+            normalizedName.includes("PRECO"),
+        pending:
+            normalizedName.includes("PENDENCIAS") ||
+            normalizedName.includes("PENDENCIA")
+    };
+}
 
-    if (
-        normalizedName.includes("PRECOS") ||
-        normalizedName.includes("PRECO")
-    ) {
+
+function getFileType(fileName) {
+    const flags = getFileTypeFlags(fileName);
+
+    if (flags.prices && flags.pending) {
+        return "ambiguous";
+    }
+
+    if (flags.prices) {
         return "prices";
     }
 
-
-    if (
-        normalizedName.includes("PENDENCIAS") ||
-        normalizedName.includes("PENDENCIA")
-    ) {
+    if (flags.pending) {
         return "pending";
     }
-
 
     return null;
 }
@@ -615,12 +624,22 @@ function appOwnerName() {
 
 
 function processCurrentFile(file, expectedType, context = {}) {
+    const fileType = getFileType(file.name);
+
+    if (fileType === "ambiguous") {
+        return {
+            processed: false,
+            fileName: file.name,
+            reason: "nome_fora_do_padrao",
+            message:
+                "Nome do arquivo fora do padrão: contém Preços e Pendências. " +
+                "Nenhuma atualização foi aplicada."
+        };
+    }
+
     if (expectedType === "prices") {
         return processPriceFile(file, context);
     }
-
-    const fileType = getFileType(file.name);
-
 
     if (fileType !== expectedType) {
         return {
