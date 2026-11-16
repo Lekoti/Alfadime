@@ -8,7 +8,7 @@ const { getFoldersConfig, saveFoldersConfig, DEFAULT_FOLDERS } = require("./pric
 const { refreshFromFolders, forceRefreshFromFolders } = require("./price-pending-file-monitor.service");
 const { readCommercialPolicies } = require("./commercial-policy.service");
 let registered = false;
-function registerPricePendingIpc() {
+function registerPricePendingIpc({ getAuthenticatedUser } = {}) {
     if (registered) return;
     registered = true;
     // Read-only endpoint. No new database and no change to pending-file routines.
@@ -17,6 +17,13 @@ function registerPricePendingIpc() {
     ipcMain.handle("price-pending:get-by-id", (event,id) => repository.getRowById(id));
     ipcMain.handle("price-pending:create", (event,data) => repository.createRow(data));
     ipcMain.handle("price-pending:update-cell", (event,payload) => repository.updateCell(payload.id,payload.column,payload.value));
+    ipcMain.handle("price-pending:update-priority", (event,payload={}) => {
+        const user = getAuthenticatedUser?.();
+        if (!user || !["creator", "editor", "admin"].includes(String(user.role || "").toLowerCase())) {
+            throw new Error("Somente Editor, Staff e Admin podem alterar a prioridade.");
+        }
+        return repository.updatePriority(payload.id, payload.priority);
+    });
     ipcMain.handle("price-pending:remove", (event,id) => repository.removeRow(id));
     ipcMain.handle("price-pending:update-email-receipt", (event,payload) => repository.updateEmailReceiptStatus(payload));
     ipcMain.handle("price-pending:refresh", async () => refreshFromFolders());

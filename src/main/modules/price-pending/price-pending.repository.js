@@ -480,6 +480,38 @@ function getRowById(id) {
 }
 
 
+const VALID_PRIORITIES = [
+    "",
+    "maximum",
+    "high",
+    "medium",
+    "low"
+];
+
+
+function updatePriority(id, priority) {
+    const normalizedPriority = String(priority ?? "").trim();
+
+    if (!VALID_PRIORITIES.includes(normalizedPriority)) {
+        throw new Error("Prioridade inválida.");
+    }
+
+    const database = getPricePendingDatabase();
+    const now = new Date().toISOString();
+    const result = database.prepare(`
+        UPDATE price_pending_rows
+        SET priority = ?, updated_at = ?
+        WHERE id = ? AND active = 1
+    `).run(normalizedPriority, now, id);
+
+    if (result.changes === 0) {
+        throw new Error("Registro não encontrado para atualização.");
+    }
+
+    return getRowById(id);
+}
+
+
 function createRow(data = {}) {
     const database = getPricePendingDatabase();
     const now = new Date().toISOString();
@@ -882,6 +914,7 @@ module.exports = {
     listRows,
     createRow,
     updateCell,
+    updatePriority,
     applyExternalCellUpdate,
     acceptExternalCellUpdate,
     removeRow,

@@ -20,6 +20,9 @@ export default function PricePendingFilters({
     canViewIgnoredFiles,
     refreshing,
     readOnly,
+    autoChargeEnabled,
+    autoChargeLoading,
+    autoChargeHistory,
     onSearchTermChange,
     onVisibleColumnsChange,
     onFilterUpdatedChange,
@@ -33,9 +36,12 @@ export default function PricePendingFilters({
     onRefresh,
     onShowIgnoredFiles,
     onShowPolicyIssues,
-    onReloadPolicyIssues
+    onReloadPolicyIssues,
+    onToggleAutoCharge,
+    onLoadAutoChargeHistory
 }) {
     const [isAdding, setIsAdding] = useState(false);
+    const [showAutoChargeHistory, setShowAutoChargeHistory] = useState(false);
 
 
     async function handleSubmit(event) {
@@ -252,7 +258,80 @@ export default function PricePendingFilters({
                                     ? "Verificando..."
                                     : "Verificar padrão"}
                             </button>
+
+                            {permissions.canManageAutoCharge && (
+                                <button
+                                    type="button"
+                                    className="price-pending-filters-toggle"
+                                    onClick={onToggleAutoCharge}
+                                    disabled={autoChargeLoading || readOnly}
+                                    title={`Cobrança automática ${autoChargeEnabled ? "ativa" : "desativada"}`}
+                                >
+                                    {autoChargeLoading
+                                        ? "Salvando..."
+                                        : autoChargeEnabled
+                                            ? "Desativar cobrança automática"
+                                            : "Ativar cobrança automática"}
+                                </button>
+                            )}
+
+                            <span className={`price-pending-auto-charge-status ${autoChargeEnabled ? "active" : ""}`}>
+                                Cobrança automática: {autoChargeEnabled ? "Ativa" : "Desativada"}
+                            </span>
+
+                            <button
+                                type="button"
+                                className="price-pending-filters-toggle"
+                                onClick={() => {
+                                    const nextVisible = !showAutoChargeHistory;
+                                    setShowAutoChargeHistory(nextVisible);
+                                    if (nextVisible) onLoadAutoChargeHistory();
+                                }}
+                            >
+                                Histórico de cobranças
+                            </button>
                         </div>
+
+                        {showAutoChargeHistory && (
+                            <div className="price-pending-auto-charge-history">
+                                {autoChargeHistory.length === 0 && (
+                                    <span>Nenhum evento de cobrança registrado.</span>
+                                )}
+                                {autoChargeHistory.map((item) => (
+                                    <article key={item.id}>
+                                        <strong>
+                                            {item.event_type === "activation"
+                                                ? "Ativação"
+                                                : item.event_type === "deactivation"
+                                                    ? "Desativação"
+                                                    : item.event_type === "execution"
+                                                        ? "Execução"
+                                                        : item.status === "failure"
+                                                            ? "Falha"
+                                                            : "Sucesso"}
+                                            {" — "}
+                                            {item.status === "enabled"
+                                                ? "Ativa"
+                                                : item.status === "disabled"
+                                                    ? "Desativada"
+                                                    : item.status === "running"
+                                                        ? "Em andamento"
+                                                        : item.status === "no_recipients"
+                                                            ? "Nenhuma indústria desatualizada"
+                                                            : item.status === "failure"
+                                                                ? "Falhou"
+                                                                : "Concluída"}
+                                        </strong>
+                                        <time>{new Date(item.created_at).toLocaleString("pt-BR")}</time>
+                                        {item.actor && <span>Por: {item.actor}</span>}
+                                        {item.recipients?.length > 0 && (
+                                            <span>Destinatários: {item.recipients.join(", ")}</span>
+                                        )}
+                                        {item.error_message && <span>Erro: {item.error_message}</span>}
+                                    </article>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
 

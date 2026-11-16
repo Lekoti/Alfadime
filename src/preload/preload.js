@@ -488,9 +488,41 @@ contextBridge.exposeInMainWorld(
                 ),
 
 
+            updatePriority: (
+                id,
+                priority
+            ) =>
+                invoke(
+                    "price-pending:update-priority",
+                    {
+                        id,
+                        priority
+                    }
+                ),
 
 
+            getAutoChargeState: () =>
+                invoke(
+                    "price-pending-auto-charge:get-state"
+                ),
 
+
+            setAutoChargeEnabled: (
+                enabled
+            ) =>
+                invoke(
+                    "price-pending-auto-charge:set-enabled",
+                    enabled
+                ),
+
+
+            getAutoChargeHistory: (
+                limit = 50
+            ) =>
+                invoke(
+                    "price-pending-auto-charge:list-history",
+                    limit
+                ),
 
 
             remove: (

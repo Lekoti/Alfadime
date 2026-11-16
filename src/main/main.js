@@ -49,6 +49,14 @@ const {
 );
 
 
+const {
+    registerPricePendingAutoChargeIpc,
+    stopPricePendingAutoCharge
+} = require(
+    "./modules/price-pending/price-pending-auto-charge.ipc"
+);
+
+
 
 const {
     registerProductsIpc
@@ -970,9 +978,14 @@ function registerAllIpc() {
 
 
 
-    registerPricePendingIpc(
-        ipcMain
-    );
+    registerPricePendingIpc({
+        getAuthenticatedUser: () => authHandler.getAuthenticatedUser()
+    });
+
+
+    registerPricePendingAutoChargeIpc({
+        getAuthenticatedUser: () => authHandler.getAuthenticatedUser()
+    });
 
 
 
@@ -1114,7 +1127,9 @@ app.whenReady().then(
 app.on(
     "before-quit",
     () => {
-        logStartup(
+    stopPricePendingAutoCharge();
+
+    logStartup(
             "Encerrando Alfadime"
         );
 

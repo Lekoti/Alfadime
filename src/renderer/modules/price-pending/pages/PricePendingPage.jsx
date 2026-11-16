@@ -367,6 +367,9 @@ export default function PricePendingPage() {
                     canViewIgnoredFiles={permissions.canViewIgnoredFiles}
                     refreshing={rowsState.refreshing}
                     readOnly={rowsState.readOnly}
+                    autoChargeEnabled={rowsState.autoChargeEnabled}
+                    autoChargeLoading={rowsState.autoChargeLoading}
+                    autoChargeHistory={rowsState.autoChargeHistory}
                     onSearchTermChange={filters.setSearchTerm}
                     onVisibleColumnsChange={filters.setVisibleColumns}
                     onFilterUpdatedChange={filters.setFilterUpdated}
@@ -381,6 +384,8 @@ export default function PricePendingPage() {
                     onShowIgnoredFiles={() => setShowIgnoredModal(true)}
                     onShowPolicyIssues={() => setShowPolicyIssuesModal(true)}
                     onReloadPolicyIssues={loadPolicyIssues}
+                    onToggleAutoCharge={rowsState.toggleAutoCharge}
+                    onLoadAutoChargeHistory={rowsState.loadAutoChargeHistory}
                 />
             )}
 
@@ -492,6 +497,7 @@ export default function PricePendingPage() {
                 onScroll={handleTableScroll}
                 onUpdateValue={rowsState.updateLocalValue}
                 onSaveCell={rowsState.saveCell}
+                onUpdatePriority={rowsState.updatePriority}
                 onRemoveLaboratory={rowsState.removeLaboratory}
                 onAcceptExternalUpdate={handleAcceptExternalUpdate}
             />

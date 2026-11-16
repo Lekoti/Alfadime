@@ -21,6 +21,9 @@ export default function usePricePendingRows({
     const [ignoredFiles, setIgnoredFiles] = useState([]);
     const [sharedDbMode, setSharedDbMode] = useState(false);
     const [readOnly, setReadOnly] = useState(false);
+    const [autoChargeEnabled, setAutoChargeEnabled] = useState(false);
+    const [autoChargeLoading, setAutoChargeLoading] = useState(false);
+    const [autoChargeHistory, setAutoChargeHistory] = useState([]);
 
     const editingCellRef = useRef(null);
     const originalValuesRef = useRef(new Map());
@@ -333,6 +336,98 @@ export default function usePricePendingRows({
     ]);
 
 
+    const updatePriority = useCallback(async (id, priority) => {
+        if (!permissions.canEditPriority || readOnly) return;
+
+        const cellKey = `${id}:priority`;
+        try {
+            setSavingCell(cellKey);
+            setError("");
+
+            const savedRow = await window.alfadime.pricePending.updatePriority(
+                id,
+                priority
+            );
+
+            if (savedRow?.id === id) {
+                setAllRows((currentRows) =>
+                    currentRows.map((row) => row.id === id ? savedRow : row)
+                );
+            }
+        } catch (priorityError) {
+            console.error(priorityError);
+            if (isDatabaseBusyError(priorityError)) setReadOnly(true);
+            setError(
+                getFriendlyErrorMessage(
+                    priorityError,
+                    "Não foi possível salvar a prioridade."
+                )
+            );
+        } finally {
+            setSavingCell(null);
+        }
+    }, [permissions.canEditPriority, readOnly]);
+
+
+    const loadAutoChargeState = useCallback(async () => {
+        try {
+            const state = await window.alfadime.pricePending.getAutoChargeState();
+            setAutoChargeEnabled(state?.enabled === true);
+        } catch (stateError) {
+            console.error(stateError);
+            setError(
+                getFriendlyErrorMessage(
+                    stateError,
+                    "Não foi possível carregar o estado da cobrança automática."
+                )
+            );
+        }
+    }, []);
+
+
+    const toggleAutoCharge = useCallback(async () => {
+        if (!permissions.canManageAutoCharge) {
+            setError("Você não tem permissão para alterar a cobrança automática.");
+            return;
+        }
+
+        try {
+            setAutoChargeLoading(true);
+            setError("");
+            const state = await window.alfadime.pricePending.setAutoChargeEnabled(
+                !autoChargeEnabled
+            );
+            setAutoChargeEnabled(state?.enabled === true);
+        } catch (toggleError) {
+            console.error(toggleError);
+            setError(
+                getFriendlyErrorMessage(
+                    toggleError,
+                    "Não foi possível alterar a cobrança automática."
+                )
+            );
+        } finally {
+            setAutoChargeLoading(false);
+        }
+    }, [autoChargeEnabled, permissions.canManageAutoCharge]);
+
+
+    const loadAutoChargeHistory = useCallback(async () => {
+        try {
+            const result = await window.alfadime.pricePending.getAutoChargeHistory();
+            setAutoChargeHistory(Array.isArray(result) ? result : []);
+        } catch (historyError) {
+            console.error(historyError);
+            setError(
+                getFriendlyErrorMessage(
+                    historyError,
+                    "Não foi possível carregar o histórico de cobranças."
+                )
+            );
+        }
+    }, []);
+
+
     const addLaboratory = useCallback(async (laboratoryName) => {
         if (!permissions.canAddLaboratory) {
             setError("Você não tem permissão para adicionar laboratórios.");
@@ -453,8 +548,8 @@ export default function usePricePendingRows({
             return;
         }
 
-
         loadRows();
+        loadAutoChargeState();
 
 
         window.alfadime.pricePending
@@ -467,7 +562,8 @@ export default function usePricePendingRows({
             });
     }, [
         enabled,
-        loadRows
+        loadRows,
+        loadAutoChargeState
     ]);
 
 
@@ -529,6 +625,12 @@ export default function usePricePendingRows({
         refreshRows,
         updateLocalValue,
         saveCell,
+        updatePriority,
+        autoChargeEnabled,
+        autoChargeLoading,
+        autoChargeHistory,
+        toggleAutoCharge,
+        loadAutoChargeHistory,
         addLaboratory,
         removeLaboratory,
         setError,

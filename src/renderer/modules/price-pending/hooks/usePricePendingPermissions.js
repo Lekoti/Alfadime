@@ -7,6 +7,7 @@ const PERMISSION_MODULE_KEY = "price-pending";
 export default function usePricePendingPermissions() {
     const {
         isLoading,
+        user,
         canFunction,
         canViewFunction,
         canEditFunction
@@ -30,6 +31,12 @@ export default function usePricePendingPermissions() {
             canEditFunction(PERMISSION_MODULE_KEY, "edit_observation") ||
             canEditFunction(PERMISSION_MODULE_KEY, "observation"),
         canEditValues: canEditFunction(PERMISSION_MODULE_KEY, "edit_values"),
+        canEditPriority: ["creator", "editor", "admin"].includes(
+            String(user?.role || "").toLowerCase()
+        ),
+        canManageAutoCharge: ["creator", "editor", "admin"].includes(
+            String(user?.role || "").toLowerCase()
+        ),
         canRemoveLaboratory: canFunction(PERMISSION_MODULE_KEY, "remove_laboratory"),
         canRefresh: canFunction(PERMISSION_MODULE_KEY, "refresh_data"),
         canExport: canFunction(PERMISSION_MODULE_KEY, "export_excel"),

@@ -120,6 +120,10 @@ const REQUIRED_ROW_COLUMNS = [
     {
         name: "external_updated_at",
         definition: "TEXT NOT NULL DEFAULT ''"
+    },
+    {
+        name: "priority",
+        definition: "TEXT NOT NULL DEFAULT ''"
     }
 ];
 

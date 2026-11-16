@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 
 import {
     getPendingExternalUpdate,
     getUpdateDateClass
 } from "../utils/price-pending.utils";
+
+
+const PRIORITY_OPTIONS = [
+    { value: "maximum", label: "Prioridade máxima" },
+    { value: "high", label: "Prioridade alta" },
+    { value: "medium", label: "Prioridade média" },
+    { value: "low", label: "Prioridade baixa" },
+    { value: "", label: "Sem prioridade" }
+];
 
 
 export default function PricePendingTable({
@@ -21,10 +30,12 @@ export default function PricePendingTable({
     onScroll,
     onUpdateValue,
     onSaveCell,
+    onUpdatePriority,
     onRemoveLaboratory,
     onAcceptExternalUpdate
 }) {
     const safeRows = Array.isArray(rows) ? rows : [];
+    const [priorityMenuRow, setPriorityMenuRow] = useState(null);
 
 
     const totalColumns = useMemo(() => {
@@ -167,25 +178,79 @@ export default function PricePendingTable({
 
                                 {permissions.canViewLaboratory && (
                                     <td className="laboratory-cell">
-                                        <input
-                                            type="text"
-                                            value={row.laboratory || ""}
-                                            disabled={
-                                                readOnly ||
-                                                !permissions.canEditLaboratory
-                                            }
-                                            onChange={(event) =>
-                                                onUpdateValue(
-                                                    row.id,
-                                                    "laboratory",
-                                                    event.target.value
-                                                )
-                                            }
-                                            onBlur={() =>
-                                                onSaveCell(row, "laboratory")
-                                            }
-                                            title="Edite e clique fora para salvar"
-                                        />
+                                        <div className="price-pending-laboratory-editor">
+                                            <input
+                                                type="text"
+                                                value={row.laboratory || ""}
+                                                disabled={
+                                                    readOnly ||
+                                                    !permissions.canEditLaboratory
+                                                }
+                                                onChange={(event) =>
+                                                    onUpdateValue(
+                                                        row.id,
+                                                        "laboratory",
+                                                        event.target.value
+                                                    )
+                                                }
+                                                onBlur={() =>
+                                                    onSaveCell(row, "laboratory")
+                                                }
+                                                title="Edite e clique fora para salvar"
+                                            />
+
+                                            {row.priority && (
+                                                <span
+                                                    className={`price-pending-priority-badge priority-${row.priority}`}
+                                                >
+                                                    {PRIORITY_OPTIONS.find(
+                                                        (option) => option.value === row.priority
+                                                    )?.label}
+                                                </span>
+                                            )}
+
+                                            {permissions.canEditPriority && (
+                                                <div className="price-pending-priority-picker">
+                                                    <button
+                                                        type="button"
+                                                        className="price-pending-priority-trigger"
+                                                        disabled={readOnly || saving || savingCell !== null}
+                                                        aria-label={`Alterar prioridade de ${row.laboratory}`}
+                                                        title="Alterar prioridade"
+                                                        aria-expanded={priorityMenuRow === row.id}
+                                                        onClick={() =>
+                                                            setPriorityMenuRow(
+                                                                priorityMenuRow === row.id ? null : row.id
+                                                            )
+                                                        }
+                                                    >
+                                                        ▾
+                                                    </button>
+
+                                                    {priorityMenuRow === row.id && (
+                                                        <div
+                                                            className="price-pending-priority-menu"
+                                                            role="menu"
+                                                        >
+                                                            {PRIORITY_OPTIONS.map((option) => (
+                                                                <button
+                                                                    key={option.value || "none"}
+                                                                    type="button"
+                                                                    role="menuitem"
+                                                                    disabled={readOnly}
+                                                                    onClick={() => {
+                                                                        setPriorityMenuRow(null);
+                                                                        onUpdatePriority(row.id, option.value);
+                                                                    }}
+                                                                >
+                                                                    {option.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                 )}
 

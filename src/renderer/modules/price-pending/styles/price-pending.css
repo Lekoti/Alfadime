@@ -685,6 +685,160 @@
 }
 
 
+.price-pending-laboratory-editor {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+}
+
+
+.price-pending-table .price-pending-laboratory-editor input {
+    flex: 1;
+    width: 1px;
+}
+
+
+.price-pending-priority-badge {
+    flex-shrink: 0;
+    border-radius: 3px;
+    padding: 2px 3px;
+    font-size: 7px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+
+.price-pending-priority-badge.priority-maximum {
+    background: #f8d9dc;
+    color: #8b2635;
+}
+
+
+.price-pending-priority-badge.priority-high {
+    background: #ffebd4;
+    color: #9c4a0a;
+}
+
+
+.price-pending-priority-badge.priority-medium {
+    background: #fff1cf;
+    color: #765b20;
+}
+
+
+.price-pending-priority-badge.priority-low {
+    background: #dcecf8;
+    color: #345d82;
+}
+
+
+.price-pending-priority-picker {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+
+.price-pending-priority-trigger {
+    width: 16px;
+    height: 18px;
+    border: 0;
+    background: transparent;
+    color: #6b7785;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 9px;
+}
+
+
+.price-pending-priority-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    min-width: 130px;
+    flex-direction: column;
+    border: 1px solid #cdd6df;
+    border-radius: 4px;
+    padding: 3px;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgb(31 41 55 / 18%);
+}
+
+
+.price-pending-priority-menu button {
+    border: 0;
+    border-radius: 3px;
+    padding: 5px 7px;
+    background: transparent;
+    color: #344b65;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 9px;
+    text-align: left;
+}
+
+
+.price-pending-priority-menu button:hover:not(:disabled) {
+    background: #f0f4f8;
+}
+
+
+.price-pending-auto-charge-status {
+    align-self: center;
+    color: #8b2635;
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+
+.price-pending-auto-charge-status.active {
+    color: #176b2c;
+}
+
+
+.price-pending-auto-charge-history {
+    display: flex;
+    max-height: 170px;
+    flex-direction: column;
+    gap: 5px;
+    overflow-y: auto;
+    margin-top: 5px;
+    border: 1px solid #e6ebf2;
+    border-radius: 4px;
+    padding: 5px;
+    background: #ffffff;
+}
+
+
+.price-pending-auto-charge-history article {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 1px solid #eef1f5;
+    padding-bottom: 4px;
+    color: #45515e;
+    font-size: 9px;
+}
+
+
+.price-pending-auto-charge-history article:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+
+.price-pending-auto-charge-history time {
+    color: #6b7785;
+    font-size: 8px;
+}
+
+
 
 .price-pending-table .group-env_precos {
     background: #f1f6fb;
