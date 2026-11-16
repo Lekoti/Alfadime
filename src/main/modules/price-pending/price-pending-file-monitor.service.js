@@ -683,6 +683,140 @@ function processCurrentFile(file, expectedType, context = {}) {
 }
 
 
+function runRefreshFromFolders(database, ownerId, force = false) {
+    if (force) {
+        database
+            .prepare("DELETE FROM price_pending_processed_files")
+            .run();
+    }
+
+    const priceFiles = listExcelFiles(
+        getFolders().prices
+    );
+
+
+    const pendingFiles = listExcelFiles(
+        getFolders().pending
+    );
+
+
+    const allFiles = [
+        ...priceFiles.map((file) => {
+            return {
+                ...file,
+                expectedType: "prices"
+            };
+        }),
+        ...pendingFiles.map((file) => {
+            return {
+                ...file,
+                expectedType: "pending"
+            };
+        })
+    ];
+
+
+    const context = {
+        rowsByCode: null
+    };
+    const results = [];
+    let newFiles = 0;
+    let changedFiles = 0;
+    let alreadyProcessed = 0;
+    let failures = 0;
+
+
+    for (const file of allFiles) {
+        const previous = getProcessedFile(
+            database,
+            file.path
+        );
+
+
+        if (wasFileAlreadyProcessed(database, file)) {
+            alreadyProcessed += 1;
+
+
+            results.push({
+                processed: false,
+                fileName: file.name,
+                reason: "ja_processado"
+            });
+
+
+            continue;
+        }
+
+
+        try {
+            const result = processCurrentFile(
+                file,
+                file.expectedType,
+                context
+            );
+
+
+            results.push(result);
+
+
+            if (result.processed) {
+                if (previous) {
+                    changedFiles += 1;
+                } else {
+                    newFiles += 1;
+                }
+
+
+                saveProcessedFile(
+                    database,
+                    file,
+                    file.expectedType,
+                    ownerId
+                );
+            }
+        } catch (error) {
+            failures += 1;
+
+
+            results.push({
+                processed: false,
+                fileName: file.name,
+                reason: "erro_processamento",
+                error: String(
+                    error?.message ||
+                    "Falha desconhecida."
+                )
+            });
+        }
+    }
+
+
+    const processed = results.filter((item) => {
+        return item.processed;
+    });
+
+
+    const ignored = results.filter((item) => {
+        return !item.processed;
+    });
+
+
+    return {
+        success: true,
+        pricesFound: priceFiles.length,
+        pendingFound: pendingFiles.length,
+        filesFound: allFiles.length,
+        newFiles,
+        changedFiles,
+        alreadyProcessed,
+        processed: processed.length,
+        failures,
+        ignored,
+        details: results
+    };
+}
+
+
 function refreshFromFolders() {
     const database = getPricePendingDatabase();
     const ownerId = crypto.randomUUID();
@@ -720,130 +854,11 @@ function refreshFromFolders() {
 
 
     try {
-        const priceFiles = listExcelFiles(
-            getFolders().prices
+        return runRefreshFromFolders(
+            database,
+            ownerId,
+            false
         );
-
-
-        const pendingFiles = listExcelFiles(
-            getFolders().pending
-        );
-
-
-        const allFiles = [
-            ...priceFiles.map((file) => {
-                return {
-                    ...file,
-                    expectedType: "prices"
-                };
-            }),
-            ...pendingFiles.map((file) => {
-                return {
-                    ...file,
-                    expectedType: "pending"
-                };
-            })
-        ];
-
-
-        const context = {
-            rowsByCode: null
-        };
-        const results = [];
-        let newFiles = 0;
-        let changedFiles = 0;
-        let alreadyProcessed = 0;
-        let failures = 0;
-
-
-        for (const file of allFiles) {
-            const previous = getProcessedFile(
-                database,
-                file.path
-            );
-
-
-            if (wasFileAlreadyProcessed(database, file)) {
-                alreadyProcessed += 1;
-
-
-                results.push({
-                    processed: false,
-                    fileName: file.name,
-                    reason: "ja_processado"
-                });
-
-
-                continue;
-            }
-
-
-            try {
-                const result = processCurrentFile(
-                    file,
-                    file.expectedType,
-                    context
-                );
-
-
-                results.push(result);
-
-
-                if (result.processed) {
-                    if (previous) {
-                        changedFiles += 1;
-                    } else {
-                        newFiles += 1;
-                    }
-
-
-                    saveProcessedFile(
-                        database,
-                        file,
-                        file.expectedType,
-                        ownerId
-                    );
-                }
-            } catch (error) {
-                failures += 1;
-
-
-                results.push({
-                    processed: false,
-                    fileName: file.name,
-                    reason: "erro_processamento",
-                    error: String(
-                        error?.message ||
-                        "Falha desconhecida."
-                    )
-                });
-            }
-        }
-
-
-        const processed = results.filter((item) => {
-            return item.processed;
-        });
-
-
-        const ignored = results.filter((item) => {
-            return !item.processed;
-        });
-
-
-        return {
-            success: true,
-            pricesFound: priceFiles.length,
-            pendingFound: pendingFiles.length,
-            filesFound: allFiles.length,
-            newFiles,
-            changedFiles,
-            alreadyProcessed,
-            processed: processed.length,
-            failures,
-            ignored,
-            details: results
-        };
     } finally {
         releaseRefreshLock(
             database,
@@ -855,15 +870,16 @@ function refreshFromFolders() {
 
 function forceRefreshFromFolders() {
     const database = getPricePendingDatabase();
+    const ownerId = crypto.randomUUID();
+
 
     ensureRefreshControlTables(database);
-
-    const ownerId = crypto.randomUUID();
 
     const lockResult = acquireRefreshLock(
         database,
         ownerId
     );
+
 
     if (!lockResult.acquired) {
         const expiresAt = lockResult.lock?.expires_at
@@ -871,6 +887,7 @@ function forceRefreshFromFolders() {
                 lockResult.lock.expires_at
             ).toLocaleTimeString("pt-BR")
             : "em breve";
+
 
         return {
             success: false,
@@ -886,12 +903,13 @@ function forceRefreshFromFolders() {
         };
     }
 
-    try {
-        database
-            .prepare("DELETE FROM price_pending_processed_files")
-            .run();
 
-        return refreshFromFolders();
+    try {
+        return runRefreshFromFolders(
+            database,
+            ownerId,
+            true
+        );
     } finally {
         releaseRefreshLock(
             database,
