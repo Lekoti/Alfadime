@@ -432,7 +432,7 @@ async function executePlan(plan, token) {
     return coordination.sendPlan(plan, token, executeUncoordinatedPlanV4);
 }
 
-async function executeUncoordinatedPlanV4(plan, token) {
+async function executeUncoordinatedPlanV4(plan, token, phase) {
     const config = getEmailConfig();
 
     for (const [file, expected] of plan.fingerprints) {
@@ -445,6 +445,7 @@ async function executeUncoordinatedPlanV4(plan, token) {
 
     for (const message of plan.messages) {
         try {
+            phase.smtpStarted = true;
             const smtp = await sendEmailViaSmtp(config, {
                 to: message.to,
                 toName: message.contact.contact_name || undefined,
