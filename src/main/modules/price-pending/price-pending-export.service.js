@@ -36,6 +36,9 @@ function normalizeLaboratory(value) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .toUpperCase()
+        .replace(/^#\s*/, "")
+        .replace(/(?:\s*-\s*|\s+)\d+\s*$/, "")
+        .replace(/\s+/g, " ")
         .trim();
 }
 
@@ -67,7 +70,6 @@ function filterRowsByIds(rows, rowIds) {
     }
 
     const selectedIds = new Set(rowIds.map((id) => String(id)));
-
     return rows.filter((row) => selectedIds.has(String(row.id)));
 }
 

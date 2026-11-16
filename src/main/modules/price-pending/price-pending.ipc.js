@@ -45,11 +45,20 @@ function registerPricePendingIpc() {
         return exportToExcel({filePath,includeColumns,rowIds});
     });
     ipcMain.handle("price-pending:get-db-config", () => {
-        const saved=getDbConfig();return {mode:saved?.mode==="shared"?"shared":"local",path:String(saved?.path||"").trim()||DEFAULT_SHARED_DATABASE_PATH,defaultPath:DEFAULT_SHARED_DATABASE_PATH};
+        const saved=getDbConfig();
+        return {
+            mode: "shared",
+            path: DEFAULT_SHARED_DATABASE_PATH,
+            defaultPath: DEFAULT_SHARED_DATABASE_PATH
+        };
     });
     ipcMain.handle("price-pending:save-db-config", (event,config={}) => {
-        const mode=config.mode==="shared"?"shared":"local",dbPath=String(config.path||"").trim()||DEFAULT_SHARED_DATABASE_PATH;
-        saveDbConfig({mode,path:dbPath});return {mode,path:dbPath,defaultPath:DEFAULT_SHARED_DATABASE_PATH};
+        const saved=saveDbConfig();
+        return {
+            mode: "shared",
+            path: DEFAULT_SHARED_DATABASE_PATH,
+            defaultPath: DEFAULT_SHARED_DATABASE_PATH
+        };
     });
     ipcMain.handle("price-pending:test-connection", (event,customPath) => testSharedConnection(customPath));
     ipcMain.handle("price-pending:get-folders-config", () => getFoldersConfig());
