@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PricePendingToolbar from "../components/PricePendingToolbar";
+import PricePendingChargeHistoryModal from "../components/PricePendingChargeHistoryModal"; // pp-local-fix-history-v1
 import PricePendingFilters from "../components/PricePendingFilters";
 import PricePendingTable from "../components/PricePendingTable";
 import PricePendingIgnoredFilesModal from "../components/PricePendingIgnoredFilesModal";
@@ -48,6 +49,7 @@ export default function PricePendingPage() {
     const [policyIssuesError, setPolicyIssuesError] = useState("");
     const [automaticChargeEnabled, setAutomaticChargeEnabled] = useState(false);
     const [automaticChargeBusy, setAutomaticChargeBusy] = useState(false);
+    const [showChargeHistory, setShowChargeHistory] = useState(false);
     const tableWrapperRef = useRef(null);
     const scrollTimerRef = useRef(null);
     const rows = useMemo(() => filters.filterRows(rowsState.allRows), [filters, rowsState.allRows]);
@@ -90,7 +92,7 @@ export default function PricePendingPage() {
         try {
             rowsState.setError(""); rowsState.setSuccess("");
             const updatedRow = await window.alfadime.ipc.invoke("price-pending:update-priority", { id: row.id, priority });
-            if (updatedRow?.id === row.id) rowsState.setAllRows((current) => current.map((r) => r.id === updatedRow.id ? updatedRow : r));
+            if (updatedRow?.id === row.id) rowsState.setAllRows((current) => current.map((r) => r.id === updatedRow.id ? { ...r, ...updatedRow } : r));
             rowsState.setSuccess(priority ? "Prioridade atualizada." : "Prioridade removida.");
         } catch (error) {
             console.error(error);
@@ -112,21 +114,15 @@ export default function PricePendingPage() {
             rowsState.setError(error?.message || "Nao foi possivel alterar a cobranca automatica.");
         } finally { setAutomaticChargeBusy(false); }
     }
-    async function handleShowChargeHistory() {
-        try {
-            rowsState.setError(""); rowsState.setSuccess("");
-            const runs = await window.alfadime.ipc.invoke("contacts:list-charge-runs", { limit: 50 });
-            rowsState.setSuccess(Array.isArray(runs) && runs.length ? `Historico carregado: ${runs.length} cobranca(s).` : "Nenhuma cobranca registrada ainda.");
-        } catch (error) {
-            console.error(error);
-            rowsState.setError(error?.message || "Nao foi possivel carregar o historico de cobrancas.");
-        }
+    function handleShowChargeHistory() {
+        setShowChargeHistory(true);
     }
+
     async function handleAcceptExternalUpdate({ id, column }) {
         try {
             rowsState.setError(""); rowsState.setSuccess("");
             const updatedRow = await window.alfadime.pricePending.acceptExternalUpdate({ id, column });
-            if (updatedRow && updatedRow.id === id) rowsState.setAllRows((current) => current.map((r) => r.id === updatedRow.id ? updatedRow : r));
+            if (updatedRow && updatedRow.id === id) rowsState.setAllRows((current) => current.map((r) => r.id === updatedRow.id ? { ...r, ...updatedRow } : r));
             rowsState.setSuccess("Atualizacao externa aceita.");
         } catch (error) {
             console.error(error);
@@ -197,6 +193,7 @@ export default function PricePendingPage() {
             />
             <PricePendingIgnoredFilesModal open={showIgnoredModal} files={rowsState.ignoredFiles} onClose={() => setShowIgnoredModal(false)} />
             <PricePendingPolicyIssuesModal open={showPolicyIssuesModal} files={policyIssues} loading={policyIssuesLoading} onClose={() => setShowPolicyIssuesModal(false)} onReload={loadPolicyIssues} />
+            <PricePendingChargeHistoryModal open={showChargeHistory} onClose={() => setShowChargeHistory(false)} />
             <ExportExcelModal open={exportModalOpen} title="Exportar Precos e Pendencias" moduleKey="price-pending" availableColumns={PRICE_PENDING_EXPORT_COLUMNS} onClose={() => setExportModalOpen(false)} onExport={handleExport} />
         </main>
     );
