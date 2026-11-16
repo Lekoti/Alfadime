@@ -291,6 +291,30 @@ function parseWorkbook(workbook, metadata) {
         }
     }
 
+    const validityGroups = new Map();
+
+    for (const record of records) {
+        const key = `${record.globalLabCode}:${record.branch}`;
+        if (!validityGroups.has(key)) {
+            validityGroups.set(key, { first: record, dates: new Set() });
+        }
+        validityGroups.get(key).dates.add(record.validity);
+    }
+
+    for (const group of validityGroups.values()) {
+        if (group.dates.size < 2) continue;
+        issues.push({
+            fileName: metadata.fileName,
+            sheetName: group.first.sheetName,
+            line: group.first.line,
+            column: REQUIRED_HEADERS.validity,
+            type: "VALIDADE_DIVERGENTE",
+            found: [...group.dates].sort().join(" | "),
+            expected: "Uma única validade por indústria e empresa dentro do arquivo",
+            message: `Validades divergentes para indústria ${group.first.globalLabCode}, filial ${group.first.branch}.`
+        });
+    }
+
     if (!usableSheets) {
         warnings.push(
             `${metadata.fileName}: nenhum cabeçalho padrão reconhecido. Política Comercial não aplicada.`
@@ -338,12 +362,18 @@ function selectLatestRecords(records) {
     }
 
     for (const [key, candidates] of groups) {
-        const latest = Math.max(
-            ...candidates.map((record) => Number(record.mtimeMs) || 0)
-        );
+        const latestValidity = candidates.reduce((latest, record) => {
+            return record.validity > latest ? record.validity : latest;
+        }, "");
+        const validCandidates = candidates.filter((record) => {
+            return record.validity === latestValidity;
+        });
+        const latest = validCandidates.reduce((maximum, record) => {
+            return Math.max(maximum, Number(record.mtimeMs) || 0);
+        }, 0);
 
         const finalists = candidates
-            .filter((record) => (Number(record.mtimeMs) || 0) === latest)
+            .filter((record) => record.validity === latestValidity && (Number(record.mtimeMs) || 0) === latest)
             .sort(
                 (first, second) =>
                     first.fileName.localeCompare(second.fileName, "pt-BR") ||
@@ -424,8 +454,7 @@ async function scan(force = false) {
         (entry) =>
             entry.isFile() &&
             !entry.name.startsWith("~$") &&
-            /\.(xlsx|xlsm|xls)$/i.test(entry.name) &&
-            /\bPRECOS?\b/.test(normalize(entry.name))
+            /\.(xlsx|xlsm|xls)$/i.test(entry.name)
     );
 
     const warnings = [];

@@ -2,6 +2,8 @@
 const path = require("node:path");
 const crypto = require("node:crypto");
 
+const { processPriceFile } = require("./price-pending-price-content.service");
+
 
 const {
     listRows,
@@ -367,6 +369,7 @@ function listExcelFiles(folderPath) {
         })
         .filter((entry) => {
             return entry.isFile() &&
+                !entry.name.startsWith("~$") &&
                 /\.(xlsx|xlsm|xls)$/i.test(entry.name);
         })
         .map((entry) => {
@@ -586,6 +589,10 @@ function appOwnerName() {
 
 
 function processCurrentFile(file, expectedType) {
+    if (expectedType === "prices") {
+        return processPriceFile(file);
+    }
+
     const fileType = getFileType(file.name);
 
 
@@ -697,6 +704,10 @@ function refreshFromFolders() {
             getFolders().pending
         );
 
+
+        for (const file of priceFiles) {
+            file.signature += ":workbook-content-v1";
+        }
 
         const allFiles = [
             ...priceFiles.map((file) => {
