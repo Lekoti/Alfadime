@@ -27,7 +27,7 @@ function database() {
                 identity_key TEXT PRIMARY KEY, reservation_id TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS charge_identity_reservation_v5
-                ON charge_identity_reservation_v5(reservation_id);
+                ON charge_identity_locks_v5(reservation_id);
         `);
         ensured.add(db);
     }
