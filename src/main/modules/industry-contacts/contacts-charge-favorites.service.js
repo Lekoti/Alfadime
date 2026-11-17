@@ -15,6 +15,7 @@ const {
     CHARGE_EMAIL_BODIES
 } = require("./industry-contacts-charge.constants");
 const { getAttachmentPaths } = require("./industry-contacts-charge.service");
+const { normalizeBranch, VALID_BRANCHES } = require("./contacts-charge-policy");
 
 const prepared = new Map();
 const PREVIEW_TTL = 30 * 60 * 1000;
@@ -152,15 +153,16 @@ function buildFixedMessage(group) {
         contact: {
             id: row.contact_id || row.id,
             laboratory_name: row.laboratory_name,
-            laboratory_key: row.laboratory_key,
-            branch: row.branch,
+            laboratory_key: row.laboratory_key || row.industry_global_code || row.global_code || row.laboratory_name,
+            branch: group.branch,
             contact_name: row.contact_name,
             email: group.email
         },
         covered: group.rows.map((item) => ({
             contact_id: item.contact_id || item.id,
             laboratory_name: item.laboratory_name,
-            branch: item.branch
+            laboratory_key: item.laboratory_key || item.industry_global_code || item.global_code || item.laboratory_name,
+            branch: group.branch
         }))
     };
 }
@@ -206,6 +208,7 @@ function prepareFixedCharge(payload = {}) {
 
     for (const row of rows) {
         const email = String(row.email || "").trim().toLowerCase();
+        const branch = normalizeBranch(row.branch);
 
         if (!email || !isValidEmail(email)) {
             invalid.push({
@@ -217,6 +220,16 @@ function prepareFixedCharge(payload = {}) {
             continue;
         }
 
+        if (!VALID_BRANCHES.has(branch)) {
+            invalid.push({
+                contact_id: row.contact_id || row.id || null,
+                laboratory_name: row.laboratory_name || "Contato",
+                branch: row.branch || "",
+                reason: `Filial inválida ou não identificada: "${row.branch || ""}".`
+            });
+            continue;
+        }
+
         const needsPrices = !row.prices_updated;
         const needsPending = !row.pending_updated;
         const group = groups.get(email);
@@ -224,6 +237,7 @@ function prepareFixedCharge(payload = {}) {
         if (!group) {
             groups.set(email, {
                 email,
+                branch,
                 rows: [row],
                 needsPrices,
                 needsPending
