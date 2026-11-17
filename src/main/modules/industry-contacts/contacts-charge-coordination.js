@@ -27,7 +27,7 @@ function database() {
                 identity_key TEXT PRIMARY KEY, reservation_id TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS charge_identity_reservation_v5
-                ON charge_identity_locks_v5(reservation_id);
+                ON charge_identity_reservation_v5(reservation_id);
         `);
         ensured.add(db);
     }
@@ -84,7 +84,14 @@ function legacyLast(db, table, emailColumn, email, keys) {
         let matches = String(row[emailColumn] || "").trim().toLowerCase() === email;
         if (!matches && row.contact_id) {
             const current = contacts.getContactById(row.contact_id);
-            if (current) matches = keys.has(policy.identity({ ...current, branch: row.branch || current.branch }));
+            if (current) {
+                try {
+                    const identity = policy.identity({ ...current, branch: row.branch || current.branch });
+                    matches = keys.has(identity);
+                } catch (_) {
+                    continue;
+                }
+            }
         }
         if (!matches) continue;
         const stamp = Date.parse(row.sent_at);
