@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PricePendingToolbar from "../components/PricePendingToolbar";
 import PricePendingChargeHistoryModal from "../components/PricePendingChargeHistoryModal"; // pp-local-fix-history-v1
+import PricePendingChargePanel from "../components/PricePendingChargePanel";
 import PricePendingFilters from "../components/PricePendingFilters";
 import PricePendingTable from "../components/PricePendingTable";
 import PricePendingIgnoredFilesModal from "../components/PricePendingIgnoredFilesModal";
@@ -43,13 +44,14 @@ export default function PricePendingPage() {
     const [newLaboratory, setNewLaboratory] = useState("");
     const [showIgnoredModal, setShowIgnoredModal] = useState(false);
     const [showPolicyIssuesModal, setShowPolicyIssuesModal] = useState(false);
+    const [showChargePanel, setShowChargePanel] = useState(false);
+    const [showChargeHistory, setShowChargeHistory] = useState(false);
+    const [automaticChargeEnabled, setAutomaticChargeEnabled] = useState(false);
+    const [automaticChargeBusy, setAutomaticChargeBusy] = useState(false);
     const [exportModalOpen, setExportModalOpen] = useState(false);
     const [policyIssues, setPolicyIssues] = useState([]);
     const [policyIssuesLoading, setPolicyIssuesLoading] = useState(false);
     const [policyIssuesError, setPolicyIssuesError] = useState("");
-    const [automaticChargeEnabled, setAutomaticChargeEnabled] = useState(false);
-    const [automaticChargeBusy, setAutomaticChargeBusy] = useState(false);
-    const [showChargeHistory, setShowChargeHistory] = useState(false);
     const tableWrapperRef = useRef(null);
     const scrollTimerRef = useRef(null);
     const rows = useMemo(() => filters.filterRows(rowsState.allRows), [filters, rowsState.allRows]);
@@ -111,10 +113,7 @@ export default function PricePendingPage() {
             rowsState.setError(error?.message || "Nao foi possivel alterar a cobranca automatica.");
         } finally { setAutomaticChargeBusy(false); }
     }
-    function handleShowChargeHistory() {
-        setShowChargeHistory(true);
-    }
-
+    function handleShowChargeHistory() { setShowChargeHistory(true); }
     async function handleAcceptExternalUpdate({ id, column }) {
         rowsState.setError(""); rowsState.setSuccess("");
         try {
@@ -138,7 +137,11 @@ export default function PricePendingPage() {
     }
     return (
         <main className="price-pending-page">
-            <PricePendingToolbar filtersPanelOpen={filters.filtersPanelOpen} onToggleFilters={() => filters.setFiltersPanelOpen(!filters.filtersPanelOpen)} />
+            <PricePendingToolbar
+                filtersPanelOpen={filters.filtersPanelOpen}
+                onToggleFilters={() => filters.setFiltersPanelOpen(!filters.filtersPanelOpen)}
+                onOpenChargePanel={() => setShowChargePanel(true)}
+            />
             {filters.filtersPanelOpen && (
                 <PricePendingFilters
                     searchTerm={filters.searchTerm} visibleColumns={filters.visibleColumns} filterUpdated={filters.filterUpdated}
@@ -148,8 +151,8 @@ export default function PricePendingPage() {
                     canViewIgnoredFiles={permissions.canViewIgnoredFiles} refreshing={rowsState.refreshing} readOnly={rowsState.readOnly}
                     automaticChargeEnabled={automaticChargeEnabled} automaticChargeBusy={automaticChargeBusy}
                     onSearchTermChange={filters.setSearchTerm} onVisibleColumnsChange={filters.setVisibleColumns}
-                    onFilterUpdatedChange={filters.setFilterUpdated} onFilterOutdatedChange={filters.setFilterOutdated}
-                    onFilterBranchChange={filters.setFilterBranch} onNewLaboratoryChange={setNewLaboratory}
+                    onFilterUpdatedChange={filters.setFilterUpdated} onFilterOutdatedChange={filters.setFilterOutdated} onFilterBranchChange={filters.setFilterBranch}
+                    onNewLaboratoryChange={setNewLaboratory}
                     onAddLaboratory={rowsState.addLaboratory} onClearFilters={filters.clearFilters}
                     onClose={() => filters.setFiltersPanelOpen(false)} onExport={() => setExportModalOpen(true)}
                     onRefresh={rowsState.refreshRows} onShowIgnoredFiles={() => setShowIgnoredModal(true)}
@@ -160,7 +163,7 @@ export default function PricePendingPage() {
             <div className="price-pending-summary">
                 <div className="price-pending-summary-item"><span>Precos atualizados</span><strong>{summary.pricesUpdated}</strong></div>
                 <div className="price-pending-summary-item pending"><span>Precos pendentes</span><strong>{summary.pricesPending}</strong></div>
-                <div className="price-pending-summary-item"><span>Pendencias atualizadas</span><strong>{summary.pendingUpdated}</strong></div>
+                <div className="price-pending-summary-item pending"><span>Pendencias atualizadas</span><strong>{summary.pendingUpdated}</strong></div>
                 <div className="price-pending-summary-item pending"><span>Pendencias pendentes</span><strong>{summary.pendingPending}</strong></div>
             </div>
             {policyIssuesError && <div className="price-pending-error">{policyIssuesError}</div>}
@@ -188,6 +191,11 @@ export default function PricePendingPage() {
             />
             <PricePendingIgnoredFilesModal open={showIgnoredModal} files={rowsState.ignoredFiles} onClose={() => setShowIgnoredModal(false)} />
             <PricePendingPolicyIssuesModal open={showPolicyIssuesModal} files={policyIssues} loading={policyIssuesLoading} onClose={() => setShowPolicyIssuesModal(false)} onReload={loadPolicyIssues} />
+            <PricePendingChargePanel
+                open={showChargePanel}
+                onClose={() => setShowChargePanel(false)}
+                canManage={permissions.canManageAutomaticCharge}
+            />
             <PricePendingChargeHistoryModal open={showChargeHistory} onClose={() => setShowChargeHistory(false)} />
             <ExportExcelModal open={exportModalOpen} title="Exportar Precos e Pendencias" moduleKey="price-pending" availableColumns={PRICE_PENDING_EXPORT_COLUMNS} onClose={() => setExportModalOpen(false)} onExport={handleExport} />
         </main>

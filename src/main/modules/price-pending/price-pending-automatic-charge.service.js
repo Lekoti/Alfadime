@@ -1,17 +1,32 @@
 const repository = require("./price-pending-automatic-charge.repository");
 const favoritesService = require("../industry-contacts/contacts-charge-favorites.service");
 const coordination = require("../industry-contacts/contacts-charge-coordination");
+
 let timer = null;
 let executing = false;
 let stopping = false;
 let activePreview = null;
-function getStatus() { return repository.getStatus(); }
+
+function buildStatus() {
+    const status = repository.getStatus();
+    let phase = "disabled";
+    if (status.enabled) {
+        if (status.running) phase = activePreview ? "sending" : "preparing";
+        else if (status.next_allowed_ms && Date.now() < status.next_allowed_ms) phase = "waiting";
+        else phase = "ready";
+    }
+    return { ...status, phase };
+}
+function getStatus() { return buildStatus(); }
 function setEnabled(enabled, actor) {
     const result = repository.setEnabled(enabled, actor);
-    if (!enabled && activePreview) favoritesService.cancelCharge({ preview_token: activePreview });
-    return result;
+    if (!enabled && activePreview) {
+        try { favoritesService.cancelCharge({ preview_token: activePreview }); } catch (_) { /* preserve state */ }
+    }
+    return buildStatus();
 }
-async function runCharge() {
+function setInterval(hours, actor) { return repository.setIntervalHours(hours, actor); }
+async function runCharge(manual = false) {
     if (executing || stopping) return { success: false, reason: "busy_or_stopping" };
     executing = true;
     let owner = null;
@@ -20,8 +35,9 @@ async function runCharge() {
     let failure = null;
     try {
         const status = repository.getStatus();
-        if (!status.enabled || status.running || Date.now() < status.next_allowed_ms) return { success: false, reason: "not_due_or_locked" };
-        owner = repository.tryLock();
+        if (!status.enabled || status.running) return { success: false, reason: "disabled_or_locked" };
+        if (!manual && Date.now() < status.next_allowed_ms) return { success: false, reason: "not_due" };
+        owner = repository.tryLock(manual);
         if (!owner) return { success: false, reason: "locked" };
         const prepared = await favoritesService.prepareFavoriteCharge({ favorite_id: favoritesService.FIXED_FAVORITE_ID });
         if (!prepared?.preview_token) throw new Error("A preparação da cobrança não retornou um token válido.");
@@ -59,7 +75,7 @@ async function runCharge() {
         }
     }
 }
-function tick() { runCharge().catch(error => console.error("[Cobrança automática]", error)); }
+function tick() { runCharge(false).catch(error => console.error("[Cobrança automática]", error)); }
 function start() {
     if (timer) return;
     stopping = false;
@@ -75,4 +91,4 @@ function stop() {
         catch (error) { console.error("[Cobrança automática]", error); }
     }
 }
-module.exports = { getStatus, setEnabled, runCharge, start, stop };
+module.exports = { getStatus, setEnabled, setInterval, runCharge, start, stop };
