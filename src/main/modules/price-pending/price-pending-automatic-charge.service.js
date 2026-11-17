@@ -6,7 +6,21 @@ let timer = null;
 let executing = false;
 let stopping = false;
 let activePreview = null;
-let progress = { total: 0, current: 0, currentLaboratory: "", startedAt: null, finishedAt: null };
+let progress = {
+    total: 0,
+    current: 0,
+    currentLaboratory: "",
+    startedAt: null,
+    finishedAt: null,
+    preparation: { stage: "", current: 0, total: 0, percent: 0, message: "" }
+};
+
+function preparationPercent(preparation) {
+    const total = Number(preparation?.total || 0);
+    const current = Number(preparation?.current || 0);
+    if (!total) return 0;
+    return Math.min(100, Math.max(0, Math.round((current / total) * 100)));
+}
 
 function buildStatus() {
     const status = repository.getStatus();
@@ -16,16 +30,20 @@ function buildStatus() {
         else if (status.next_allowed_ms && Date.now() < status.next_allowed_ms) phase = "waiting";
         else phase = "ready";
     }
+    const preparation = { ...progress.preparation, percent: preparationPercent(progress.preparation) };
     return {
         ...status,
         phase,
-        progress: { ...progress },
-        status_text: buildStatusText(phase)
+        progress: { ...progress, preparation },
+        status_text: buildStatusText(phase, preparation)
     };
 }
-function buildStatusText(phase) {
+function buildStatusText(phase, preparation) {
     if (phase === "preparing") {
-        return progress.total ? `Preparando cobrança: ${progress.total} e-mails serão enviados.` : "Preparando cobrança.";
+        if (preparation?.total) {
+            return `Preparando cobrança: ${preparation.percent}% concluído — ${preparation.message || "em andamento"}.`;
+        }
+        return "Preparando cobrança.";
     }
     if (phase === "sending") {
         const current = progress.current || 0;
@@ -66,7 +84,27 @@ async function runCharge(manual = false) {
         if (!manual && Date.now() < status.next_allowed_ms) return { success: false, reason: "not_due" };
         owner = repository.tryLock(manual);
         if (!owner) return { success: false, reason: "locked" };
-        const prepared = await favoritesService.prepareFavoriteCharge({ favorite_id: favoritesService.FIXED_FAVORITE_ID });
+        progress = {
+            total: 0,
+            current: 0,
+            currentLaboratory: "",
+            startedAt: null,
+            finishedAt: null,
+            preparation: { stage: "", current: 0, total: 0, percent: 0, message: "" }
+        };
+        const prepared = await favoritesService.prepareFavoriteCharge({
+            favorite_id: favoritesService.FIXED_FAVORITE_ID,
+            onProgress: (update) => {
+                progress.preparation = {
+                    stage: update?.stage || progress.preparation.stage,
+                    current: Number(update?.current || 0),
+                    total: Number(update?.total || 0),
+                    percent: 0,
+                    message: update?.message || progress.preparation.message
+                };
+                progress.preparation.percent = preparationPercent(progress.preparation);
+            }
+        });
         if (!prepared?.preview_token) throw new Error("A preparação da cobrança não retornou um token válido.");
         activePreview = prepared.preview_token;
         progress = {
@@ -74,7 +112,8 @@ async function runCharge(manual = false) {
             current: 0,
             currentLaboratory: "",
             startedAt: null,
-            finishedAt: null
+            finishedAt: null,
+            preparation: { ...progress.preparation, stage: "done", percent: 100, message: "Preparação concluída." }
         };
         heartbeat = globalThis.setInterval(() => {
             try {
@@ -96,7 +135,8 @@ async function runCharge(manual = false) {
                     current: Number(chargeStatus.current || 0),
                     currentLaboratory: chargeStatus.currentLaboratory || "",
                     startedAt: chargeStatus.startedAt || progress.startedAt,
-                    finishedAt: chargeStatus.finishedAt || progress.finishedAt
+                    finishedAt: chargeStatus.finishedAt || progress.finishedAt,
+                    preparation: progress.preparation
                 };
             } catch (_) { /* mantém último progresso conhecido */ }
         }, 1000);

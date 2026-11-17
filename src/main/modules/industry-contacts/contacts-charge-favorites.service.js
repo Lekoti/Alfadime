@@ -30,6 +30,12 @@ function normalizeText(value) {
     return text || null;
 }
 
+function reportProgress(payload, data) {
+    if (typeof payload?.onProgress === "function") {
+        try { payload.onProgress(data); } catch (_) { /* ignora falha de progresso */ }
+    }
+}
+
 function validateAttachment(attachment) {
     const filePath = normalizeText(attachment.file_path || attachment.path);
     const fileName = normalizeText(attachment.file_name || attachment.name) || path.basename(filePath || "");
@@ -76,7 +82,6 @@ function mergeRecipients(savedRecipients = [], industries = []) {
     for (const recipient of savedRecipients) {
         const contactId = normalizeText(recipient.contact_id || recipient.id);
         if (!contactId) continue;
-
         recipientsByContact.set(contactId, {
             contact_id: contactId,
             laboratory_name: recipient.laboratory_name,
@@ -89,7 +94,6 @@ function mergeRecipients(savedRecipients = [], industries = []) {
     for (const contact of getContactsByIndustries(industries)) {
         const contactId = normalizeText(contact.contact_id || contact.id);
         if (!contactId || recipientsByContact.has(contactId)) continue;
-
         recipientsByContact.set(contactId, {
             contact_id: contactId,
             laboratory_name: contact.laboratory_name,
@@ -168,6 +172,13 @@ function buildFixedMessage(group) {
 }
 
 function prepareFixedCharge(payload = {}) {
+    reportProgress(payload, {
+        stage: "loading",
+        current: 0,
+        total: 1,
+        message: "Carregando preços e pendências..."
+    });
+
     const result = chargeView.listLaboratories();
     const allRows = Array.isArray(result?.rows) ? result.rows : [];
 
@@ -182,7 +193,8 @@ function prepareFixedCharge(payload = {}) {
     const skipped = [];
     const rows = [];
 
-    for (const row of allRows) {
+    for (let index = 0; index < allRows.length; index += 1) {
+        const row = allRows[index];
         const rowId = normalizeText(row.contact_id || row.id);
 
         if (row.charge_update_status === "updated") {
@@ -192,14 +204,16 @@ function prepareFixedCharge(payload = {}) {
                 branch: row.branch,
                 reason: "Preços e pendências já atualizados."
             });
-            continue;
+        } else if (!hasSelection || requestedIds.has(rowId)) {
+            rows.push(row);
         }
 
-        if (hasSelection && !requestedIds.has(rowId)) {
-            continue;
-        }
-
-        rows.push(row);
+        reportProgress(payload, {
+            stage: "validating",
+            current: index + 1,
+            total: allRows.length || 1,
+            message: "Validando destinatários..."
+        });
     }
 
     const groups = new Map();
@@ -258,7 +272,15 @@ function prepareFixedCharge(payload = {}) {
         });
     }
 
+    reportProgress(payload, {
+        stage: "messages",
+        current: 0,
+        total: groups.size || 1,
+        message: "Preparando mensagens..."
+    });
+
     const messages = [];
+    let messageIndex = 0;
 
     for (const group of groups.values()) {
         try {
@@ -273,6 +295,14 @@ function prepareFixedCharge(payload = {}) {
                 });
             }
         }
+
+        messageIndex += 1;
+        reportProgress(payload, {
+            stage: "messages",
+            current: messageIndex,
+            total: groups.size || 1,
+            message: "Preparando mensagens..."
+        });
     }
 
     if (!messages.length) {
@@ -281,12 +311,28 @@ function prepareFixedCharge(payload = {}) {
 
     const token = crypto.randomUUID();
     const fingerprints = new Map();
+    const attachmentTotal = messages.reduce((total, message) => total + message.attachments.length, 0) || 1;
+    let attachmentIndex = 0;
 
     for (const message of messages) {
         for (const attachment of message.attachments) {
             fingerprints.set(attachment.path, fingerprint(attachment.path));
+            attachmentIndex += 1;
+            reportProgress(payload, {
+                stage: "attachments",
+                current: attachmentIndex,
+                total: attachmentTotal,
+                message: "Verificando anexos..."
+            });
         }
     }
+
+    reportProgress(payload, {
+        stage: "done",
+        current: attachmentTotal,
+        total: attachmentTotal,
+        message: "Preparação concluída."
+    });
 
     prepared.set(token, {
         favorite: favoritesRepository.getFavorite(FIXED_FAVORITE_ID),
@@ -350,11 +396,19 @@ function prepareFavoriteCharge(payload = {}) {
         throw new Error("Selecione pelo menos um contato ou indústria com contatos cadastrados.");
     }
 
+    reportProgress(payload, {
+        stage: "validating",
+        current: 0,
+        total: recipients.length || 1,
+        message: "Validando destinatários..."
+    });
+
     const messagesByEmail = new Map();
     const invalid = [];
     const duplicates = [];
 
-    for (const recipient of recipients) {
+    for (let index = 0; index < recipients.length; index += 1) {
+        const recipient = recipients[index];
         try {
             const contact = contactsRepository.getContactById(recipient.contact_id) || recipient;
             const message = buildMessage(favorite, contact);
@@ -366,10 +420,9 @@ function prepareFavoriteCharge(payload = {}) {
                     laboratory_name: contact.laboratory_name,
                     branch: contact.branch
                 });
-                continue;
+            } else {
+                messagesByEmail.set(email, message);
             }
-
-            messagesByEmail.set(email, message);
         } catch (error) {
             invalid.push({
                 contact_id: recipient.contact_id,
@@ -378,6 +431,13 @@ function prepareFavoriteCharge(payload = {}) {
                 reason: error.message
             });
         }
+
+        reportProgress(payload, {
+            stage: "validating",
+            current: index + 1,
+            total: recipients.length || 1,
+            message: "Validando destinatários..."
+        });
     }
 
     const messages = Array.from(messagesByEmail.values());
@@ -388,12 +448,28 @@ function prepareFavoriteCharge(payload = {}) {
 
     const token = crypto.randomUUID();
     const fingerprints = new Map();
+    const attachmentTotal = messages.reduce((total, message) => total + message.attachments.length, 0) || 1;
+    let attachmentIndex = 0;
 
     for (const message of messages) {
         for (const attachment of message.attachments) {
             fingerprints.set(attachment.path, fingerprint(attachment.path));
+            attachmentIndex += 1;
+            reportProgress(payload, {
+                stage: "attachments",
+                current: attachmentIndex,
+                total: attachmentTotal,
+                message: "Verificando anexos..."
+            });
         }
     }
+
+    reportProgress(payload, {
+        stage: "done",
+        current: attachmentTotal,
+        total: attachmentTotal,
+        message: "Preparação concluída."
+    });
 
     prepared.set(token, {
         favorite,
@@ -433,11 +509,9 @@ function getEmailConfig() {
         String(item.smtp_user || "").trim() &&
         String(item.smtp_password_encrypted || "").trim()
     );
-
     if (!config) {
         throw new Error("Nenhuma configuração SMTP válida foi encontrada.");
     }
-
     return config;
 }
 
