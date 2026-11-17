@@ -9,29 +9,30 @@ const KEY = "automatic-charge-v3";
 function iso() { return new Date().toISOString(); }
 function db() {
     const database = getPricePendingDatabase();
-    if (ensuredDatabases.has(database)) return database;
-    database.exec(`
-        CREATE TABLE IF NOT EXISTS price_pending_auto_v3 (
-            id TEXT PRIMARY KEY CHECK(id = 'automatic-charge-v3'),
-            enabled INTEGER NOT NULL DEFAULT 0,
-            owner TEXT, lease_until INTEGER,
-            last_attempt_ms INTEGER NOT NULL DEFAULT 0,
-            last_success_at TEXT, last_error TEXT,
-            updated_at TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS price_pending_auto_events_v3 (
-            id TEXT PRIMARY KEY, kind TEXT NOT NULL, actor TEXT,
-            detail TEXT, created_at TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS price_pending_auto_settings (
-            id TEXT PRIMARY KEY CHECK(id = 'automatic-charge-v3'),
-            interval_hours INTEGER NOT NULL DEFAULT 48,
-            updated_at TEXT NOT NULL
-        );
-    `);
-    database.prepare("INSERT OR IGNORE INTO price_pending_auto_v3(id, updated_at) VALUES (?, ?)").run(KEY, iso());
-    database.prepare("INSERT OR IGNORE INTO price_pending_auto_settings(id, interval_hours, updated_at) VALUES (?, ?, ?)").run(KEY, DEFAULT_INTERVAL_HOURS, iso());
-    ensuredDatabases.add(database);
+    if (!ensuredDatabases.has(database)) {
+        database.exec(`
+            CREATE TABLE IF NOT EXISTS price_pending_auto_v3 (
+                id TEXT PRIMARY KEY CHECK(id = 'automatic-charge-v3'),
+                enabled INTEGER NOT NULL DEFAULT 0,
+                owner TEXT, lease_until INTEGER,
+                last_attempt_ms INTEGER NOT NULL DEFAULT 0,
+                last_success_at TEXT, last_error TEXT,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS price_pending_auto_events_v3 (
+                id TEXT PRIMARY KEY, kind TEXT NOT NULL, actor TEXT,
+                detail TEXT, created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS price_pending_auto_settings (
+                id TEXT PRIMARY KEY CHECK(id = 'automatic-charge-v3'),
+                interval_hours INTEGER NOT NULL DEFAULT 48,
+                updated_at TEXT NOT NULL
+            );
+        `);
+        database.prepare("INSERT OR IGNORE INTO price_pending_auto_v3(id, updated_at) VALUES (?, ?)").run(KEY, iso());
+        database.prepare("INSERT OR IGNORE INTO price_pending_auto_settings(id, interval_hours, updated_at) VALUES (?, ?, ?)").run(KEY, DEFAULT_INTERVAL_HOURS, iso());
+        ensuredDatabases.add(database);
+    }
     return database;
 }
 function event(kind, actor, detail = "") {
@@ -58,7 +59,24 @@ function setIntervalHours(hours, actor) {
     }).immediate();
     return getStatus();
 }
+function recoverStaleLock() {
+    const database = db();
+    const row = database.prepare("SELECT * FROM price_pending_auto_v3 WHERE id = ?").get(KEY);
+    if (!row?.owner) return;
+    if (Number(row.lease_until || 0) > Date.now()) return;
+    database.transaction(() => {
+        const cleared = database.prepare(`
+            UPDATE price_pending_auto_v3
+            SET owner = NULL, lease_until = NULL, updated_at = ?
+            WHERE id = ? AND owner = ?
+        `).run(iso(), KEY, row.owner);
+        if (cleared.changes) {
+            event("bloqueio-expirado", "Sistema", row.owner);
+        }
+    }).immediate();
+}
 function getStatus() {
+    recoverStaleLock();
     const row = db().prepare("SELECT * FROM price_pending_auto_v3 WHERE id = ?").get(KEY);
     const intervalHours = getIntervalHours();
     const intervalMs = intervalHours * 60 * 60 * 1000;
@@ -67,7 +85,7 @@ function getStatus() {
     return {
         enabled: Boolean(row.enabled),
         running: Boolean(row.owner),
-        recovery_required: Boolean(row.owner && Number(row.lease_until || 0) <= Date.now()),
+        recovery_required: false,
         last_success_at: row.last_success_at || "",
         last_error: row.last_error || "",
         last_attempt_ms: lastAttempt,
