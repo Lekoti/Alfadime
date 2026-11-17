@@ -76,7 +76,7 @@ function recoverStaleLock() {
     }).immediate();
 }
 function getStatus() {
-    recoverStaleLock();
+    // Não liberar automaticamente uma reserva cujo resultado de envio pode ser incerto.
     const row = db().prepare("SELECT * FROM price_pending_auto_v3 WHERE id = ?").get(KEY);
     const intervalHours = getIntervalHours();
     const intervalMs = intervalHours * 60 * 60 * 1000;
@@ -85,7 +85,7 @@ function getStatus() {
     return {
         enabled: Boolean(row.enabled),
         running: Boolean(row.owner),
-        recovery_required: false,
+        recovery_required: Boolean(row.owner && Number(row.lease_until || 0) <= Date.now()),
         last_success_at: row.last_success_at || "",
         last_error: row.last_error || "",
         last_attempt_ms: lastAttempt,

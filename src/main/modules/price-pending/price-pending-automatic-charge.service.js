@@ -6,6 +6,7 @@ let timer = null;
 let executing = false;
 let stopping = false;
 let activePreview = null;
+let cancelRequested = false;
 let progress = {
     total: 0,
     current: 0,
@@ -26,10 +27,12 @@ function buildStatus() {
     const status = repository.getStatus();
     let phase = "disabled";
     if (status.enabled) {
-        if (executing || status.running) phase = activePreview ? "sending" : "preparing";
+        if (executing) phase = cancelRequested ? "cancelling" : activePreview ? "sending" : "preparing";
+        else if (status.running) phase = "interrupted";
         else if (status.next_allowed_ms && Date.now() < status.next_allowed_ms) phase = "waiting";
         else phase = "ready";
     }
+    if (executing && !status.enabled) phase = "cancelling";
     const preparation = { ...progress.preparation, percent: preparationPercent(progress.preparation) };
     return {
         ...status,
@@ -41,7 +44,9 @@ function buildStatus() {
 function buildStatusText(phase, preparation) {
     if (phase === "preparing") {
         if (preparation?.total) {
-            return `Preparando cobrança: ${preparation.percent}% concluído — ${preparation.message || "em andamento"}.`;
+            return preparation.stage === "loading"
+                ? "Carregando dados: total ainda não disponível."
+                : `Preparação — ${preparation.message || "etapa atual"} ${preparation.percent}% da etapa (${preparation.current}/${preparation.total}).`;
         }
         return "Preparando cobrança.";
     }
@@ -56,9 +61,8 @@ function buildStatusText(phase, preparation) {
 function getStatus() { return buildStatus(); }
 function setEnabled(enabled, actor) {
     const status = repository.getStatus();
-    if (!enabled && (executing || status.running)) {
-        throw new Error("Não é possível desativar durante a preparação ou envio. Aguarde a conclusão da cobrança.");
-    }
+    if (enabled && executing) throw new Error("Aguarde a execução atual terminar antes de reativar.");
+    if (!enabled && executing) cancelRequested = true;
     const result = repository.setEnabled(enabled, actor);
     if (!enabled && activePreview) {
         try { favoritesService.cancelCharge({ preview_token: activePreview }); } catch (_) { /* preserve state */ }
@@ -73,6 +77,7 @@ function clearLastError(actor) { return repository.clearLastError(actor); }
 async function runCharge(manual = false) {
     if (executing || stopping) return { success: false, reason: "busy_or_stopping" };
     executing = true;
+    cancelRequested = false;
     let owner = null;
     let heartbeat = null;
     let progressTimer = null;
@@ -84,6 +89,16 @@ async function runCharge(manual = false) {
         if (!manual && Date.now() < status.next_allowed_ms) return { success: false, reason: "not_due" };
         owner = repository.tryLock(manual);
         if (!owner) return { success: false, reason: "locked" };
+        heartbeat = globalThis.setInterval(() => {
+            try {
+                if (!repository.heartbeat(owner)) {
+                    failure = new Error("Bloqueio da automação perdido.");
+                    cancelRequested = true;
+                }
+                if (!repository.getStatus().enabled || stopping) cancelRequested = true;
+                if (cancelRequested && activePreview) favoritesService.cancelCharge({ preview_token: activePreview });
+            } catch (error) { failure = error; cancelRequested = true; }
+        }, 30000);
         progress = {
             total: 0,
             current: 0,
@@ -94,6 +109,7 @@ async function runCharge(manual = false) {
         };
         const prepared = await favoritesService.prepareFavoriteCharge({
             favorite_id: favoritesService.FIXED_FAVORITE_ID,
+            shouldCancel: () => cancelRequested || stopping || Boolean(failure),
             onProgress: (update) => {
                 progress.preparation = {
                     stage: update?.stage || progress.preparation.stage,
@@ -115,18 +131,6 @@ async function runCharge(manual = false) {
             finishedAt: null,
             preparation: { ...progress.preparation, stage: "done", percent: 100, message: "Preparação concluída." }
         };
-        heartbeat = globalThis.setInterval(() => {
-            try {
-                if (!repository.heartbeat(owner)) throw new Error("Bloqueio da automação perdido.");
-                if (stopping || !repository.getStatus().enabled) {
-                    favoritesService.cancelCharge({ preview_token: activePreview });
-                    throw new Error("Automação desativada durante a execução.");
-                }
-            } catch (error) {
-                failure = error;
-                try { favoritesService.cancelCharge({ preview_token: activePreview }); } catch (_) { /* preserve error */ }
-            }
-        }, 30000);
         progressTimer = globalThis.setInterval(async () => {
             try {
                 const chargeStatus = await favoritesService.getChargeStatus({ preview_token: activePreview });
@@ -136,11 +140,13 @@ async function runCharge(manual = false) {
                     currentLaboratory: chargeStatus.currentLaboratory || "",
                     startedAt: chargeStatus.startedAt || progress.startedAt,
                     finishedAt: chargeStatus.finishedAt || progress.finishedAt,
+                    sent: Number(chargeStatus.sent || 0),
+                    failed: Number(chargeStatus.failed || 0),
                     preparation: progress.preparation
                 };
             } catch (_) { /* mantém último progresso conhecido */ }
         }, 1000);
-        if (stopping || !repository.getStatus().enabled) throw new Error("Automação desativada antes do envio.");
+        if (cancelRequested || stopping || !repository.getStatus().enabled) throw new Error("Automação desativada antes do envio.");
         result = await coordination.automatic(() => favoritesService.sendFavoriteCharge({ preview_token: activePreview }));
         if (stopping || !repository.getStatus().enabled) {
             try { favoritesService.cancelCharge({ preview_token: activePreview }); } catch (_) { /* preserve error */ }
@@ -171,6 +177,7 @@ function start() {
 }
 function stop() {
     stopping = true;
+    cancelRequested = true;
     if (timer) clearInterval(timer);
     timer = null;
     if (activePreview) {

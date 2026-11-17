@@ -30,9 +30,13 @@ function normalizeText(value) {
     return text || null;
 }
 
-function reportProgress(payload, data) {
+async function reportProgress(payload, data) {
     if (typeof payload?.onProgress === "function") {
-        try { payload.onProgress(data); } catch (_) { /* ignora falha de progresso */ }
+        payload.onProgress(data);
+    }
+    await new Promise(resolve => setImmediate(resolve));
+    if (typeof payload?.shouldCancel === "function" && payload.shouldCancel()) {
+        throw new Error("Preparação cancelada pelo usuário.");
     }
 }
 
@@ -171,8 +175,8 @@ function buildFixedMessage(group) {
     };
 }
 
-function prepareFixedCharge(payload = {}) {
-    reportProgress(payload, {
+async function prepareFixedCharge(payload = {}) {
+    await reportProgress(payload, {
         stage: "loading",
         current: 0,
         total: 1,
@@ -208,7 +212,7 @@ function prepareFixedCharge(payload = {}) {
             rows.push(row);
         }
 
-        reportProgress(payload, {
+        await reportProgress(payload, {
             stage: "validating",
             current: index + 1,
             total: allRows.length || 1,
@@ -272,7 +276,7 @@ function prepareFixedCharge(payload = {}) {
         });
     }
 
-    reportProgress(payload, {
+    await reportProgress(payload, {
         stage: "messages",
         current: 0,
         total: groups.size || 1,
@@ -297,7 +301,7 @@ function prepareFixedCharge(payload = {}) {
         }
 
         messageIndex += 1;
-        reportProgress(payload, {
+        await reportProgress(payload, {
             stage: "messages",
             current: messageIndex,
             total: groups.size || 1,
@@ -316,9 +320,11 @@ function prepareFixedCharge(payload = {}) {
 
     for (const message of messages) {
         for (const attachment of message.attachments) {
-            fingerprints.set(attachment.path, fingerprint(attachment.path));
+            if (!fingerprints.has(attachment.path)) {
+                fingerprints.set(attachment.path, fingerprint(attachment.path));
+            }
             attachmentIndex += 1;
-            reportProgress(payload, {
+            await reportProgress(payload, {
                 stage: "attachments",
                 current: attachmentIndex,
                 total: attachmentTotal,
@@ -327,7 +333,7 @@ function prepareFixedCharge(payload = {}) {
         }
     }
 
-    reportProgress(payload, {
+    await reportProgress(payload, {
         stage: "done",
         current: attachmentTotal,
         total: attachmentTotal,
@@ -366,7 +372,7 @@ function prepareFixedCharge(payload = {}) {
     };
 }
 
-function prepareFavoriteCharge(payload = {}) {
+async function prepareFavoriteCharge(payload = {}) {
     for (const [key, entry] of prepared) {
         if (Date.now() > entry.expires && !entry.running) {
             prepared.delete(key);
@@ -396,7 +402,7 @@ function prepareFavoriteCharge(payload = {}) {
         throw new Error("Selecione pelo menos um contato ou indústria com contatos cadastrados.");
     }
 
-    reportProgress(payload, {
+    await reportProgress(payload, {
         stage: "validating",
         current: 0,
         total: recipients.length || 1,
@@ -432,7 +438,7 @@ function prepareFavoriteCharge(payload = {}) {
             });
         }
 
-        reportProgress(payload, {
+        await reportProgress(payload, {
             stage: "validating",
             current: index + 1,
             total: recipients.length || 1,
@@ -453,9 +459,11 @@ function prepareFavoriteCharge(payload = {}) {
 
     for (const message of messages) {
         for (const attachment of message.attachments) {
-            fingerprints.set(attachment.path, fingerprint(attachment.path));
+            if (!fingerprints.has(attachment.path)) {
+                fingerprints.set(attachment.path, fingerprint(attachment.path));
+            }
             attachmentIndex += 1;
-            reportProgress(payload, {
+            await reportProgress(payload, {
                 stage: "attachments",
                 current: attachmentIndex,
                 total: attachmentTotal,
@@ -464,7 +472,7 @@ function prepareFavoriteCharge(payload = {}) {
         }
     }
 
-    reportProgress(payload, {
+    await reportProgress(payload, {
         stage: "done",
         current: attachmentTotal,
         total: attachmentTotal,
@@ -596,6 +604,8 @@ async function executeFavoriteCharge(plan, token) {
 
     const results = [];
     let sent = 0;
+    plan.sent = 0;
+    plan.failed = 0;
 
     for (let index = 0; index < plan.messages.length; index += 1) {
         if (plan.cancelRequested) {
@@ -605,7 +615,7 @@ async function executeFavoriteCharge(plan, token) {
         const message = plan.messages[index];
         const runItem = run.items.find((item) => item.contact_id === message.contact.id);
 
-        plan.current = index + 1;
+        plan.current = index;
         plan.currentLaboratory = message.contact.laboratory_name;
 
         if (runItem) {
@@ -621,6 +631,7 @@ async function executeFavoriteCharge(plan, token) {
             const result = await executePlan(singlePlan, token);
             results.push(...result.results);
             sent += result.sent;
+            plan.sent = sent;
 
             if (runItem) {
                 const itemResult = result.results[0];
@@ -644,6 +655,8 @@ async function executeFavoriteCharge(plan, token) {
                 runRepository.updateItemStatus(run.id, runItem.id, "failed", error.message);
             }
         }
+        plan.current = index + 1;
+        plan.failed = results.filter(item => !item.success).length;
     }
 
     if (plan.cancelRequested) {
@@ -652,6 +665,7 @@ async function executeFavoriteCharge(plan, token) {
         runRepository.finishRun(run.id);
     }
 
+    plan.current = results.length;
     plan.finishedAt = now();
     plan.currentLaboratory = "";
 
@@ -712,6 +726,8 @@ function getChargeStatus(payload = {}) {
     return {
         total,
         current,
+        sent: Number(plan.sent || 0),
+        failed: Number(plan.failed || 0),
         remaining: Math.max(0, total - current),
         running: Boolean(plan.running && !plan.finishedAt),
         cancelRequested: Boolean(plan.cancelRequested),

@@ -4,6 +4,8 @@ import "../styles/price-pending-interactions.css";
 
 const STATUS_LABELS = {
     disabled: "Desativada",
+    cancelling: "Cancelamento solicitado",
+    interrupted: "Execução anterior pendente de revisão",
     preparing: "Preparando cobrança",
     sending: "Enviando cobrança",
     waiting: "Aguardando próxima cobrança",
@@ -93,7 +95,9 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
         try {
             const result = await invoke("price-pending-automatic-charge:set-enabled", !status?.enabled);
             setStatus(result);
-            setMessage(result?.enabled ? "Cobrança automática ativada. Preparando cobrança." : "Cobrança automática desativada.");
+            setMessage(result?.enabled
+                ? result.phase === "waiting" ? "Automação ativada. Aguardando o intervalo configurado." : "Automação ativada. Consulte o status acima."
+                : result.phase === "cancelling" ? "Agendamento desativado. Aguardando finalizar a operação atual; novos envios serão interrompidos." : "Cobrança automática desativada.");
             loadHistory();
         } catch (failure) {
             setError(failure?.message || "Não foi possível alterar a cobrança automática.");
@@ -187,28 +191,29 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                     {running && (
                         <div className="pp-charge-progress" role="status">
                             <span>{statusText(status)}</span>
-                            <div className={`pp-charge-progress-bar ${phase === "preparing" && !preparation.total ? "pp-charge-progress-indeterminate" : ""}`}>
-                                <div
-                                    className={`pp-charge-progress-fill ${phase === "preparing" && !preparation.total ? "pp-charge-progress-fill-indeterminate" : ""}`}
-                                    style={phase === "preparing" && preparation.total ? { width: `${preparationPercent}%` } : phase === "sending" ? { width: `${percent}%` } : undefined}
-                                ></div>
-                            </div>
-                            {phase === "preparing" && preparation.total > 0 && (
+                            {(phase === "sending" || (preparation.total > 0 && preparation.stage !== "loading")) && (
+                                <div className="pp-charge-progress-bar" role="progressbar" aria-label={phase === "preparing" ? "Etapa da preparação" : "Destinatários processados"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={phase === "preparing" ? preparationPercent : percent}>
+                                    <div className="pp-charge-progress-fill" style={{ width: `${phase === "preparing" ? preparationPercent : percent}%` }}></div>
+                                </div>
+                            )}
+                            {phase === "preparing" && preparation.total > 0 && preparation.stage !== "loading" && (
                                 <p className="pp-charge-progress-detail">
-                                    <strong>{preparationPercent}% da preparação concluído</strong> — {preparation.message || "em andamento"}
+                                    <strong>{preparationPercent}% da etapa</strong> — {preparation.message || "em andamento"} ({preparation.current || 0}/{preparation.total || 0})
                                 </p>
                             )}
-                            {phase === "preparing" && !preparation.total && (
-                                <p className="pp-charge-progress-detail">Iniciando preparação da cobrança...</p>
+                            {phase === "preparing" && (!preparation.total || preparation.stage === "loading") && (
+                                <p className="pp-charge-progress-detail">Carregando dados. O total desta etapa ainda não está disponível; nenhum percentual é estimado.</p>
                             )}
                             {phase === "sending" && (
                                 <p className="pp-charge-progress-detail">
-                                    <strong>{percent}% concluído</strong> — {progress.current || 0} de {progress.total || 0} e-mails enviados
+                                    <strong>{percent}% concluído</strong> — {progress.current || 0} de {progress.total || 0} destinatários processados — {progress.sent || 0} enviados; {progress.failed || 0} falhas
                                     {progress.currentLaboratory ? ` — ${progress.currentLaboratory}` : ""}
                                 </p>
                             )}
                         </div>
                     )}
+                    {phase === "interrupted" && <div className="pp-charge-error" role="alert">Existe uma reserva de execução anterior. Desative o agendamento e confira o histórico e o SMTP antes de autorizar uma recuperação. Nenhum bloqueio será removido automaticamente.</div>}
+                    {phase === "cancelling" && <div role="status">Cancelamento solicitado. A operação de rede atual pode precisar terminar antes da parada.</div>}
                     {status?.last_error && (
                         <div className="pp-charge-error" role="alert">
                             <span>Última execução com falhas: {status.last_error}</span>
@@ -218,10 +223,10 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                     {message && <div className="pp-charge-success" role="status">{message}</div>}
                     {error && <div className="pp-charge-error" role="alert">{error}</div>}
                     <section className="pp-charge-actions">
-                        <button type="button" disabled={!canManage || busy || running} onClick={toggle}>
+                        <button type="button" disabled={!canManage || busy || (!status?.enabled && (running || phase === "cancelling" || status?.running))} onClick={toggle}>
                             {status?.enabled ? "Desativar cobrança automática" : "Ativar cobrança automática"}
                         </button>
-                        <button type="button" disabled={!canManage || busy || running} onClick={runNow}>Executar agora</button>
+                        <button type="button" disabled={!canManage || busy || running || status?.running || !status?.enabled} onClick={runNow}>Executar agora</button>
                         <button type="button" disabled={busy} onClick={() => { loadStatus(); loadHistory(); }}>Atualizar</button>
                     </section>
                     <section className="pp-charge-interval">
