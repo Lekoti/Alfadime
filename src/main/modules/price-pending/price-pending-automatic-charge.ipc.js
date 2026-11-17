@@ -17,7 +17,7 @@ function registerPricePendingAutomaticChargeIpc() {
     });
     ipcMain.handle("price-pending-automatic-charge:set-interval", (_event, hours) => {
         const user = access.requireEditor();
-        return service.setInterval(hours, access.name(user));
+        return service.setChargeInterval(hours, access.name(user));
     });
     ipcMain.handle("price-pending-automatic-charge:run-now", () => {
         const user = access.requireEditor();

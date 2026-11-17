@@ -25,7 +25,7 @@ function setEnabled(enabled, actor) {
     }
     return buildStatus();
 }
-function setInterval(hours, actor) { return repository.setIntervalHours(hours, actor); }
+function setChargeInterval(hours, actor) { return repository.setIntervalHours(hours, actor); }
 async function runCharge(manual = false) {
     if (executing || stopping) return { success: false, reason: "busy_or_stopping" };
     executing = true;
@@ -42,7 +42,7 @@ async function runCharge(manual = false) {
         const prepared = await favoritesService.prepareFavoriteCharge({ favorite_id: favoritesService.FIXED_FAVORITE_ID });
         if (!prepared?.preview_token) throw new Error("A preparação da cobrança não retornou um token válido.");
         activePreview = prepared.preview_token;
-        heartbeat = setInterval(() => {
+        heartbeat = globalThis.setInterval(() => {
             try {
                 if (!repository.heartbeat(owner)) throw new Error("Bloqueio da automação perdido.");
                 if (stopping || !repository.getStatus().enabled) {
@@ -79,7 +79,7 @@ function tick() { runCharge(false).catch(error => console.error("[Cobrança auto
 function start() {
     if (timer) return;
     stopping = false;
-    timer = setInterval(tick, 15 * 60 * 1000);
+    timer = globalThis.setInterval(tick, 15 * 60 * 1000);
     tick();
 }
 function stop() {
@@ -91,4 +91,4 @@ function stop() {
         catch (error) { console.error("[Cobrança automática]", error); }
     }
 }
-module.exports = { getStatus, setEnabled, setInterval, runCharge, start, stop };
+module.exports = { getStatus, setEnabled, setChargeInterval, runCharge, start, stop };
