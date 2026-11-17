@@ -93,11 +93,24 @@
 .pp-charge-progress span { display: block; margin-bottom: 5px; font-size: 10px; }
 .pp-charge-progress-bar {
     width: 100%; height: 8px; border: 1px solid #b9cbdc; border-radius: 4px;
-    background: #fff; overflow: hidden;
+    background: #fff; overflow: hidden; position: relative;
 }
 .pp-charge-progress-fill {
     height: 100%; background: #346ca4; transition: width .3s ease;
 }
+.pp-charge-progress-indeterminate::after {
+    content: ""; position: absolute; inset: 0; width: 35%;
+    background: linear-gradient(90deg, transparent, #346ca4, transparent);
+    animation: pp-charge-progress-slide 1.4s linear infinite;
+}
+.pp-charge-progress-fill-indeterminate {
+    width: 0 !important; background: transparent;
+}
+@keyframes pp-charge-progress-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+}
+.pp-charge-progress-detail { margin: 5px 0 0; font-size: 10px; color: #344b65; }
 .pp-charge-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .pp-charge-actions button {
     border: 1px solid #cdd6df; border-radius: 4px; padding: 6px 9px;

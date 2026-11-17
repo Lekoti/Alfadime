@@ -34,7 +34,7 @@ function remaining(ms) {
 function statusText(status) {
     if (status?.status_text) return status.status_text;
     const phase = status?.phase;
-    if (phase === "preparing") return "Preparando cobrança.";
+    if (phase === "preparing") return "Preparando cobrança. Verificando destinatários, e-mails e anexos...";
     if (phase === "sending") return "Enviando cobrança.";
     return "";
 }
@@ -153,6 +153,8 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
     const phase = status?.phase || "disabled";
     const running = phase === "preparing" || phase === "sending";
     const canSaveInterval = canManage && !busy && (customInterval || selectedInterval);
+    const progress = status?.progress || {};
+    const percent = progress.total ? Math.min(100, Math.round(((progress.current || 0) / progress.total) * 100)) : 0;
     return createPortal(
         <div className="pp-charge-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
             <section className="pp-charge-dialog" role="dialog" aria-modal="true" aria-labelledby="pp-charge-title">
@@ -183,12 +185,21 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                     {running && (
                         <div className="pp-charge-progress" role="status">
                             <span>{statusText(status)}</span>
-                            <div className="pp-charge-progress-bar">
+                            <div className={`pp-charge-progress-bar ${phase === "preparing" ? "pp-charge-progress-indeterminate" : ""}`}>
                                 <div
-                                    className="pp-charge-progress-fill"
-                                    style={{ width: `${status?.progress?.total ? Math.min(100, Math.round(((status?.progress?.current || 0) / status.progress.total) * 100)) : 0}%` }}
+                                    className={`pp-charge-progress-fill ${phase === "preparing" ? "pp-charge-progress-fill-indeterminate" : ""}`}
+                                    style={phase === "sending" ? { width: `${percent}%` } : undefined}
                                 ></div>
                             </div>
+                            {phase === "sending" && (
+                                <p className="pp-charge-progress-detail">
+                                    {progress.current || 0} de {progress.total || 0} e-mails enviados
+                                    {progress.currentLaboratory ? ` — ${progress.currentLaboratory}` : ""}
+                                </p>
+                            )}
+                            {phase === "preparing" && (
+                                <p className="pp-charge-progress-detail">A barra permanece em movimento enquanto a preparação está em andamento.</p>
+                            )}
                         </div>
                     )}
                     {status?.last_error && (
