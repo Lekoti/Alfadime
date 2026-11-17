@@ -258,6 +258,24 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                                 <p>Início: {date(detail.started_at)} · Fim: {date(detail.finished_at)}</p>
                                 <p>Status: {RUN_LABELS[detail.status] || detail.status} · Enviados: {detail.sent ?? 0} · Falhas: {detail.failed ?? 0}</p>
                                 {detail.error_message && <div className="pp-charge-error">{detail.error_message}</div>}
+                                <div className="pp-charge-scroll">
+                                    <table>
+                                        <thead><tr><th>Indústria</th><th>Filial</th><th>E-mail</th><th>Status</th><th>Enviado em</th><th>Motivo da falha</th></tr></thead>
+                                        <tbody>
+                                            {(detail.items || []).map(item => (
+                                                <tr key={item.id}>
+                                                    <td>{item.laboratory_name || "Não registrado"}</td>
+                                                    <td>{item.branch || "Não registrada"}</td>
+                                                    <td>{item.email || "Não registrado"}</td>
+                                                    <td>{RUN_LABELS[item.status] || item.status}</td>
+                                                    <td>{date(item.sent_at)}</td>
+                                                    <td>{item.error_message || "—"}</td>
+                                                </tr>
+                                            ))}
+                                            {!(detail.items || []).length && <tr><td colSpan="6">Nenhum destinatário registrado nesta cobrança.</td></tr>}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </section>
                         )}
                     </section>
