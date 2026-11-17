@@ -6,6 +6,7 @@ const access = require("../price-pending/price-pending-access");
 const policy = require("./contacts-charge-policy");
 const context = new AsyncLocalStorage();
 const ensured = new WeakSet();
+
 function database() {
     const db = getDatabase();
     if (!ensured.has(db)) {
@@ -88,9 +89,7 @@ function legacyLast(db, table, emailColumn, email, keys) {
                 try {
                     const identity = policy.identity({ ...current, branch: row.branch || current.branch });
                     matches = keys.has(identity);
-                } catch (_) {
-                    continue;
-                }
+                } catch (_) { continue; }
             }
         }
         if (!matches) continue;
@@ -113,20 +112,21 @@ function reserve(message) {
         let last = 0;
         for (const row of rows) {
             if (row.status === "preflight_failed") continue;
+            // Sem identificação íntegra, não é possível descartar relação com segurança.
             const related = row.email === email || storedIdentities(row).some(key => keys.has(key));
             if (!related) continue;
             if (row.status === "sending") throw new Error("Envio em andamento ou resultado incerto para esta indústria/filial ou e-mail. Confira o histórico antes de reenviar.");
             last = Math.max(last, policy.reference(row));
         }
         if (store.source === "automatic") {
-            last = Math.max(last, legacyLast(db,"contact_charge_run_items","email",email,keys), legacyLast(db,"industry_contact_charge_history","recipient",email,keys));
+            last = Math.max(last, legacyLast(db, "contact_charge_run_items", "email", email, keys), legacyLast(db, "industry_contact_charge_history", "recipient", email, keys));
             if (last && Date.now() < last + policy.WAIT_MS) throw new Error("Cobrança automática adiada: ainda não passaram 48 horas para esta indústria/filial ou e-mail.");
         }
         const id = crypto.randomUUID();
         db.prepare("INSERT INTO charge_coordination_v4(id,email,source,actor,run_id,covered,started_ms,status) VALUES (?,?,?,?,?,?,?,'sending')")
-            .run(id,email,store.source,store.actor,store.runId,JSON.stringify(covered),Date.now());
+            .run(id, email, store.source, store.actor, store.runId, JSON.stringify(covered), Date.now());
         const insert = db.prepare("INSERT INTO charge_identity_locks_v5(identity_key,reservation_id) VALUES (?,?)");
-        for (const key of keys) insert.run(key,id);
+        for (const key of keys) insert.run(key, id);
         return id;
     }).immediate();
 }
@@ -141,36 +141,52 @@ function complete(id, status, error) {
 async function sendPlan(plan, token, execute) {
     if (!context.getStore()) return manual(() => sendPlan(plan, token, execute));
     if (!Array.isArray(plan.messages) || plan.messages.length !== 1) throw new Error("Envio deve ser coordenado por destinatário.");
-    const id = reserve(plan.messages[0]);
+    let id;
+    try { id = reserve(plan.messages[0]); }
+    catch (error) {
+        error.safeToRetry = true;
+        throw error;
+    }
     const phase = { smtpStarted: false };
     let result;
     try {
         result = await execute(plan, token, phase);
     } catch (error) {
-        complete(id, phase.smtpStarted ? "sending" : "preflight_failed", String(error.message || error));
+        error.safeToRetry = !phase.smtpStarted;
+        try { complete(id, phase.smtpStarted ? "sending" : "preflight_failed", String(error.message || error)); }
+        catch (persistenceError) {
+            error.safeToRetry = false;
+            error.message += ` Falha ao registrar a reserva: ${persistenceError.message}`;
+        }
         throw error;
     }
     const status = policy.classify(phase.smtpStarted, result);
-    complete(id,status,status === "sent" ? null : status === "sending"
-        ? "Resultado de envio incerto. Confira SMTP e histórico antes de reenviar."
-        : JSON.stringify(result?.results || []));
-    return result;
+    try {
+        complete(id, status, status === "sent" ? null : status === "sending"
+            ? "Resultado de envio incerto. Confira SMTP e histórico antes de reenviar."
+            : JSON.stringify(result?.results || []));
+    } catch (error) {
+        error.safeToRetry = false;
+        error.deliveryResult = { ...result, delivery_status: status };
+        throw error;
+    }
+    return { ...result, delivery_status: status };
 }
 function expandedItems(runId, fallback) {
     const rows = database().prepare("SELECT * FROM charge_coordination_v4 WHERE run_id=? ORDER BY started_ms").all(runId);
     if (!rows.length) return fallback;
-    const items=[];
+    const items = [];
     for (const row of rows) {
-        let covered=[];
-        try { covered=JSON.parse(row.covered); } catch (_) { covered=[]; }
-        covered.forEach((contact,index) => items.push({
-            id:row.id+":"+index,laboratory_name:contact.laboratory_name,branch:contact.branch,email:row.email,
-            status:row.status === "preflight_failed" ? "failed" : row.status,
-            sent_at:row.status === "sent" && row.finished_ms ? new Date(row.finished_ms).toISOString() : null,
-            error_message:row.error || null
+        let covered = [];
+        try { covered = JSON.parse(row.covered); } catch (_) { covered = []; }
+        covered.forEach((contact, index) => items.push({
+            id: row.id + ":" + index, laboratory_name: contact.laboratory_name, branch: contact.branch, email: row.email,
+            status: row.status === "preflight_failed" ? "failed" : row.status,
+            sent_at: row.status === "sent" && row.finished_ms ? new Date(row.finished_ms).toISOString() : null,
+            error_message: row.error || null
         }));
     }
-    const emails=new Set(rows.map(row=>row.email));
-    return items.concat((fallback||[]).filter(item=>!emails.has(String(item.email||"").trim().toLowerCase())));
+    const emails = new Set(rows.map(row => row.email));
+    return items.concat((fallback || []).filter(item => !emails.has(String(item.email || "").trim().toLowerCase())));
 }
-module.exports={automatic,manual,recordRun,metadata,sendPlan,expandedItems};
+module.exports = { automatic, manual, recordRun, metadata, sendPlan, expandedItems };

@@ -1,5 +1,7 @@
 const runRepository = require("./contacts-charge-run.repository");
 const favoritesService = require("./contacts-charge-favorites.service");
+const executionRepository = require("./contacts-charge-execution.repository");
+const access = require("../price-pending/price-pending-access");
 
 function normalizeText(value) {
     return String(value ?? "").trim();
@@ -11,59 +13,34 @@ function listRuns(limit = 50) {
 
 function getRun(runId) {
     const id = normalizeText(runId);
-
-    if (!id) {
-        throw new Error("Informe o identificador da execução.");
-    }
-
+    if (!id) throw new Error("Informe o identificador da execução.");
     const run = runRepository.getRun(id);
-
-    if (!run) {
-        throw new Error("Execução de cobrança não encontrada.");
-    }
-
+    if (!run) throw new Error("Execução de cobrança não encontrada.");
     return run;
 }
 
 function getRunSummary(runId) {
     const run = getRun(runId);
-
     return {
         ...run,
-        id: run.id,
-        favorite_id: run.favorite_id,
-        favorite_name: run.favorite_name,
-        charge_type: run.charge_type,
-        status: run.status,
-        total: run.total,
-        sent: run.sent,
-        failed: run.failed,
-        ignored: run.ignored,
-        cancelled: run.cancelled,
-        started_at: run.started_at,
-        finished_at: run.finished_at,
-        error_message: run.error_message,
         progress: run.total > 0
-            ? Math.round(((run.sent + run.failed + run.ignored + run.cancelled) / run.total) * 100)
+            ? Math.min(100, Math.round(((run.sent + run.failed + run.ignored + run.cancelled) / run.total) * 100))
             : 0,
+        cancelRequested: executionRepository.isCancellationRequested(run.id),
         items: require("./contacts-charge-coordination").expandedItems(run.id, run.items)
     };
 }
 
 function cancelRun(runId) {
+    const user = access.requireEditor();
     const run = getRun(runId);
-
-    if (["completed", "completed_with_errors", "cancelled"].includes(run.status)) {
-        throw new Error("Esta execução já foi finalizada.");
-    }
-
-    return runRepository.cancelRun(run.id);
+    return executionRepository.requestCancel(run.id, access.name(user));
 }
 
 async function retryFailedCharge(runId) {
+    access.requireEditor();
     const run = getRun(runId);
     const preview = await favoritesService.retryFailedCharge({ run_id: run.id });
-
     return {
         run_id: run.id,
         preview_token: preview.preview_token,
@@ -76,10 +53,4 @@ async function retryFailedCharge(runId) {
     };
 }
 
-module.exports = {
-    listRuns,
-    getRun,
-    getRunSummary,
-    cancelRun,
-    retryFailedCharge
-};
+module.exports = { listRuns, getRun, getRunSummary, cancelRun, retryFailedCharge };

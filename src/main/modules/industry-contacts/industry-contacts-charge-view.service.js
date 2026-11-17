@@ -1,38 +1,26 @@
-﻿const service = require("./industry-contacts.service");
+const service = require("./industry-contacts.service");
 const prices = require("../price-pending/price-pending.repository");
 const history = require("./industry-contacts-charge-history.repository");
+const { isUpdatedPeriod } = require("../price-pending/price-pending-validation");
 
 function laboratoryKey(value) {
     return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, " ").trim().toUpperCase();
 }
+function normalizedLookupKey(value) {
+    return laboratoryKey(value).replace(/^#\s*/, "").replace(/(?:\s*-\s*|\s+)\d+\s*$/, "").trim();
+}
 function isUpdated(value, now = new Date()) {
-    const match = String(value ?? "").trim().match(
-        /^(?:Atualizado\s*)?(\d{1,2})\/(\d{1,2})\/(\d{4})$/i
-    );
-    if (!match) return false;
-
-    const day = Number(match[1]);
-    const month = Number(match[2]);
-    const year = Number(match[3]);
-
-    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1000) {
-        return false;
-    }
-
-    const date = new Date(Date.UTC(year, month - 1, day));
-    if (
-        date.getUTCFullYear() !== year ||
-        date.getUTCMonth() !== month - 1 ||
-        date.getUTCDate() !== day
-    ) {
-        return false;
-    }
-
-    return year * 12 + month >= now.getFullYear() * 12 + now.getMonth() + 1;
+    return isUpdatedPeriod(value, now);
 }
 function isNotWorking(value) {
     return String(value ?? "").trim().toUpperCase() === "NAO TRABALHA";
+}
+function addIndex(index, key, row) {
+    if (!key) return;
+    const entries = index.get(key) || [];
+    entries.push(row);
+    index.set(key, entries);
 }
 function listLaboratories() {
     const result = service.listLaboratories();
@@ -40,39 +28,42 @@ function listLaboratories() {
     if (!Array.isArray(result?.rows) || !Array.isArray(priceRows)) {
         throw new Error("Não foi possível conferir os dados de atualização dos contatos.");
     }
-    const byLaboratory = new Map();
+    const exact = new Map();
+    const normalized = new Map();
     for (const row of priceRows) {
-        const key = laboratoryKey(row.laboratory);
-        if (!byLaboratory.has(key)) byLaboratory.set(key, row);
+        addIndex(exact, laboratoryKey(row.laboratory), row);
+        addIndex(normalized, normalizedLookupKey(row.laboratory), row);
     }
     const lastCharges = history.getLastChargesMap();
     const now = new Date();
     return {
         ...result,
-        rows: result.rows.map((row) => {
+        rows: result.rows.map(row => {
+            const direct = exact.get(laboratoryKey(row.laboratory_name));
+            const candidates = direct?.length ? direct : normalized.get(normalizedLookupKey(row.laboratory_name)) || [];
+            if (candidates.length > 1) {
+                throw new Error(`Mais de um cadastro corresponde a ${row.laboratory_name}. Corrija a identificação antes de preparar cobranças.`);
+            }
+            const priceRow = candidates[0];
             const branch = String(row.branch || "").trim().toUpperCase();
             const validBranch = ["DPR", "AMS", "DMT", "DMS", "DSC"].includes(branch);
-            const priceRow = byLaboratory.get(laboratoryKey(row.laboratory_name));
             const suffix = branch.toLowerCase();
             const pricesNotWorking = validBranch && isNotWorking(priceRow?.[`precos_ok_${suffix}`]);
             const pendingNotWorking = validBranch && isNotWorking(priceRow?.[`pendencias_ok_${suffix}`]);
             const pricesUpdated = validBranch && (isUpdated(priceRow?.[`precos_ok_${suffix}`], now) || pricesNotWorking);
             const pendingUpdated = validBranch && (isUpdated(priceRow?.[`pendencias_ok_${suffix}`], now) || pendingNotWorking);
-            const chargeStatus = pricesUpdated && pendingUpdated ? "updated" :
-                !pricesUpdated && !pendingUpdated ? "both_missing" :
-                    !pricesUpdated ? "prices_missing" : "pending_missing";
-            const last = lastCharges.get(JSON.stringify([String(row.contact_id || row.id), row.branch || '']));
+            const chargeStatus = pricesUpdated && pendingUpdated ? "updated"
+                : !pricesUpdated && !pendingUpdated ? "both_missing" : !pricesUpdated ? "prices_missing" : "pending_missing";
+            const last = lastCharges.get(JSON.stringify([String(row.contact_id || row.id), row.branch || ""]));
             return {
                 ...row,
-                prices_updated: Boolean(pricesUpdated),
-                pending_updated: Boolean(pendingUpdated),
-                prices_not_working: Boolean(pricesNotWorking),
-                pending_not_working: Boolean(pendingNotWorking),
+                prices_updated: Boolean(pricesUpdated), pending_updated: Boolean(pendingUpdated),
+                prices_not_working: Boolean(pricesNotWorking), pending_not_working: Boolean(pendingNotWorking),
                 charge_update_status: chargeStatus,
-                charge_status_label: pricesNotWorking && pendingNotWorking ? "Não trabalha — isento de cobrança" :
-                    chargeStatus === "updated" ? "Preços e pendências atualizados" :
-                        chargeStatus === "both_missing" ? "Precisa atualizar preços e pendências" :
-                            chargeStatus === "prices_missing" ? "Precisa atualizar preços" : "Precisa atualizar pendências",
+                charge_status_label: pricesNotWorking && pendingNotWorking ? "Não trabalha — isento de cobrança"
+                    : chargeStatus === "updated" ? "Preços e pendências atualizados"
+                    : chargeStatus === "both_missing" ? "Precisa atualizar preços e pendências"
+                    : chargeStatus === "prices_missing" ? "Precisa atualizar preços" : "Precisa atualizar pendências",
                 last_prices_charge_at: last?.last_prices_charge_at || null,
                 last_pending_charge_at: last?.last_pending_charge_at || null
             };
