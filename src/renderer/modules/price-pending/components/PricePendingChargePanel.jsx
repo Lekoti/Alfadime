@@ -4,8 +4,8 @@ import "../styles/price-pending-interactions.css";
 
 const STATUS_LABELS = {
     disabled: "Desativada",
-    preparing: "Cobrança em preparação para iniciar",
-    sending: "Cobrança em execução",
+    preparing: "Preparando cobrança",
+    sending: "Enviando cobrança",
     waiting: "Aguardando próxima cobrança",
     ready: "Pronta para iniciar"
 };
@@ -31,6 +31,13 @@ function remaining(ms) {
     if (hours) return `${hours}h ${minutes}min`;
     return `${minutes}min`;
 }
+function statusText(status) {
+    if (status?.status_text) return status.status_text;
+    const phase = status?.phase;
+    if (phase === "preparing") return "Preparando cobrança.";
+    if (phase === "sending") return "Enviando cobrança.";
+    return "";
+}
 async function invoke(channel, args) {
     if (typeof window.alfadime?.ipc?.invoke !== "function") throw new Error("A comunicação com o aplicativo não está disponível. Reinicie o Alfadime.");
     return window.alfadime.ipc.invoke(channel, args);
@@ -43,6 +50,7 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+    const [countdown, setCountdown] = useState("—");
     const [runs, setRuns] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [detail, setDetail] = useState(null);
@@ -85,7 +93,7 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
         try {
             const result = await invoke("price-pending-automatic-charge:set-enabled", !status?.enabled);
             setStatus(result);
-            setMessage(result?.enabled ? "Cobrança automática ativada." : "Cobrança automática desativada.");
+            setMessage(result?.enabled ? "Cobrança automática ativada. Preparando cobrança." : "Cobrança automática desativada.");
             loadHistory();
         } catch (failure) {
             setError(failure?.message || "Não foi possível alterar a cobrança automática.");
@@ -131,16 +139,19 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
         if (!open) return undefined;
         loadStatus(); loadHistory();
         const statusTimer = globalThis.setInterval(loadStatus, 30000);
-        const clockTimer = globalThis.setInterval(() => setStatus(current => current ? { ...current } : current), 30000);
+        const countdownTimer = globalThis.setInterval(() => {
+            setCountdown(remaining(status?.next_allowed_ms));
+        }, 1000);
         function key(event) { if (event.key === "Escape") onClose(); }
         document.addEventListener("keydown", key);
         return () => {
-            clearInterval(statusTimer); clearInterval(clockTimer);
+            clearInterval(statusTimer); clearInterval(countdownTimer);
             document.removeEventListener("keydown", key);
         };
-    }, [open, loadStatus, loadHistory, onClose]);
+    }, [open, loadStatus, loadHistory, onClose, status?.next_allowed_ms]);
     if (!open) return null;
     const phase = status?.phase || "disabled";
+    const running = phase === "preparing" || phase === "sending";
     const canSaveInterval = canManage && !busy && (customInterval || selectedInterval);
     return createPortal(
         <div className="pp-charge-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -154,10 +165,11 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                         <div>
                             <span>Status</span>
                             <strong>{STATUS_LABELS[phase]}</strong>
+                            <p className="pp-charge-status-detail">{statusText(status)}</p>
                         </div>
                         <div>
                             <span>Próxima cobrança</span>
-                            <strong>{status?.enabled ? remaining(status?.next_allowed_ms) : "—"}</strong>
+                            <strong>{status?.enabled ? countdown : "—"}</strong>
                         </div>
                         <div>
                             <span>Intervalo</span>
@@ -168,6 +180,17 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                             <strong>{date(status?.last_success_at)}</strong>
                         </div>
                     </section>
+                    {running && (
+                        <div className="pp-charge-progress" role="status">
+                            <span>{statusText(status)}</span>
+                            <div className="pp-charge-progress-bar">
+                                <div
+                                    className="pp-charge-progress-fill"
+                                    style={{ width: `${status?.progress?.total ? Math.min(100, Math.round(((status?.progress?.current || 0) / status.progress.total) * 100)) : 0}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    )}
                     {status?.last_error && (
                         <div className="pp-charge-error" role="alert">
                             <span>Última execução com falhas: {status.last_error}</span>
@@ -177,10 +200,10 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                     {message && <div className="pp-charge-success" role="status">{message}</div>}
                     {error && <div className="pp-charge-error" role="alert">{error}</div>}
                     <section className="pp-charge-actions">
-                        <button type="button" disabled={!canManage || busy} onClick={toggle}>
+                        <button type="button" disabled={!canManage || busy || running} onClick={toggle}>
                             {status?.enabled ? "Desativar cobrança automática" : "Ativar cobrança automática"}
                         </button>
-                        <button type="button" disabled={!canManage || busy} onClick={runNow}>Executar agora</button>
+                        <button type="button" disabled={!canManage || busy || running} onClick={runNow}>Executar agora</button>
                         <button type="button" disabled={busy} onClick={() => { loadStatus(); loadHistory(); }}>Atualizar</button>
                     </section>
                     <section className="pp-charge-interval">
@@ -221,7 +244,7 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                                                 <td>{RUN_LABELS[run.status] || run.status}</td>
                                                 <td>{run.sent ?? 0}</td>
                                                 <td>{run.failed ?? 0}</td>
-                                                <td><button type="button" disabled={busy} onClick={() => selectRun(run)}>Detalhes</button></td>
+                                                <td><button type="button" className="pp-charge-detail-button" disabled={busy} onClick={() => selectRun(run)}>Detalhes</button></td>
                                             </tr>
                                         ))}
                                         {!runs.length && <tr><td colSpan="8">Nenhuma cobrança registrada.</td></tr>}

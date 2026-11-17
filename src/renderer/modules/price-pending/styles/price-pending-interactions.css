@@ -85,6 +85,19 @@
 }
 .pp-charge-status span { display: block; margin-bottom: 3px; color: #52647a; }
 .pp-charge-status strong { font-size: 11px; }
+.pp-charge-status-detail { margin: 4px 0 0; font-size: 10px; color: #344b65; }
+.pp-charge-progress {
+    border: 1px solid #b9cbdc; border-radius: 4px; padding: 8px; margin: 8px 0;
+    background: #f7fafc;
+}
+.pp-charge-progress span { display: block; margin-bottom: 5px; font-size: 10px; }
+.pp-charge-progress-bar {
+    width: 100%; height: 8px; border: 1px solid #b9cbdc; border-radius: 4px;
+    background: #fff; overflow: hidden;
+}
+.pp-charge-progress-fill {
+    height: 100%; background: #346ca4; transition: width .3s ease;
+}
 .pp-charge-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .pp-charge-actions button {
     border: 1px solid #cdd6df; border-radius: 4px; padding: 6px 9px;
@@ -121,6 +134,12 @@
 .pp-charge-scroll table { width: 100%; border-collapse: collapse; font-size: 10px; }
 .pp-charge-scroll th, .pp-charge-scroll td { padding: 5px 6px; border: 1px solid #d5dbe3; text-align: left; }
 .pp-charge-scroll th { background: #edf4fa; }
+.pp-charge-detail-button {
+    border: 1px solid #b9cbdc; border-radius: 4px; padding: 3px 7px;
+    background: #edf4fa; color: #344b65; font-family: inherit; font-size: 10px; cursor: pointer;
+}
+.pp-charge-detail-button:hover, .pp-charge-detail-button:focus { background: #dbe9f5; }
+.pp-charge-detail-button:disabled { opacity: .6; cursor: wait; }
 .pp-charge-detail { margin-top: 10px; border-top: 1px solid #d5dbe3; padding-top: 6px; }
 .pp-charge-detail h4 { margin: 0 0 4px; font-size: 11px; }
 .pp-charge-success {

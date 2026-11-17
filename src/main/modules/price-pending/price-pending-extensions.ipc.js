@@ -1,7 +1,5 @@
 const { ipcMain } = require("electron");
 const priorityRepository = require("./price-pending-priority.repository");
-const automaticCharge = require("./price-pending-automatic-charge.service");
-const automaticChargeIpc = require("./price-pending-automatic-charge.ipc");
 const authHandler = require("../auth/authHandler");
 const { USER_ROLES } = require("../auth/userRoles.constants");
 
@@ -17,7 +15,6 @@ function requireEditor() {
 function registerPricePendingExtensionsIpc() {
     if (registered) return;
     registered = true;
-    automaticChargeIpc.registerPricePendingAutomaticChargeIpc();
     ipcMain.handle("price-pending:update-priority", (_event, payload = {}) => {
         requireEditor();
         const id = String(payload?.id || "").trim();
