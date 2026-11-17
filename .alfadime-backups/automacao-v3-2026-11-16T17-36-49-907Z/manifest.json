@@ -1,0 +1,22 @@
+[
+  {
+    "path": "src/main/modules/price-pending/price-pending-automatic-charge.repository.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending-automatic-charge.service.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending-automatic-charge.ipc.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending-access.js",
+    "existed": false
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending.ipc.js",
+    "existed": true
+  }
+]

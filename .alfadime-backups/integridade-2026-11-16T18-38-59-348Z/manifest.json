@@ -1,0 +1,34 @@
+[
+  {
+    "path": "src/renderer/modules/price-pending/hooks/usePricePendingRows.js",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/utils/price-pending.utils.js",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/hooks/usePricePendingFilters.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending.repository.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending-priority.repository.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending-price-content.service.js",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/utils/price-pending-edit-journal.js",
+    "existed": false
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending-validation.js",
+    "existed": false
+  }
+]

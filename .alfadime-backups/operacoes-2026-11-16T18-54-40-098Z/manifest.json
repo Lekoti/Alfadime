@@ -1,0 +1,26 @@
+[
+  {
+    "path": "src/main/modules/price-pending/price-pending-validation.js",
+    "existed": true
+  },
+  {
+    "path": "src/main/modules/price-pending/price-pending.repository.js",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/hooks/usePricePendingRows.js",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/pages/PricePendingPage.jsx",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/components/PricePendingTable.jsx",
+    "existed": true
+  },
+  {
+    "path": "src/renderer/modules/price-pending/components/PricePendingPriorityMenu.jsx",
+    "existed": true
+  }
+]
