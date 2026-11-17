@@ -193,12 +193,12 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                             </div>
                             {phase === "sending" && (
                                 <p className="pp-charge-progress-detail">
-                                    {progress.current || 0} de {progress.total || 0} e-mails enviados
+                                    <strong>{percent}% concluído</strong> — {progress.current || 0} de {progress.total || 0} e-mails enviados
                                     {progress.currentLaboratory ? ` — ${progress.currentLaboratory}` : ""}
                                 </p>
                             )}
                             {phase === "preparing" && (
-                                <p className="pp-charge-progress-detail">A barra permanece em movimento enquanto a preparação está em andamento.</p>
+                                <p className="pp-charge-progress-detail">Preparação em andamento. O percentual será exibido após o início do envio.</p>
                             )}
                         </div>
                     )}
