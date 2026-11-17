@@ -1,0 +1,59 @@
+﻿{
+    "entries":  [
+                    {
+                        "path":  "src/main/modules/industry-contacts/contacts-charge-execution.repository.js",
+                        "existed":  false,
+                        "applied_blob":  "9abfa19eb37f7e006da957bffc0bc7288c8b7f91",
+                        "backup_sha256":  null
+                    },
+                    {
+                        "path":  "src/main/modules/industry-contacts/contacts-charge-execution.service.js",
+                        "existed":  false,
+                        "applied_blob":  "de488fff05918226bacab0da45ba2b29691dbcf0",
+                        "backup_sha256":  null
+                    },
+                    {
+                        "path":  "src/main/modules/industry-contacts/contacts-charge-favorites.service.js",
+                        "existed":  true,
+                        "applied_blob":  "3d22eed3a71326b720069d240473329abcd45997",
+                        "backup_sha256":  "A8D10BDFAF3D1103E2A6A9CA74D47108220807DF997B5EFD8C4102FBEC9D4D15"
+                    },
+                    {
+                        "path":  "src/main/modules/industry-contacts/contacts-charge-coordination.js",
+                        "existed":  true,
+                        "applied_blob":  "e6b890c040837da923527c74023c6fa750e4a024",
+                        "backup_sha256":  "A063A6517C21BE2FA8B80100CCFD2EBAF17FA19DB0C33122F8C96C8963C1D63C"
+                    },
+                    {
+                        "path":  "src/main/modules/industry-contacts/contacts-charge-run.service.js",
+                        "existed":  true,
+                        "applied_blob":  "a1b71512ab4a2dc9a02908c1fdea807fb40bd2af",
+                        "backup_sha256":  "DE947DC8C2DE78C8F520036A2F28B2CA1BD82F3BE50130264E1E6D3BB9B7F41C"
+                    },
+                    {
+                        "path":  "src/main/modules/price-pending/price-pending-automatic-charge.service.js",
+                        "existed":  true,
+                        "applied_blob":  "891d5069a663907096737905a015db68a3cd637c",
+                        "backup_sha256":  "8D0828EBF9DE5D54666B39B45F295E4C09B5D8FDAB102635DC05271F939DEAA2"
+                    },
+                    {
+                        "path":  "src/main/modules/industry-contacts/industry-contacts-charge-view.service.js",
+                        "existed":  true,
+                        "applied_blob":  "4594aa83bc261a2ca97f66011b1e2cf1c1859f2a",
+                        "backup_sha256":  "255B1F7891DC887853BEA8BB69C31A5DD0704A5D47AE96A5B398462E94B93B01"
+                    },
+                    {
+                        "path":  "src/renderer/modules/price-pending/components/PricePendingChargePanel.jsx",
+                        "existed":  true,
+                        "applied_blob":  "7975d3ef7aaffd61e573b22cb7acc58d39b55ec6",
+                        "backup_sha256":  "2AB5B4870BB7000022383AA3AA8C553AAEE7AED6B20E0B9AAC0D2B0054E42342"
+                    },
+                    {
+                        "path":  "tests/price-pending-charge-regression.cjs",
+                        "existed":  false,
+                        "applied_blob":  "dc8ed266803e0ce1670089d7ad88d4d4ac731f63",
+                        "backup_sha256":  null
+                    }
+                ],
+    "project":  "C:\\Users\\USER\\Alfadime"
+}
