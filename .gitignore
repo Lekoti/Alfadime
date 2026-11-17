@@ -189,3 +189,8 @@ server/data/*.db-wal
 app-data/
 # Alfadime - analises e backups locais
 output/
+
+# Backups e pacotes locais do Alfadime
+/.alfadime-backups/
+/alfadime-fontes-revisao-*.zip
+/Aplicar-Correcao-Cobranca.ps1
