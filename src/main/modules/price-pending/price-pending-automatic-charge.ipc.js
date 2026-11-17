@@ -19,6 +19,10 @@ function registerPricePendingAutomaticChargeIpc() {
         const user = access.requireEditor();
         return service.setChargeInterval(hours, access.name(user));
     });
+    ipcMain.handle("price-pending-automatic-charge:clear-error", () => {
+        const user = access.requireEditor();
+        return service.clearLastError(access.name(user));
+    });
     ipcMain.handle("price-pending-automatic-charge:run-now", () => {
         const user = access.requireEditor();
         return service.runCharge(true);

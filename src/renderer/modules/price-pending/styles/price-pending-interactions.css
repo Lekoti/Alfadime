@@ -105,6 +105,16 @@
     background: #fff; color: #344b65; font-family: inherit; font-size: 10px; cursor: pointer;
 }
 .pp-charge-interval button:disabled { opacity: .6; cursor: wait; }
+.pp-charge-error {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px; margin: 5px 0; border: 1px solid #e2b8bd; border-radius: 4px;
+    background: #fff7f8; color: #9f414c; white-space: normal; font-size: 10px;
+}
+.pp-charge-error button {
+    border: 1px solid #cdd6df; border-radius: 4px; padding: 4px 7px;
+    background: #fff; color: #344b65; font-family: inherit; font-size: 10px; cursor: pointer;
+}
+.pp-charge-error button:disabled { opacity: .6; cursor: wait; }
 .pp-charge-history { margin-top: 12px; border-top: 1px solid #d5dbe3; padding-top: 8px; }
 .pp-charge-history h3 { margin: 0 0 6px; font-size: 11px; }
 .pp-charge-scroll { overflow: auto; max-height: 320px; }
@@ -116,8 +126,4 @@
 .pp-charge-success {
     padding: 6px; margin: 5px 0; border: 1px solid #b7d7bd; border-radius: 4px;
     background: #f2faf4; color: #276b39; font-size: 10px;
-}
-.pp-charge-error {
-    padding: 6px; margin: 5px 0; border: 1px solid #e2b8bd; border-radius: 4px;
-    background: #fff7f8; color: #9f414c; white-space: normal; font-size: 10px;
 }

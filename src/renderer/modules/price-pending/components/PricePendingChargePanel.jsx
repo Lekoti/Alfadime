@@ -38,7 +38,7 @@ async function invoke(channel, args) {
 
 export default function PricePendingChargePanel({ open, onClose, canManage }) {
     const [status, setStatus] = useState(null);
-    const [interval, setInterval] = useState(48);
+    const [selectedInterval, setSelectedInterval] = useState(48);
     const [customInterval, setCustomInterval] = useState("");
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState("");
@@ -52,7 +52,7 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
         try {
             const result = await invoke("price-pending-automatic-charge:get-status");
             setStatus(result);
-            setInterval(Number(result?.interval_hours || 48));
+            setSelectedInterval(Number(result?.interval_hours || 48));
         } catch (failure) {
             setError(failure?.message || "Não foi possível carregar o status da cobrança.");
         }
@@ -91,15 +91,27 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
             setError(failure?.message || "Não foi possível alterar a cobrança automática.");
         } finally { setBusy(false); }
     }
-    async function saveInterval(hours) {
+    async function saveInterval() {
+        const hours = customInterval ? Number(customInterval) : Number(selectedInterval);
         setBusy(true); setError(""); setMessage("");
         try {
             const result = await invoke("price-pending-automatic-charge:set-interval", hours);
             setStatus(result);
-            setInterval(Number(result?.interval_hours || hours));
+            setSelectedInterval(Number(result?.interval_hours || hours));
+            setCustomInterval("");
             setMessage(`Intervalo alterado para ${result?.interval_hours || hours} horas.`);
         } catch (failure) {
             setError(failure?.message || "Não foi possível alterar o intervalo.");
+        } finally { setBusy(false); }
+    }
+    async function clearError() {
+        setBusy(true); setError(""); setMessage("");
+        try {
+            const result = await invoke("price-pending-automatic-charge:clear-error");
+            setStatus(result);
+            setMessage("Aviso de falha anterior removido.");
+        } catch (failure) {
+            setError(failure?.message || "Não foi possível remover o aviso de falha.");
         } finally { setBusy(false); }
     }
     async function runNow() {
@@ -109,7 +121,7 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
             if (result?.success) setMessage("Cobrança manual concluída.");
             else if (result?.reason === "busy_or_stopping") setMessage("Já existe uma cobrança em execução.");
             else if (result?.reason === "disabled_or_locked") setMessage("A cobrança está desativada ou bloqueada.");
-            else setMessage(result?.error || "A cobrança manual não foi concluída.");
+            else setMessage(result?.error || "A cobrança manual não foi concluída. Consulte o histórico.");
             await loadStatus(); loadHistory();
         } catch (failure) {
             setError(failure?.message || "Não foi possível executar a cobrança.");
@@ -118,8 +130,8 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
     useEffect(() => {
         if (!open) return undefined;
         loadStatus(); loadHistory();
-        const statusTimer = setInterval(loadStatus, 30000);
-        const clockTimer = setInterval(() => setStatus(current => current ? { ...current } : current), 30000);
+        const statusTimer = globalThis.setInterval(loadStatus, 30000);
+        const clockTimer = globalThis.setInterval(() => setStatus(current => current ? { ...current } : current), 30000);
         function key(event) { if (event.key === "Escape") onClose(); }
         document.addEventListener("keydown", key);
         return () => {
@@ -129,6 +141,7 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
     }, [open, loadStatus, loadHistory, onClose]);
     if (!open) return null;
     const phase = status?.phase || "disabled";
+    const canSaveInterval = canManage && !busy && (customInterval || selectedInterval);
     return createPortal(
         <div className="pp-charge-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
             <section className="pp-charge-dialog" role="dialog" aria-modal="true" aria-labelledby="pp-charge-title">
@@ -155,7 +168,12 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                             <strong>{date(status?.last_success_at)}</strong>
                         </div>
                     </section>
-                    {status?.last_error && <div className="pp-charge-error" role="alert">Última falha: {status.last_error}</div>}
+                    {status?.last_error && (
+                        <div className="pp-charge-error" role="alert">
+                            <span>Última execução com falhas: {status.last_error}</span>
+                            <button type="button" disabled={!canManage || busy} onClick={clearError}>Limpar aviso</button>
+                        </div>
+                    )}
                     {message && <div className="pp-charge-success" role="status">{message}</div>}
                     {error && <div className="pp-charge-error" role="alert">{error}</div>}
                     <section className="pp-charge-actions">
@@ -169,25 +187,23 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
                         <label htmlFor="pp-charge-interval-select">Intervalo entre cobranças</label>
                         <select
                             id="pp-charge-interval-select"
-                            value={INTERVAL_OPTIONS.includes(Number(interval)) ? Number(interval) : ""}
+                            value={customInterval ? "" : selectedInterval}
                             disabled={!canManage || busy}
-                            onChange={(event) => saveInterval(event.target.value)}
+                            onChange={(event) => { setSelectedInterval(Number(event.target.value)); setCustomInterval(""); }}
                         >
-                            <option value="">Personalizado</option>
                             {INTERVAL_OPTIONS.map(option => <option key={option} value={option}>{option} horas</option>)}
+                            <option value="">Personalizado</option>
                         </select>
                         <input
                             type="number"
                             min="1"
                             max="8760"
-                            placeholder="Horas"
+                            placeholder="Horas personalizadas"
                             value={customInterval}
                             disabled={!canManage || busy}
                             onChange={(event) => setCustomInterval(event.target.value)}
                         />
-                        <button type="button" disabled={!canManage || busy || !customInterval} onClick={() => saveInterval(customInterval)}>
-                            Salvar intervalo
-                        </button>
+                        <button type="button" disabled={!canSaveInterval} onClick={saveInterval}>Salvar intervalo</button>
                     </section>
                     <section className="pp-charge-history">
                         <h3>Histórico de cobranças</h3>

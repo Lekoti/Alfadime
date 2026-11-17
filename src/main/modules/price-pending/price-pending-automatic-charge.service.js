@@ -26,6 +26,7 @@ function setEnabled(enabled, actor) {
     return buildStatus();
 }
 function setChargeInterval(hours, actor) { return repository.setIntervalHours(hours, actor); }
+function clearLastError(actor) { return repository.clearLastError(actor); }
 async function runCharge(manual = false) {
     if (executing || stopping) return { success: false, reason: "busy_or_stopping" };
     executing = true;
@@ -91,4 +92,4 @@ function stop() {
         catch (error) { console.error("[Cobrança automática]", error); }
     }
 }
-module.exports = { getStatus, setEnabled, setChargeInterval, runCharge, start, stop };
+module.exports = { getStatus, setEnabled, setChargeInterval, clearLastError, runCharge, start, stop };

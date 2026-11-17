@@ -94,6 +94,13 @@ function setEnabled(enabled, actor) {
     }).immediate();
     return getStatus();
 }
+function clearLastError(actor) {
+    db().transaction(() => {
+        db().prepare("UPDATE price_pending_auto_v3 SET last_error = NULL, updated_at = ? WHERE id = ?").run(iso(), KEY);
+        event("aviso-de-falha-limpo", actor);
+    }).immediate();
+    return getStatus();
+}
 function tryLock(manual = false) {
     const database = db();
     return database.transaction(() => {
@@ -133,4 +140,4 @@ function finish(owner, result = {}, error = null) {
         }
     }).immediate();
 }
-module.exports = { getStatus, setEnabled, setIntervalHours, tryLock, heartbeat, finish, event, DEFAULT_INTERVAL_HOURS };
+module.exports = { getStatus, setEnabled, setIntervalHours, clearLastError, tryLock, heartbeat, finish, event, DEFAULT_INTERVAL_HOURS };
