@@ -23,8 +23,14 @@ function db() {
             id TEXT PRIMARY KEY, kind TEXT NOT NULL, actor TEXT,
             detail TEXT, created_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS price_pending_auto_settings (
+            id TEXT PRIMARY KEY CHECK(id = 'automatic-charge-v3'),
+            interval_hours INTEGER NOT NULL DEFAULT 48,
+            updated_at TEXT NOT NULL
+        );
     `);
     database.prepare("INSERT OR IGNORE INTO price_pending_auto_v3(id, updated_at) VALUES (?, ?)").run(KEY, iso());
+    database.prepare("INSERT OR IGNORE INTO price_pending_auto_settings(id, interval_hours, updated_at) VALUES (?, ?, ?)").run(KEY, DEFAULT_INTERVAL_HOURS, iso());
     ensuredDatabases.add(database);
     return database;
 }

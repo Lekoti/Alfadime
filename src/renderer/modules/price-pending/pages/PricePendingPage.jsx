@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PricePendingToolbar from "../components/PricePendingToolbar";
-import PricePendingChargeHistoryModal from "../components/PricePendingChargeHistoryModal"; // pp-local-fix-history-v1
 import PricePendingChargePanel from "../components/PricePendingChargePanel";
 import PricePendingFilters from "../components/PricePendingFilters";
 import PricePendingTable from "../components/PricePendingTable";
@@ -45,9 +44,6 @@ export default function PricePendingPage() {
     const [showIgnoredModal, setShowIgnoredModal] = useState(false);
     const [showPolicyIssuesModal, setShowPolicyIssuesModal] = useState(false);
     const [showChargePanel, setShowChargePanel] = useState(false);
-    const [showChargeHistory, setShowChargeHistory] = useState(false);
-    const [automaticChargeEnabled, setAutomaticChargeEnabled] = useState(false);
-    const [automaticChargeBusy, setAutomaticChargeBusy] = useState(false);
     const [exportModalOpen, setExportModalOpen] = useState(false);
     const [policyIssues, setPolicyIssues] = useState([]);
     const [policyIssuesLoading, setPolicyIssuesLoading] = useState(false);
@@ -57,15 +53,6 @@ export default function PricePendingPage() {
     const rows = useMemo(() => filters.filterRows(rowsState.allRows), [filters, rowsState.allRows]);
     const summary = useMemo(() => buildSummary(rows, filters.visibleColumnsList), [rows, filters.visibleColumnsList]);
 
-    async function loadAutomaticChargeStatus() {
-        try {
-            const status = await window.alfadime.ipc.invoke("price-pending-automatic-charge:get-status");
-            setAutomaticChargeEnabled(Boolean(status?.enabled));
-        } catch (error) {
-            console.error(error);
-            rowsState.setError(error?.message || "Nao foi possivel verificar o status da cobranca automatica.");
-        }
-    }
     async function loadPolicyIssues() {
         setPolicyIssuesLoading(true); setPolicyIssuesError("");
         try {
@@ -76,7 +63,7 @@ export default function PricePendingPage() {
             setPolicyIssuesError("Nao foi possivel verificar os arquivos de precos fora do padrao.");
         } finally { setPolicyIssuesLoading(false); }
     }
-    useEffect(() => { loadPolicyIssues(); loadAutomaticChargeStatus(); }, []);
+    useEffect(() => { loadPolicyIssues(); }, []);
     useEffect(() => {
         if (rowsState.loading || !tableWrapperRef.current) return;
         tableWrapperRef.current.scrollTop = filters.tableScrollTop;
@@ -98,22 +85,6 @@ export default function PricePendingPage() {
             return { success: false, error: message };
         }
     }
-    async function handleToggleAutomaticCharge() {
-        if (!permissions.canManageAutomaticCharge) {
-            rowsState.setError("Voce nao tem permissao para ativar ou desativar a cobranca automatica. Solicite a permissao manage_automatic_charge ao administrador.");
-            return;
-        }
-        try {
-            setAutomaticChargeBusy(true); rowsState.setError(""); rowsState.setSuccess("");
-            const status = await window.alfadime.ipc.invoke("price-pending-automatic-charge:set-enabled", !automaticChargeEnabled);
-            setAutomaticChargeEnabled(Boolean(status?.enabled));
-            rowsState.setSuccess(status?.enabled ? "Cobranca automatica ativada." : "Cobranca automatica desativada.");
-        } catch (error) {
-            console.error(error);
-            rowsState.setError(error?.message || "Nao foi possivel alterar a cobranca automatica.");
-        } finally { setAutomaticChargeBusy(false); }
-    }
-    function handleShowChargeHistory() { setShowChargeHistory(true); }
     async function handleAcceptExternalUpdate({ id, column }) {
         rowsState.setError(""); rowsState.setSuccess("");
         try {
@@ -140,7 +111,6 @@ export default function PricePendingPage() {
             <PricePendingToolbar
                 filtersPanelOpen={filters.filtersPanelOpen}
                 onToggleFilters={() => filters.setFiltersPanelOpen(!filters.filtersPanelOpen)}
-                onOpenChargePanel={() => setShowChargePanel(true)}
             />
             {filters.filtersPanelOpen && (
                 <PricePendingFilters
@@ -149,7 +119,6 @@ export default function PricePendingPage() {
                     hasActiveFilters={filters.hasActiveFilters} permissions={permissions} ignoredFilesCount={rowsState.ignoredFiles.length}
                     policyIssuesCount={policyIssues.length} policyIssuesLoading={policyIssuesLoading} canRefresh={permissions.canRefresh}
                     canViewIgnoredFiles={permissions.canViewIgnoredFiles} refreshing={rowsState.refreshing} readOnly={rowsState.readOnly}
-                    automaticChargeEnabled={automaticChargeEnabled} automaticChargeBusy={automaticChargeBusy}
                     onSearchTermChange={filters.setSearchTerm} onVisibleColumnsChange={filters.setVisibleColumns}
                     onFilterUpdatedChange={filters.setFilterUpdated} onFilterOutdatedChange={filters.setFilterOutdated} onFilterBranchChange={filters.setFilterBranch}
                     onNewLaboratoryChange={setNewLaboratory}
@@ -157,7 +126,7 @@ export default function PricePendingPage() {
                     onClose={() => filters.setFiltersPanelOpen(false)} onExport={() => setExportModalOpen(true)}
                     onRefresh={rowsState.refreshRows} onShowIgnoredFiles={() => setShowIgnoredModal(true)}
                     onShowPolicyIssues={() => setShowPolicyIssuesModal(true)} onReloadPolicyIssues={loadPolicyIssues}
-                    onToggleAutomaticCharge={handleToggleAutomaticCharge} onShowChargeHistory={handleShowChargeHistory}
+                    onOpenChargePanel={() => setShowChargePanel(true)}
                 />
             )}
             <div className="price-pending-summary">
@@ -196,7 +165,6 @@ export default function PricePendingPage() {
                 onClose={() => setShowChargePanel(false)}
                 canManage={permissions.canManageAutomaticCharge}
             />
-            <PricePendingChargeHistoryModal open={showChargeHistory} onClose={() => setShowChargeHistory(false)} />
             <ExportExcelModal open={exportModalOpen} title="Exportar Precos e Pendencias" moduleKey="price-pending" availableColumns={PRICE_PENDING_EXPORT_COLUMNS} onClose={() => setExportModalOpen(false)} onExport={handleExport} />
         </main>
     );

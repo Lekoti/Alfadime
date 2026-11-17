@@ -4,10 +4,10 @@ import { BRANCHES, COLUMN_GROUPS } from "../constants/price-pending.constants";
 export default function PricePendingFilters({
     searchTerm, visibleColumns, filterUpdated, filterOutdated, filterBranch, newLaboratory, hasActiveFilters,
     permissions, ignoredFilesCount, policyIssuesCount, policyIssuesLoading, canRefresh, canViewIgnoredFiles,
-    refreshing, readOnly, automaticChargeEnabled, automaticChargeBusy, onSearchTermChange, onVisibleColumnsChange,
+    refreshing, readOnly, onSearchTermChange, onVisibleColumnsChange,
     onFilterUpdatedChange, onFilterOutdatedChange, onFilterBranchChange, onNewLaboratoryChange, onAddLaboratory,
     onClearFilters, onClose, onExport, onRefresh, onShowIgnoredFiles, onShowPolicyIssues, onReloadPolicyIssues,
-    onToggleAutomaticCharge, onShowChargeHistory
+    onOpenChargePanel
 }) {
     const [isAdding, setIsAdding] = useState(false);
     async function handleSubmit(event) {
@@ -62,12 +62,9 @@ export default function PricePendingFilters({
                 </div>
                 <div className="price-pending-panel-right">
                     <div className="price-pending-filters-section">
-                        <h3>Cobranca automatica</h3>
+                        <h3>Cobranca</h3>
                         <div className="price-pending-filter-options">
-                            <button type="button" className="price-pending-filters-toggle" disabled={automaticChargeBusy} onClick={onToggleAutomaticCharge}>
-                                {automaticChargeBusy ? "Atualizando..." : automaticChargeEnabled ? "Desativar cobranca automatica" : "Ativar cobranca automatica"}
-                            </button>
-                            <button type="button" className="price-pending-filters-toggle" onClick={onShowChargeHistory}>Historico de cobrancas</button>
+                            <button type="button" className="price-pending-filters-toggle" onClick={onOpenChargePanel}>Cobranca</button>
                         </div>
                     </div>
                     <div className="price-pending-filters-section">
