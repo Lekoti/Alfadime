@@ -10,7 +10,7 @@ function requireEditor() {
     const user = authHandler.getAuthenticatedUser();
     if (!user) throw new Error("Usuario nao autenticado.");
     if (![USER_ROLES.CREATOR, USER_ROLES.ADMIN, USER_ROLES.EDITOR].includes(String(user?.role || "").toLowerCase())) {
-        throw new Error("Apenas Editor, Staff e Administrador podem alterar a prioridade.");
+        throw new Error("Apenas Criador, Administrador e Editor podem alterar a prioridade.");
     }
     return user;
 }
@@ -20,7 +20,9 @@ function registerPricePendingExtensionsIpc() {
     automaticChargeIpc.registerPricePendingAutomaticChargeIpc();
     ipcMain.handle("price-pending:update-priority", (_event, payload = {}) => {
         requireEditor();
-        return priorityRepository.updatePriority(payload.id, payload.priority);
+        const id = String(payload?.id || "").trim();
+        if (!id) throw new Error("Registro obrigatório para atualizar a prioridade.");
+        return priorityRepository.updatePriority(id, payload?.priority);
     });
 }
 module.exports = { registerPricePendingExtensionsIpc };

@@ -29,7 +29,10 @@ async function runCharge() {
         heartbeat = setInterval(() => {
             try {
                 if (!repository.heartbeat(owner)) throw new Error("Bloqueio da automação perdido.");
-                if (stopping || !repository.getStatus().enabled) favoritesService.cancelCharge({ preview_token: activePreview });
+                if (stopping || !repository.getStatus().enabled) {
+                    favoritesService.cancelCharge({ preview_token: activePreview });
+                    throw new Error("Automação desativada durante a execução.");
+                }
             } catch (error) {
                 failure = error;
                 try { favoritesService.cancelCharge({ preview_token: activePreview }); } catch (_) { /* preserve error */ }
@@ -37,6 +40,10 @@ async function runCharge() {
         }, 30000);
         if (stopping || !repository.getStatus().enabled) throw new Error("Automação desativada antes do envio.");
         result = await coordination.automatic(() => favoritesService.sendFavoriteCharge({ preview_token: activePreview }));
+        if (stopping || !repository.getStatus().enabled) {
+            try { favoritesService.cancelCharge({ preview_token: activePreview }); } catch (_) { /* preserve error */ }
+            throw new Error("Automação desativada durante a execução.");
+        }
         if (failure) throw failure;
         return result;
     } catch (error) {

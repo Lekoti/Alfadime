@@ -32,19 +32,6 @@ function event(kind, actor, detail = "") {
     db().prepare("INSERT INTO price_pending_auto_events_v3 VALUES (?, ?, ?, ?, ?)")
         .run(crypto.randomUUID(), kind, String(actor || "Sistema"), String(detail), iso());
 }
-function latestSentMs() {
-    const database = getContactsDatabase();
-    const exists = database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='contact_charge_run_items'").get();
-    if (!exists) return 0;
-    const rows = database.prepare("SELECT sent_at FROM contact_charge_run_items WHERE status='sent' AND sent_at IS NOT NULL").all();
-    let latest = 0;
-    for (const row of rows) {
-        const parsed = Date.parse(row.sent_at);
-        if (!Number.isFinite(parsed)) throw new Error("Histórico com data de envio inválida. Automação bloqueada para conferência.");
-        latest = Math.max(latest, parsed);
-    }
-    return latest;
-}
 function getStatus() {
     const row = db().prepare("SELECT * FROM price_pending_auto_v3 WHERE id=?").get(KEY);
     // O intervalo por destinatário é conferido no ponto comum do envio.
