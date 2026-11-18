@@ -27,3 +27,9 @@ Módulo de simulação de compras, preços, políticas comerciais, médias móve
 - `Completa`: todos os produtos e colunas.
 - `Planilha1`: base original para conferência.
 - `Apoio`: planilha oculta de fórmulas.
+
+## Testes
+
+- Consulte `TESTES.md` para o checklist manual e os testes automatizados de referência.
+- Execute `npm run build` para validar a compilação.
+- Execute `npm test` para o comando de testes do projeto.
