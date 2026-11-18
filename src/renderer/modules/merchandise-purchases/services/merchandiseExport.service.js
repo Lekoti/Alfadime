@@ -1,12 +1,12 @@
-﻿import ExcelJS from "exceljs";
+import ExcelJS from "exceljs";
 import {selectExportColumns} from "./merchandiseColumns.service";
-import {buildColumns,PRICE_CRITERIA,PRICE_SOURCES,PERIOD_REFERENCES,MONTH_LABELS} from "../constants/merchandise-purchases.constants";
-import {buildMerchandiseReports,reportValue,REPORT_FORMATS} from "./merchandiseReport.service";
+import {buildColumns,PRICE_CRITERIA,PRICE_SOURCES,PERIOD_REFERENCES} from "../constants/merchandise-purchases.constants";
+import {buildMerchandiseReports,REPORT_FORMATS} from "./merchandiseReport.service";
 import {resolvePrice,productPriceKey} from "./merchandisePolicy.service";
 import {addNativeExcelCharts} from "./merchandiseNativeCharts.service";
 import {addDynamicChartRanges} from "./merchandiseChartRanges.service";
 
-import {visibleReports,chartRows} from "./merchandisePresentation.service";
+import {visibleReports,chartReports,chartRows} from "./merchandisePresentation.service";
 import {getRollingRange} from "./merchandisePeriod.service";
 
 const FILTERS="Filtros";
@@ -17,13 +17,13 @@ const BLUE="FF344B65";
 const FMT={text:"@",int:"#,##0",dec:"#,##0.0",currency:'"R$" #,##0.00',date:"dd/mm/yyyy",datetime:"dd/mm/yyyy hh:mm:ss"};
 
 function L(number){let result="";while(number){number--;result=String.fromCharCode(65+number%26)+result;number=Math.floor(number/26);}return result;}
-function clean(value){if(typeof value=="number")return Number.isFinite(value)?value:0;if(typeof value=="string")return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");return value??"";}
+function clean(value){if(typeof value==="number")return Number.isFinite(value)?value:0;if(typeof value==="string")return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");return value??"";}
 function formula(cell,formula,value){cell.value={formula,result:clean(value)};}
 function literal(value){return '"'+String(value).replace(/"/g,'""')+'"';}
 function quote(value){return literal(String(value).replace(/~/g,"~~").replace(/\*/g,"~*").replace(/\?/g,"~?"));}
 function head(cell,value,color=BLUE){cell.value=clean(value);cell.font={name:"Calibri",size:10,bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:color}};cell.alignment={wrapText:true,vertical:"middle"};}
 function color(key){if(key.startsWith("policy"))return "FF7C3AED";if(key==="maxPeriod"||key==="maxQty")return "FF047857";if(key==="minPeriod"||key==="minQty")return "FFBE123C";if(/price|Purchase|Company/i.test(key)&&key!=="company")return "FFB45309";if(/stock|blocked|pending|consolidated|transferred/i.test(key))return "FF047857";if(/avg|curve/i.test(key))return "FF0E7490";return BLUE;}
-function excelValue(value,type){if(!value)return type==="date"||type==="datetime"?"":clean(value);if(type==="date"){const match=String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);return match?Date.UTC(Number(match[1]),Number(match[2])-1,Number(match[3]))/86400000+25569:"";}if(type==="datetime"){const date=new Date(value);return Number.isNaN(date.getTime())?"":(date.getTime()-date.getTimezoneOffset()*60000)/86400000+25569;}return clean(value);}
+function excelValue(value,type){if(!value)return type==="date"||type==="datetime"?"":clean(value);if(type==="date"){const match=String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);if(!match)return "";const date=new Date(Number(match[1]),Number(match[2])-1,Number(match[3]));return Math.round((date.getTime()-date.getTimezoneOffset()*60000)/86400000)+25569;}if(type==="datetime"){const date=new Date(value);return Number.isNaN(date.getTime())?"":Math.round((date.getTime()-date.getTimezoneOffset()*60000)/86400000)+25569;}return clean(value);}
 
 export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filters={},importInfo={},policySnapshot,policyError,columnKeys=null,exportMode="view"}){
     if(!rows?.length)throw new Error("Nenhum produto filtrado para exportar.");
@@ -44,6 +44,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     const complete=exportMode==="complete";
     const scopeDescription=complete?"Exportação completa: todos os produtos e colunas, com as premissas atuais.":"Exportação conforme o app: produtos filtrados e colunas visíveis, na ordem escolhida.";
     const reports=visibleReports(buildMerchandiseReports(rows));
+    const chartModels=chartReports(buildMerchandiseReports(rows));
     const total=rows.length;
     const supportEnd=total+5;
     const productsEnd=total+1;
@@ -170,7 +171,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     });
 
     const alternatives=PRICE_SOURCES.map(source=>rows.map(row=>resolvePrice(row,source.value)));
-    const lowestPrices=PRICE_SOURCES.map((source,sourceIndex)=>{
+    const lowestPrices=PRICE_SOURCES.map(source=>{
         const map=new Map();
         priceRows.forEach(row=>{
             const price=resolvePrice(row,source.value);
@@ -204,10 +205,8 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
 
             if(own.key==="policyPrice"){
                 const fixed=(input.policyWarning||"").split(" · ").filter(item=>item!=="Política vencida").join(" · ");
-                formula(support.getCell(supportRow,start+3),`IF(AND(ISNUMBER(${reference("policyValidity")}),${reference("policyValidity")}>0,TODAY()>${reference("policyValidity")}),\"Política vencida\",\"\")&${literal(fixed?` · ${fixed}`:"")}`,own.warning);
+                formula(support.getCell(supportRow,start+3),`IF(AND(ISNUMBER(${reference("policyValidity")}),${reference("policyValidity")}>0,TODAY()>${reference("policyValidity")}),\"Política vencida\",\"\"\)&${literal(fixed?` · ${fixed}`:"")}`,own.warning);
             }
-
-            // A referência de menor preço inclui filiais fora do filtro; o aviso já foi armazenado.
         });
 
         const box=reference("boxSize");
@@ -230,7 +229,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
             selectedPriceWarning:`IF('${FILTERS}'!$C$17="Menor preço",${select(8)},${select(4)})`,
             priceViaLast:`IF(${reference("selectedPrice")}<=0,"",IF(${reference("priceOrigin")}="Última compra","Sim","Não"))`,
             policyStatus:literal(input.policyStatus||"Sem Política Comercial"),
-            consolidated:`SUM(${reference("pending")}:${reference("transferred")})`,
+            consolidated:`${reference("stock")}+${reference("blocked")}+${reference("pending")}+${reference("transferred")}`,
             targetDays:`IF(${reference("curve")}="A",'${FILTERS}'!$C$13,IF(${reference("curve")}="B",'${FILTERS}'!$C$14,IF(${reference("curve")}="C",'${FILTERS}'!$C$15,'${FILTERS}'!$C$16)))`,
             refQty:periodFormula,
             finalValue:`${reference("finalQty")}*${reference("selectedPrice")}`,
@@ -298,14 +297,12 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
         if(metric.op==="sum"&&metric.key==="periodValue")return `SUMIF(${productsRange("periodSuggestion")},">0",${productsRange("periodValue")})`;
         if(metric.op==="sum")return `SUM(${productsRange(metric.key)})`;
         if(metric.op==="buyCount")return `COUNTIF(${productsRange("finalQty")},">0")`;
-        if(metric.op==="scenario")return `SUMPRODUCT(${productsRange("finalQty")},${productsRange(metric.key)})`;
-        if(metric.op==="difference")return `SUMPRODUCT(${productsRange("finalQty")},${productsRange(metric.key)})-SUMPRODUCT(${productsRange("finalQty")},${productsRange("lowestPrice")})`;
         if(metric.op==="group")return `SUMIF(${productsRange(metric.groupKey)},${quote(metric.label)},${productsRange(metric.key)})`;
         if(metric.op==="groupAverage")return `IFERROR(SUMIF(${productsRange(metric.groupKey)},${quote(metric.label)},${productsRange("finalValue")})/SUMIF(${productsRange(metric.groupKey)},${quote(metric.label)},${productsRange("finalQty")}),0)`;
         if(metric.op==="invalidBox")return `COUNTIF(${productsRange("boxStatus")},"Caixa inválida")`;
         if(metric.op==="noPriceBuy")return `COUNTIFS(${productsRange("finalQty")},">0",${productsRange("selectedPrice")},"<=0")`;
         if(metric.op==="withPolicy")return `COUNTIF(${productsRange("policyPrice")},">0")`;
-        if(metric.op==="withoutPolicy")return `COUNTIF(${productsRange("company")},"?*")-COUNTIF(${productsRange("policyPrice")},">0")`;
+        if(metric.op==="withoutPolicy")return `COUNTIF(${productsRange("policyPrice")},"<=0")+COUNTBLANK(${productsRange("policyPrice")})`;
         if(metric.op==="expiredPolicy")return `COUNTIF(${productsRange("policyStatus")},"Política vencida")`;
         throw new Error(`Indicador desconhecido: ${metric.op}`);
     }
@@ -354,8 +351,8 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     const chartSpecs=[];
     const dynamicRanges=[];
     let chartRow=4;
-    for(let index=0;index<reports.length;index+=2){
-        const band=reports.slice(index,index+2);
+    for(let index=0;index<chartModels.length;index+=2){
+        const band=chartModels.slice(index,index+2);
         let largest=0;
         band.forEach((report,position)=>{
             const data=chartRows(report);
@@ -387,8 +384,8 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
                 fromCol:start-1,fromRow:chartRow,toCol:start+6,toRow:chartRow+11
             });
             const number=chartSpecs.length;
-            dynamicRanges.push({name:`MP_Chart_${number}_Categorias`,sheetIndex:graphs.id-1,formula:categoryRange});
-            dynamicRanges.push({name:`MP_Chart_${number}_Valores`,sheetIndex:graphs.id-1,formula:valueRange});
+            dynamicRanges.push({name:`MP_Chart_${number}_Categorias`,sheetIndex:workbook.worksheets.indexOf(graphs),formula:categoryRange});
+            dynamicRanges.push({name:`MP_Chart_${number}_Valores`,sheetIndex:workbook.worksheets.indexOf(graphs),formula:valueRange});
         });
         chartRow+=largest+19;
     }
@@ -398,7 +395,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
 
     const original=workbook.addWorksheet("Planilha1");
     original.addRow((importInfo.headers||[]).map(clean));
-    (importInfo.rows||rows).forEach(row=>original.addRow((row.raw||[]).map(clean)));
+    (importInfo.rows||[]).forEach(row=>original.addRow((row.raw||[]).map(clean)));
 
     const rules=workbook.addWorksheet("Regras da consolidação");
     [
@@ -422,7 +419,8 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     rules.getColumn(2).width=125;
 
     let buffer=await workbook.xlsx.writeBuffer();
-    buffer=await addNativeExcelCharts(buffer,graphs.id,chartSpecs);
+    const graphSheetIndex=workbook.worksheets.indexOf(graphs)+1;
+    buffer=await addNativeExcelCharts(buffer,graphSheetIndex,chartSpecs);
     buffer=await addDynamicChartRanges(buffer,dynamicRanges);
 
     const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
@@ -435,4 +433,3 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
-
