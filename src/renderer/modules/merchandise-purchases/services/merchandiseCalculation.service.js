@@ -24,6 +24,10 @@ export function validateManualQuantity(value){
     return number;
 }
 
+export function productIdentityKey(row){
+    return `${String(row.company||"").trim()}|${productPriceKey(row)}`;
+}
+
 export function computeRows(rows,premises){
     const periods=getRollingPeriods(premises.closedMonth,premises.referenceDate);
     const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
@@ -51,19 +55,18 @@ export function computeRows(rows,premises){
             return total/size;
         };
 
-        const avgAll=rollingAverage(12);
         const avg12=rollingAverage(12);
         const avg9=rollingAverage(9);
         const avg6=rollingAverage(6);
         const avg3=rollingAverage(3);
         const avgMonthSheet=row.avgMonthSheet;
         const hasSheetAverage=avgMonthSheet!==null&&avgMonthSheet!==undefined&&avgMonthSheet!=="";
-        const avgMonth=hasSheetAverage?Number(avgMonthSheet)||0:avgAll;
+        const avgMonth=hasSheetAverage?Number(avgMonthSheet)||0:avg12;
         const hasHistory=available.some(value=>value>0);
         const maxQty=hasHistory?Math.max(...available):0;
         const minQty=hasHistory?Math.min(...available):0;
         const select=test=>months.map((value,position)=>value!==null&&test(value)?periods[position].label:null).filter(Boolean);
-        const highMonths=hasHistory?select(value=>value>avgAll):[];
+        const highMonths=hasHistory?select(value=>value>avg12):[];
         const peak=select(value=>value===maxQty);
         const lowMonths=select(value=>value===minQty);
         const maxPeriod=hasHistory
@@ -87,7 +90,7 @@ export function computeRows(rows,premises){
         const boxValid=Number.isFinite(boxValue)&&(boxValue===0||(Number.isInteger(boxValue)&&boxValue>0));
 
         return {
-            ...row,id:index,avgMonth,avgAll,avg12,avg9,avg6,avg3,hasHistory,incompleteHistory,
+            ...row,id:productIdentityKey(row),avgMonth,avg12,avg9,avg6,avg3,hasHistory,incompleteHistory,
             historyWarning:incompleteHistory?"Histórico mensal incompleto":"",maxPeriod,maxQty,
             minPeriod:hasHistory?lowMonths.join(", "):"Sem histórico",minQty,highMonths,pending,transferred,
             consolidated,targetDays,ownPrice:base.price,lowestPrice:low?.price||0,
