@@ -29,10 +29,15 @@ export function computeRows(rows,premises){
     });
 
     return rows.map((row,index)=>{
-        const months=periods.map(period=>Number(row.months?.[period.index])||0);
+        const months=periods.map(period=>{
+            const value=row.months?.[period.index];
+            return value===null||value===undefined?null:Number(value)||0;
+        });
+        const available=months.filter(value=>value!==null);
         const average=size=>{
-            const values=months.slice(-size);
-            return values.reduce((total,value)=>total+value,0)/values.length;
+            const values=months.slice(-size).filter(value=>value!==null);
+
+            return values.length?values.reduce((total,value)=>total+value,0)/values.length:0;
         };
 
         const avgAll=average(12);
@@ -43,16 +48,17 @@ export function computeRows(rows,premises){
         const avgMonthSheet=row.avgMonthSheet;
         const hasSheetAverage=avgMonthSheet!==null&&avgMonthSheet!==undefined&&avgMonthSheet!=="";
         const avgMonth=hasSheetAverage?Number(avgMonthSheet)||0:avgAll;
-        const hasHistory=months.some(value=>value>0);
-        const maxQty=hasHistory?Math.max(...months):0;
-        const minQty=hasHistory?Math.min(...months):0;
-        const select=test=>months.map((value,position)=>test(value)?periods[position].label:null).filter(Boolean);
+        const hasHistory=available.some(value=>value>0);
+        const maxQty=hasHistory?Math.max(...available):0;
+        const minQty=hasHistory?Math.min(...available):0;
+        const select=test=>months.map((value,position)=>value!==null&&test(value)?periods[position].label:null).filter(Boolean);
         const highMonths=hasHistory?select(value=>value>avgAll):[];
         const peak=select(value=>value===maxQty);
         const lowMonths=select(value=>value===minQty);
         const maxPeriod=hasHistory
             ?`${peak.join(", ")} | ${highMonths.length?`Alta: ${highMonths.join(", ")}`:"Sem meses acima da média"}`
             :"Sem histórico";
+        const incompleteHistory=months.some(value=>value===null);
 
         const base=prices[index];
         const low=cheapest.get(productPriceKey(row));
@@ -79,6 +85,8 @@ export function computeRows(rows,premises){
             avg6,
             avg3,
             hasHistory,
+            incompleteHistory,
+            historyWarning:incompleteHistory?"Histórico mensal incompleto":"",
             maxPeriod,
             maxQty,
             minPeriod:hasHistory?lowMonths.join(", "):"Sem histórico",

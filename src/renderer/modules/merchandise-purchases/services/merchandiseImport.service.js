@@ -14,32 +14,34 @@ export function setCachedImport(value){
 const text=value=>String(value??"").replace(/\s+/g," ").trim();
 const normalize=value=>text(value).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
-function number(value){
-    if(typeof value==="number")return Number.isFinite(value)?value:0;
+function parseNumber(value){
+    if(typeof value==="number")return Number.isFinite(value)?value:null;
+    if(value===null||value===undefined)return null;
 
-    let valueText=text(value);
-
-    if(valueText==="")return 0;
-
-    if(valueText.includes(","))valueText=valueText.replace(/\./g,"").replace(",",".");
-
-    const converted=Number(valueText);
-
-    return Number.isFinite(converted)?converted:0;
-}
-
-function nullableNumber(value){
     const valueText=text(value);
 
     if(valueText==="")return null;
 
-    let normalized=valueText;
-
-    if(normalized.includes(","))normalized=normalized.replace(/\./g,"").replace(",",".");
-
+    const normalized=valueText.includes(",")
+        ?valueText.replace(/\./g,"").replace(",",".")
+        :valueText;
     const converted=Number(normalized);
 
-    return Number.isFinite(converted)?converted:0;
+    return Number.isFinite(converted)?converted:null;
+}
+
+function number(value,context,warnings){
+    const parsed=parseNumber(value);
+
+    if(parsed===null){
+        if(value!==null&&value!==undefined&&text(value)!==""){
+            warnings.push(`${context}: valor inválido "${text(value)}"; foi considerado 0.`);
+        }
+
+        return 0;
+    }
+
+    return parsed;
 }
 
 function code(value){
@@ -84,6 +86,7 @@ export async function importMerchandiseFile(file){
 
     const get=(row,key)=>indices[key]===undefined?null:row[indices[key]];
     const rows=[];
+    const warnings=[];
 
     for(let index=1;index<matrix.length;index++){
         const raw=matrix[index];
@@ -100,22 +103,30 @@ export async function importMerchandiseFile(file){
             supplierCode:code(get(raw,"supplierCode")),
             barcode:code(get(raw,"barcode")),
             description:text(get(raw,"description")),
-            boxSize:text(get(raw,"boxSize"))===""?0:Number(text(get(raw,"boxSize")).replace(",",".")),
+            boxSize:number(get(raw,"boxSize"),`Linha ${index+1} · Cx Padrao`,warnings),
             labCode:code(get(raw,"labCode")),
             localLab:text(get(raw,"localLab")),
             lab:text(get(raw,"lab"))||"Fabricante global não informado",
             globalLabCode:code(get(raw,"globalLabCode")),
             group:text(get(raw,"group")),
             curve:text(get(raw,"curve")).toUpperCase(),
-            avgMonthSheet:indices.avgMonthSheet===undefined?null:nullableNumber(get(raw,"avgMonthSheet")),
-            months:monthIndices.map(monthIndex=>number(raw[monthIndex])),
+            avgMonthSheet:indices.avgMonthSheet===undefined?null:parseNumber(get(raw,"avgMonthSheet")),
+            months:monthIndices.map((monthIndex,monthPosition)=>{
+                const value=parseNumber(raw[monthIndex]);
+
+                if(value===null&&raw[monthIndex]!==null&&raw[monthIndex]!==undefined&&text(raw[monthIndex])!==""){
+                    warnings.push(`Linha ${index+1} · ${MONTH_LABELS[monthPosition]} Qtde: valor inválido "${text(raw[monthIndex])}"; foi considerado 0.`);
+                }
+
+                return value;
+            }),
             lastPurchaseCompany:text(get(raw,"lastPurchaseCompany"))||company,
             penultPurchaseCompany:text(get(raw,"penultPurchaseCompany"))||company,
             antePenultPurchaseCompany:text(get(raw,"antePenultPurchaseCompany"))||company
         };
 
         for(const key of ["stock","blocked","pending","transferred","pf","pmc","avgCost","lastPurchase","penultPurchase","antePenultPurchase","suggestedPrice","avgPrice","recompCost","dpcCost"]){
-            row[key]=number(get(raw,key));
+            row[key]=number(get(raw,key),`Linha ${index+1} · ${FIELD_HEADERS[key]||key}`,warnings);
         }
 
         rows.push(row);
@@ -123,11 +134,18 @@ export async function importMerchandiseFile(file){
 
     if(!rows.length)throw new Error("Nenhum produto válido encontrado.");
 
+    const incompleteHistory=rows.filter(row=>row.months.some(value=>value===null)).length;
+
+    if(incompleteHistory){
+        warnings.push(`${incompleteHistory} produto(s) com histórico mensal incompleto. Células vazias foram tratadas como ausentes e não como venda zero.`);
+    }
+
     return {
         fileName:file.name,
         sheetName,
         headers,
         rows,
+        warnings,
         importedAt:new Date().toISOString()
     };
 }
