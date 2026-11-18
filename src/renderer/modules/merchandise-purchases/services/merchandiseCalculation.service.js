@@ -32,10 +32,11 @@ export function computeRows(rows,premises){
     const periods=getRollingPeriods(premises.closedMonth,premises.referenceDate);
     const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
     const cheapest=new Map();
+    const keys=rows.map(row=>productPriceKey(row));
 
     rows.forEach((row,index)=>{
         const price=prices[index];
-        const key=productPriceKey(row);
+        const key=keys[index];
 
         if(price.price>0&&(!cheapest.has(key)||price.price<cheapest.get(key).price)){
             cheapest.set(key,price);
@@ -48,11 +49,17 @@ export function computeRows(rows,premises){
             return value===null||value===undefined?null:Number(value)||0;
         });
         const available=months.filter(value=>value!==null);
-        const rollingAverage=size=>{
-            const values=months.slice(-size).map(value=>value===null?0:value);
-            const total=values.reduce((sum,value)=>sum+value,0);
+        const suffixSums=[];
+        let running=0;
 
-            return total/size;
+        for(let position=months.length-1;position>=0;position-=1){
+            running+=months[position]||0;
+            suffixSums[position]=running;
+        }
+
+        const rollingAverage=size=>{
+            const start=Math.max(0,months.length-size);
+            return (suffixSums[start]||0)/size;
         };
 
         const avg12=rollingAverage(12);
@@ -75,7 +82,8 @@ export function computeRows(rows,premises){
         const incompleteHistory=months.some(value=>value===null);
 
         const base=prices[index];
-        const low=cheapest.get(productPriceKey(row));
+        const key=keys[index];
+        const low=cheapest.get(key);
         const chosen=premises.priceCriteria==="lowest"?low:base;
         const selectedPrice=chosen?.price||0;
         const pending=Number(row.pending)||0;
