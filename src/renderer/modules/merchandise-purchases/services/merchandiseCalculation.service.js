@@ -14,6 +14,16 @@ export function suggestQuantity(monthly,days,balance,box){
     return Math.ceil(need/multiple)*multiple;
 }
 
+export function validateManualQuantity(value){
+    if(value===null||value===undefined||String(value).trim()==="")return null;
+
+    const number=Number(String(value).replace(",","."));
+
+    if(!Number.isFinite(number)||number<0||!Number.isInteger(number))return undefined;
+
+    return number;
+}
+
 export function computeRows(rows,premises){
     const periods=getRollingPeriods(premises.closedMonth,premises.referenceDate);
     const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
@@ -92,8 +102,10 @@ export function computeRows(rows,premises){
 
 export function applyOverrides(rows,overrides){
     return rows.map(row=>{
-        const manual=overrides[row.id]!==undefined;
-        const finalQty=manual?overrides[row.id]:row.suggestedQty;
+        const raw=overrides[row.id];
+        const validated=validateManualQuantity(raw);
+        const manual=raw!==undefined&&validated!==undefined;
+        const finalQty=manual?validated:row.suggestedQty;
 
         return {...row,manual,finalQty,finalValue:finalQty*row.selectedPrice};
     });
