@@ -1,6 +1,6 @@
 import {DEFAULT_FILTERS,STATUS_OPTIONS} from "../constants/merchandise-purchases.constants";
 
-function MultiSelectField({label,values,allLabel,items=[],onChange}){
+function MultiSelectField({id,label,values,allLabel,items=[],onChange}){
     const selected=Array.isArray(values)?values:[];
 
     function toggle(value){
@@ -13,12 +13,13 @@ function MultiSelectField({label,values,allLabel,items=[],onChange}){
 
     return (
         <div className="mp-filter-field mp-multi-filter">
-            <label>{label}</label>
+            <label htmlFor={id}>{label}</label>
 
-            <div className="mp-multi-select">
+            <div className="mp-multi-select" id={id} role="group" aria-label={label}>
                 <button
                     type="button"
                     className={`mp-multi-option${!selected.length?" mp-multi-option-active":""}`}
+                    aria-pressed={!selected.length}
                     onClick={()=>onChange([])}
                 >
                     {allLabel}
@@ -30,6 +31,7 @@ function MultiSelectField({label,values,allLabel,items=[],onChange}){
                             key={item}
                             type="button"
                             className={`mp-multi-option${selected.includes(item)?" mp-multi-option-active":""}`}
+                            aria-pressed={selected.includes(item)}
                             onClick={()=>toggle(item)}
                         >
                             {item}
@@ -41,12 +43,13 @@ function MultiSelectField({label,values,allLabel,items=[],onChange}){
     );
 }
 
-function SelectField({label,value,allLabel,items=[],onChange}){
+function SelectField({id,label,value,allLabel,items=[],onChange}){
     return (
         <div className="mp-filter-field">
-            <label>{label}</label>
+            <label htmlFor={id}>{label}</label>
 
             <select
+                id={id}
                 value={value||""}
                 onChange={event=>onChange(event.target.value)}
             >
@@ -64,11 +67,12 @@ export default function MerchandiseFilters({filters,options,onChange}){
     const update=(key,value)=>onChange({...filters,[key]:value});
 
     return (
-        <section className="mp-filters">
+        <section className="mp-filters" aria-label="Filtros de compras">
             <div className="mp-search-field">
-                <label>Buscar</label>
+                <label htmlFor="mp-search">Buscar</label>
 
                 <input
+                    id="mp-search"
                     type="search"
                     value={filters.search}
                     placeholder="Código, EAN, descrição ou fabricante global"
@@ -77,6 +81,7 @@ export default function MerchandiseFilters({filters,options,onChange}){
             </div>
 
             <MultiSelectField
+                id="mp-company-filter"
                 label="Empresa"
                 values={filters.company}
                 allLabel="Todas"
@@ -85,6 +90,7 @@ export default function MerchandiseFilters({filters,options,onChange}){
             />
 
             <MultiSelectField
+                id="mp-laboratory-filter"
                 label="Laboratório (Fabr_Global)"
                 values={filters.laboratory}
                 allLabel="Todos"
@@ -93,6 +99,7 @@ export default function MerchandiseFilters({filters,options,onChange}){
             />
 
             <MultiSelectField
+                id="mp-curve-filter"
                 label="Curva"
                 values={filters.curve}
                 allLabel="Todas"
@@ -101,6 +108,7 @@ export default function MerchandiseFilters({filters,options,onChange}){
             />
 
             <SelectField
+                id="mp-price-origin-filter"
                 label="Origem do preço utilizado"
                 value={filters.priceOrigin}
                 allLabel="Todas"
@@ -109,9 +117,10 @@ export default function MerchandiseFilters({filters,options,onChange}){
             />
 
             <div className="mp-filter-field">
-                <label>Situação</label>
+                <label htmlFor="mp-status-filter">Situação</label>
 
                 <select
+                    id="mp-status-filter"
                     value={filters.status}
                     onChange={event=>update("status",event.target.value)}
                 >
@@ -126,6 +135,7 @@ export default function MerchandiseFilters({filters,options,onChange}){
             <button
                 type="button"
                 className="mp-clear-button"
+                aria-label="Limpar filtros"
                 onClick={()=>onChange(DEFAULT_FILTERS)}
             >
                 Limpar

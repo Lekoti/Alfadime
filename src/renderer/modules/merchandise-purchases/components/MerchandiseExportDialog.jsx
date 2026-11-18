@@ -8,9 +8,9 @@ export default function MerchandiseExportDialog({total,filtered,columnCount,visi
         return ()=>{if(element.open)element.close();};
     },[]);
     return (
-        <dialog ref={dialog} className="mp-export-dialog" aria-labelledby="mp-export-title" onCancel={event=>{event.preventDefault();onCancel();}}>
+        <dialog ref={dialog} className="mp-export-dialog" aria-labelledby="mp-export-title" aria-describedby="mp-export-description" onCancel={event=>{event.preventDefault();onCancel();}}>
             <h2 id="mp-export-title">Exportar Excel</h2>
-            <p>Escolha os produtos e as colunas que deseja exportar.</p>
+            <p id="mp-export-description">Escolha os produtos e as colunas que deseja exportar.</p>
             <div className="mp-export-choices">
                 <button type="button" className="mp-export-choice" onClick={()=>onChoose("complete")} disabled={!total}>
                     <strong>Completo</strong>
@@ -24,7 +24,7 @@ export default function MerchandiseExportDialog({total,filtered,columnCount,visi
                 </button>
             </div>
             <p className="mp-export-note">Planilha1 preserva a base original completa para conferência em ambas as opções. Ocultar colunas não remove seus dados dessa cópia.</p>
-            <button type="button" className="mp-filters-toggle" onClick={onCancel}>Cancelar</button>
+            <button type="button" className="mp-filters-toggle" aria-label="Cancelar exportação" onClick={onCancel}>Cancelar</button>
         </dialog>
     );
 }
