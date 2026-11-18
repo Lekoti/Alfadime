@@ -10,7 +10,6 @@ let cachedPolicyError=null;
 
 function normalizeState(state){
     const saved=state&&typeof state==="object"?state:{};
-
     return {
         premises:{...createDefaultPremises(),...(saved.premises&&typeof saved.premises==="object"?saved.premises:{})},
         filters:{...DEFAULT_FILTERS,...(saved.filters&&typeof saved.filters==="object"?saved.filters:{})},
@@ -34,48 +33,36 @@ export function useMerchandisePurchases(){
 
     useEffect(()=>{
         mounted.current=true;
-
         return ()=>{mounted.current=false;requestId.current+=1;};
     },[]);
 
     useEffect(()=>{
         if(!imported?.fileName)return;
-
         saveMerchandiseState(imported.fileName,{premises,filters,overrides});
     },[imported,premises,filters,overrides]);
 
     const importFile=useCallback(async file=>{
         if(busy.current)return;
-
         busy.current=true;
         const request=++requestId.current;
-
         setLoading(true);
         setError(null);
-
         try{
             await new Promise(resolve=>setTimeout(resolve,30));
             const result=await importMerchandiseFile(file);
-
             if(!mounted.current||request!==requestId.current)return;
-
             setPolicyLoading(true);
             let snapshot=null;
             let warning=null;
-
             try{
                 snapshot=await readCommercialPolicies(true);
             }catch(policyError){
                 warning=`Não foi possível ler a Política Comercial nesta importação: ${policyError.message}. Os preços históricos serão utilizados. Para tentar novamente, importe a base outra vez.`;
             }
-
             if(!mounted.current||request!==requestId.current)return;
-
             const saved=normalizeState(loadMerchandiseState(result.fileName));
-            const validOverrides=Object.fromEntries(
-                Object.entries(saved.overrides).filter(([,value])=>validateManualQuantity(value)!==undefined)
-            );
-
+            const validOverrides=Object.fromEntries(Object.entries(saved.overrides).filter(([,value])=>validateManualQuantity(value)!==undefined));
+            const referenceDate=typeof result.importedAt==="string"&&result.importedAt?result.importedAt.slice(0,10):new Date().toISOString().slice(0,10);
             setCachedImport(result);
             cachedPolicySnapshot=snapshot;
             cachedPolicyError=warning;
@@ -84,14 +71,13 @@ export function useMerchandisePurchases(){
             setPolicyError(warning);
             setOverrides(validOverrides);
             setFilters(saved.filters);
-            setPremises({...saved.premises,referenceDate:result.importedAt.slice(0,10)});
+            setPremises({...saved.premises,referenceDate});
         }catch(importError){
             if(mounted.current&&request===requestId.current){
                 setError(importError.message||"Não foi possível importar a planilha.");
             }
         }finally{
             busy.current=false;
-
             if(mounted.current&&request===requestId.current){
                 setLoading(false);
                 setPolicyLoading(false);
@@ -101,9 +87,7 @@ export function useMerchandisePurchases(){
 
     const clearImport=useCallback(()=>{
         requestId.current+=1;
-
         if(imported?.fileName)removeMerchandiseState(imported.fileName);
-
         setCachedImport(null);
         cachedPolicySnapshot=null;
         cachedPolicyError=null;
@@ -127,15 +111,11 @@ export function useMerchandisePurchases(){
 
     const setQuantity=useCallback((id,quantity)=>{
         const validated=validateManualQuantity(quantity);
-
         if(validated===undefined)return;
-
         setOverrides(current=>{
             const next={...current};
-
             if(validated===null)delete next[id];
             else next[id]=validated;
-
             return next;
         });
     },[]);
