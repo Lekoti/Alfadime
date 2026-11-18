@@ -5,6 +5,11 @@ import MerchandisePremises from "../components/MerchandisePremises";
 import MerchandiseCharts from "../components/MerchandiseCharts";
 import MerchandiseTable from "../components/MerchandiseTable";
 import {buildColumns} from "../constants/merchandise-purchases.constants";
+import MerchandiseColumnSelector from "../components/MerchandiseColumnSelector";
+import MerchandiseExportDialog from "../components/MerchandiseExportDialog";
+import {useMerchandiseColumns} from "../hooks/useMerchandiseColumns";
+import {createExportSelection} from "../services/merchandiseColumns.service";
+import "../styles/merchandise-columns.css";
 import {useMerchandisePurchases} from "../hooks/useMerchandisePurchases";
 import {buildMerchandiseReports} from "../services/merchandiseReport.service";
 import {exportMerchandiseExcel} from "../services/merchandiseExport.service";
@@ -30,8 +35,10 @@ export default function MerchandisePurchasesPage(){
     const [selectedIds,setSelectedIds]=useState(()=>new Set());
     const [exporting,setExporting]=useState(false);
     const [exportError,setExportError]=useState(null);
+    const [exportOpen,setExportOpen]=useState(false);
 
     const columns=useMemo(()=>buildColumns(premises.closedMonth),[premises.closedMonth]);
+    const {preferences,visibleColumns,toggleColumn,reorderColumn}=useMerchandiseColumns(columns);
     const reports=useMemo(()=>buildMerchandiseReports(rows),[rows]);
     const totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
     const currentPage=Math.min(page,totalPages);
@@ -50,22 +57,18 @@ export default function MerchandisePurchasesPage(){
         });
     }
 
-    async function handleExport(){
-        if(!rows.length){
-            setExportError("Nenhum produto filtrado para exportar.");
-            return;
-        }
-
+    async function handleExport(mode){
+        if(exporting||loading||policyLoading)return;
+        setExportOpen(false);
         try{
+            const selection=createExportSelection({mode,allRows,rows,visibleColumns,filters});
             setExporting(true);
             setExportError(null);
             await new Promise(resolve=>setTimeout(resolve,30));
 
             await exportMerchandiseExcel({
-                rows,
-                priceRows:allRows,
+                ...selection,
                 premises,
-                filters,
                 importInfo:imported,
                 policySnapshot,
                 policyError
@@ -82,10 +85,12 @@ export default function MerchandisePurchasesPage(){
         <main className="mp-page mp-dashboard">
             <div className="mp-title-bar">
                 <h1>Compras de Mercadorias</h1>
-                <button className="mp-action-button" disabled={!rows.length||exporting||loading||policyLoading} onClick={handleExport} title="Exporta exatamente os produtos visíveis após os filtros aplicados no app.">
-                    {exporting?"Exportando...":`Exportar Excel filtrado (${rows.length.toLocaleString("pt-BR")})`}
+                <button className="mp-action-button" disabled={!allRows.length||exporting||loading||policyLoading} onClick={()=>setExportOpen(true)} title="Escolha exportação completa ou conforme a visualização atual.">
+                    {exporting?"Exportando...":"Exportar Excel"}
                 </button>
             </div>
+
+            {exportOpen&&<MerchandiseExportDialog total={allRows.length} filtered={rows.length} columnCount={columns.length} visibleCount={visibleColumns.length} onChoose={handleExport} onCancel={()=>setExportOpen(false)}/>}
 
             <MerchandiseImportPanel imported={imported} loading={loading} onFileSelected={importFile} onClear={clearImport}/>
 
@@ -113,10 +118,11 @@ export default function MerchandisePurchasesPage(){
             ):!imported?null:tab==="products"?(
                 <section className="mp-card">
                     <div className="mp-card-header">
-                        <span>{rows.length.toLocaleString("pt-BR")} produtos filtrados · {selectedIds.size} selecionados · exportação filtrada</span>
+                        <span>{rows.length.toLocaleString("pt-BR")} produtos filtrados · {selectedIds.size} selecionados</span>
+                        <MerchandiseColumnSelector columns={columns} preferences={preferences} onToggle={toggleColumn} onReorder={reorderColumn}/>
                     </div>
 
-                    <MerchandiseTable rows={pageRows} columns={columns} selectedIds={selectedIds} allSelected={allSelected} onToggleSelection={toggle} onToggleAll={()=>setSelectedIds(allSelected?new Set():new Set(rows.map(row=>row.id)))} onQuantityChange={setQuantity}/>
+                    <MerchandiseTable rows={pageRows} columns={visibleColumns} selectedIds={selectedIds} allSelected={allSelected} onToggleSelection={toggle} onToggleAll={()=>setSelectedIds(allSelected?new Set():new Set(rows.map(row=>row.id)))} onQuantityChange={setQuantity}/>
 
                     <div className="mp-pagination">
                         <span>Página {currentPage} de {totalPages}</span>
