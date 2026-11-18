@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import {selectExportColumns} from "./merchandiseColumns.service";
 import {buildColumns,PRICE_CRITERIA,PRICE_SOURCES,PERIOD_REFERENCES,MONTH_LABELS} from "../constants/merchandise-purchases.constants";
 import {buildMerchandiseReports,reportValue,REPORT_FORMATS} from "./merchandiseReport.service";
 import {resolvePrice,productPriceKey} from "./merchandisePolicy.service";
@@ -24,7 +25,7 @@ function head(cell,value,color=BLUE){cell.value=clean(value);cell.font={name:"Ca
 function color(key){if(key.startsWith("policy"))return "FF7C3AED";if(key==="maxPeriod"||key==="maxQty")return "FF047857";if(key==="minPeriod"||key==="minQty")return "FFBE123C";if(/price|Purchase|Company/i.test(key)&&key!=="company")return "FFB45309";if(/stock|blocked|pending|consolidated|transferred/i.test(key))return "FF047857";if(/avg|curve/i.test(key))return "FF0E7490";return BLUE;}
 function excelValue(value,type){if(!value)return type==="date"||type==="datetime"?"":clean(value);if(type==="date"){const match=String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);return match?Date.UTC(Number(match[1]),Number(match[2])-1,Number(match[3]))/86400000+25569:"";}if(type==="datetime"){const date=new Date(value);return Number.isNaN(date.getTime())?"":(date.getTime()-date.getTimezoneOffset()*60000)/86400000+25569;}return clean(value);}
 
-export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filters={},importInfo={},policySnapshot,policyError}){
+export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filters={},importInfo={},policySnapshot,policyError,columnKeys=null,exportMode="view"}){
     if(!rows?.length)throw new Error("Nenhum produto filtrado para exportar.");
 
     const workbook=new ExcelJS.Workbook();
@@ -38,6 +39,10 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
 
     const columns=buildColumns(premises.closedMonth);
     const positions=Object.fromEntries(columns.map((column,index)=>[column.key,index]));
+    const outputColumns=selectExportColumns(columns,columnKeys);
+    const outputPositions=Object.fromEntries(outputColumns.map((column,index)=>[column.key,index]));
+    const complete=exportMode==="complete";
+    const scopeDescription=complete?"Exportação completa: todos os produtos e colunas, com as premissas atuais.":"Exportação conforme o app: produtos filtrados e colunas visíveis, na ordem escolhida.";
     const reports=visibleReports(buildMerchandiseReports(rows));
     const total=rows.length;
     const supportEnd=total+5;
@@ -49,7 +54,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
 
     const columnLetter=key=>L(3+positions[key]);
     const supportRange=key=>`'Apoio'!$${columnLetter(key)}$6:$${columnLetter(key)}$${supportEnd}`;
-    const productsRange=key=>`'${PRODUCTS}'!$${L(1+positions[key])}$2:$${L(1+positions[key])}$${productsEnd}`;
+    const productsRange=key=>outputPositions[key]===undefined?supportRange(key):`'${PRODUCTS}'!$${L(1+outputPositions[key])}$2:$${L(1+outputPositions[key])}$${productsEnd}`;
 
     function createList(cell,values,name,column){
         const letter=L(column);
@@ -65,7 +70,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     filtersSheet.getRow(2).height=28;
 
     filtersSheet.mergeCells("B3:O3");
-    filtersSheet.getCell("B3").value="Exportação filtrada: este arquivo contém exatamente os produtos visíveis no app no momento da exportação.";
+    filtersSheet.getCell("B3").value=scopeDescription;
 
     filtersSheet.mergeCells("B4:F4");
     head(filtersSheet.getCell("B4"),"Filtros aplicados no app","FFB45309");
@@ -85,7 +90,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     });
 
     filtersSheet.mergeCells("B9:F9");
-    filtersSheet.getCell("B9").value="Estes filtros são informativos. A base exportada já corresponde aos filtros aplicados no app.";
+    filtersSheet.getCell("B9").value=complete?"Os filtros de visualização não restringem a exportação completa.":"Os produtos exportados respeitam os filtros aplicados no app.";
     filtersSheet.getCell("B9").alignment={wrapText:true};
     filtersSheet.getRow(9).height=32;
 
@@ -246,8 +251,10 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
 
             supportCell.numFmt=FMT[column.type]||"General";
 
-            const output=products.getCell(productRow,columnIndex+1);
-            const cell=key=>`${L(1+positions[key])}${productRow}`;
+            const outputIndex=outputPositions[column.key];
+            if(outputIndex===undefined)return;
+            const output=products.getCell(productRow,outputIndex+1);
+            const cell=key=>outputPositions[key]===undefined?`'Apoio'!${reference(key)}`:`${L(1+outputPositions[key])}${productRow}`;
             let expression=`INDEX(${supportRange(column.key)},${index+1})`;
 
             if(column.key==="finalValue")expression=`IF(${cell("company")}="","",${cell("finalQty")}*${cell("selectedPrice")})`;
@@ -264,17 +271,18 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
         });
     }
 
-    columns.forEach((column,columnIndex)=>{
+    outputColumns.forEach((column,columnIndex)=>{
         head(products.getCell(1,columnIndex+1),column.label,color(column.key));
         products.getColumn(columnIndex+1).width=column.width;
     });
 
     products.getRow(1).height=40;
     products.views=[{state:"frozen",ySplit:1,topLeftCell:"A2"}];
-    products.autoFilter={from:{row:1,column:1},to:{row:productsEnd,column:columns.length}};
+    products.autoFilter={from:{row:1,column:1},to:{row:productsEnd,column:outputColumns.length}};
 
     for(const key of ["policyStatus","selectedPriceWarning"]){
-        const letter=L(1+positions[key]);
+        if(outputPositions[key]===undefined)continue;
+        const letter=L(1+outputPositions[key]);
         products.addConditionalFormatting({
             ref:`${letter}2:${letter}${productsEnd}`,
             rules:[{
@@ -318,11 +326,11 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     }
 
     tablesSheet.mergeCells("B2:O2");
-    head(tablesSheet.getCell("B2"),"TABELAS — resultados dos filtros aplicados no app");
+    head(tablesSheet.getCell("B2"),complete?"TABELAS — base completa":"TABELAS — conforme o app");
     tablesSheet.getRow(2).height=28;
 
     tablesSheet.mergeCells("B3:O3");
-    tablesSheet.getCell("B3").value="As tabelas contêm apenas os produtos visíveis no app no momento da exportação.";
+    tablesSheet.getCell("B3").value=scopeDescription;
 
     let nextRow=5;
     for(let index=0;index<reports.length;index+=3){
@@ -337,10 +345,10 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     tablesSheet.views=[{state:"frozen",ySplit:3}];
 
     graphs.mergeCells("B1:U1");
-    head(graphs.getCell("B1"),"GRÁFICOS — resultados dos filtros aplicados no app");
+    head(graphs.getCell("B1"),complete?"GRÁFICOS — base completa":"GRÁFICOS — conforme o app");
     graphs.getRow(1).height=28;
     graphs.mergeCells("B2:U2");
-    graphs.getCell("B2").value="Esta exportação contém apenas os produtos visíveis no app. Os gráficos acompanham os valores calculados.";
+    graphs.getCell("B2").value=scopeDescription;
     for(let column=1;column<=25;column++)graphs.getColumn(column).width=13;
 
     const chartSpecs=[];
@@ -390,19 +398,20 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
 
     const original=workbook.addWorksheet("Planilha1");
     original.addRow((importInfo.headers||[]).map(clean));
-    rows.forEach(row=>original.addRow((row.raw||[]).map(clean)));
+    (importInfo.rows||rows).forEach(row=>original.addRow((row.raw||[]).map(clean)));
 
     const rules=workbook.addWorksheet("Regras da consolidação");
     [
         ["Regra","Aplicação"],
-        ["Exportação","Contém apenas os produtos visíveis no app após os filtros aplicados."],
+        ["Exportação",scopeDescription],
+        ["Colunas exportadas",outputColumns.map(column=>column.label).join(" | ")],
         ["Laboratório","Fabr_Global e Cod_Fabr_Global da base. Lab. não é usado para agrupar."],
         ["Política Comercial","Vínculo por empresa, EAN e código global do fabricante. Último arquivo modificado para cada chave; conflito de mesma data usa histórico."],
         ["Prioridade padrão","Política Comercial > última compra > penúltima compra > antepenúltima compra > zero. Preços não positivos são ignorados."],
         ["Fonte do preço","Escolha em Filtros!G5. Outra fonte começa pelo preço escolhido e continua pelos históricos disponíveis."],
         ["Validade","Política vencida continua sendo usada com aviso. Validade não é data de atualização."],
-        ["Atualização","O Excel contém a fotografia dos produtos filtrados no app. Atualize no app e reexporte."],
-        ["Arquivos originais","Planilha1 é somente uma cópia para conferência; não dirige as fórmulas."],
+        ["Atualização","O Excel contém os produtos do escopo escolhido. Atualize no app e reexporte."],
+        ["Arquivos originais","Planilha1 contém a base original completa para conferência, inclusive dados fora dos filtros e colunas ocultas. Não dirige as fórmulas."],
         ["Pasta de preços",policySnapshot?.folder||"Não lida"],
         ["Aviso de leitura",policyError||""],
         ...(policySnapshot?.warnings||[]).map(warning=>["Aviso",warning]),
@@ -420,7 +429,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     const url=URL.createObjectURL(blob);
     const link=document.createElement("a");
     link.href=url;
-    link.download=`Simulacao-Compra-${new Date().toISOString().slice(0,10)}.xlsx`;
+    link.download=`Simulacao-Compra-${complete?"Completo":"Conforme-App"}-${new Date().toISOString().slice(0,10)}.xlsx`;
     document.body.appendChild(link);
     link.click();
     link.remove();
