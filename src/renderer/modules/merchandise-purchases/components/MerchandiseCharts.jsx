@@ -1,4 +1,4 @@
-import {buildMerchandiseReports,formatReportCell,reportValue} from "../services/merchandiseReport.service";
+import {buildMerchandiseReports,formatReportCell} from "../services/merchandiseReport.service";
 
 import {visibleReports,chartReports,chartRows} from "../services/merchandisePresentation.service";
 

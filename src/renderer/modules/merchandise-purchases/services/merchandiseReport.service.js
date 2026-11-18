@@ -20,13 +20,12 @@ export function buildMerchandiseReports(rows){
     origins.rows=origins.rows.map(row=>[...row,metric(row[1].value>0?row[2].value/row[1].value:0,"groupAverage","selectedPrice",{groupKey:"priceOrigin",label:row[0]})]);
     const laboratories=group("lab","Por laboratório (Fabr_Global)","lab");
     laboratories.chartColumn=2;
-    laboratories.chartMode="value";
     return [
         {id:"result",title:"Resultado da simulação",headers:["Indicador","Quantidade"],formats:[null,"int"],chartColumn:1,rows:[
             ["Itens a comprar",metric(rows.filter(row=>row.finalQty>0).length,"buyCount","finalQty")],
             ["Qtde total a comprar",sum("finalQty")]
         ]},
-        {id:"values",title:"Valores da simulação",headers:["Indicador","Valor"],formats:[null,"currency"],chartColumn:1,chartMode:"value",rows:[
+        {id:"values",title:"Valores da simulação",headers:["Indicador","Valor"],formats:[null,"currency"],chartColumn:1,rows:[
             ["Valor da compra principal",metric(rows.filter(row=>row.finalQty>0).reduce((sum,row)=>sum+row.finalValue,0),"sum","finalValue")],
             ["Valor da compra alternativa",metric(rows.filter(row=>row.periodSuggestion>0).reduce((sum,row)=>sum+row.periodValue,0),"sum","periodValue")]
         ]},
