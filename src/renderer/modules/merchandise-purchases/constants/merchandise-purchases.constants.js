@@ -43,6 +43,7 @@ export const DEFAULT_FILTERS={search:"",company:[],laboratory:[],group:"",curve:
 
 export function getDefaultClosedMonth(){
     const month=new Date().getMonth();
+
     return month===0?12:month;
 }
 
@@ -52,60 +53,23 @@ export function createDefaultPremises(){
         priceSource:"policyPrice",
         priceCriteria:"own",
         periodReference:"max",
-        closedMonth:getDefaultClosedMonth()
+        closedMonth:getDefaultClosedMonth(),
+        referenceDate:new Date().toISOString().slice(0,10)
     };
 }
 
 export const REQUIRED_FIELDS=[
-    "company",
-    "productCode",
-    "barcode",
-    "description",
-    "boxSize",
-    "lab",
-    "globalLabCode",
-    "stock",
-    "lastPurchase",
-    "curve"
+    "company","productCode","barcode","description","boxSize","lab","globalLabCode","stock","lastPurchase","curve"
 ];
 
 export const FIELD_HEADERS={
-    company:"Empresa",
-    productCode:"Cod Prod",
-    supplierCode:"Cod Fornec",
-    barcode:"Cod Barras",
-    description:"Descricao",
-    boxSize:"Cx Padrao",
-    labCode:"Cod Lab",
-    localLab:"Lab.",
-    lab:"Fabr_Global",
-    globalLabCode:"Cod_Fabr_Global",
-    group:"Grupo",
-    stock:"Estoque",
-    blocked:"Estoque Bloq.",
-    pending:"Pendencia",
-    transferred:"Saldo Transferido",
-    pf:"PF",
-    pmc:"PMC",
-    avgCost:"Custo Med Atual",
-    lastPurchase:"Ult.Comp.",
-    lastPurchaseCompany:"Empresa Ult.Comp.",
-    penultPurchase:"Penult.Comp.",
-    penultPurchaseCompany:"Empresa Penult.Comp.",
-    antePenultPurchase:"Antepenult.Comp.",
-    antePenultPurchaseCompany:"Empresa Antepenult.Comp.",
-    suggestedPrice:"P Sug Atual",
-    avgPrice:"P Medio",
-    recompCost:"Custo Recomp.",
-    dpcCost:"Custo DPC",
-    avgMonthSheet:"Media Mes",
-    curve:"Curva Unidade"
+    company:"Empresa",productCode:"Cod Prod",supplierCode:"Cod Fornec",barcode:"Cod Barras",description:"Descricao",boxSize:"Cx Padrao",labCode:"Cod Lab",localLab:"Lab.",lab:"Fabr_Global",globalLabCode:"Cod_Fabr_Global",group:"Grupo",stock:"Estoque",blocked:"Estoque Bloq.",pending:"Pendencia",transferred:"Saldo Transferido",pf:"PF",pmc:"PMC",avgCost:"Custo Med Atual",lastPurchase:"Ult.Comp.",lastPurchaseCompany:"Empresa Ult.Comp.",penultPurchase:"Penult.Comp.",penultPurchaseCompany:"Empresa Penult.Comp.",antePenultPurchase:"Antepenult.Comp.",antePenultPurchaseCompany:"Empresa Antepenult.Comp.",suggestedPrice:"P Sug Atual",avgPrice:"P Medio",recompCost:"Custo Recomp.",dpcCost:"Custo DPC",avgMonthSheet:"Media Mes",curve:"Curva Unidade"
 };
 
-export function buildColumns(closedMonth){
+export function buildColumns(closedMonth,referenceDate){
     const closed=Math.min(12,Math.max(1,Number(closedMonth)||12));
     const month=index=>MONTH_LABELS[index-1].toLowerCase();
-    const range=size=>getRollingRange(closed,size);
+    const range=size=>getRollingRange(closed,size,referenceDate);
     const column=(key,label,type="text",width=18,extra={})=>({key,label,type,width,...extra});
 
     return [
@@ -153,10 +117,10 @@ export function buildColumns(closedMonth){
         column("priceCompany","Empresa do Preço","text",20),
         column("selectedPriceWarning","Aviso Preço Utilizado","text",30),
         column("finalQty","Qtde a Comprar","int",14,{editable:true}),
-        column("finalValue","Valor selecionado (R$)","currency",18),
+        column("finalValue","Valor da compra principal (R$)","currency",18),
         column("refQty","Qtde Ref. Período","dec",15),
         column("periodSuggestion","Sugestão Compra Período","int",20),
-        column("periodValue","Valor Sugestão Período (R$)","currency",22),
+        column("periodValue","Valor da compra alternativa (R$)","currency",22),
         column("priceViaLast","Preço via ÚltC?","text",13),
         column("stockMonths","Estoque Mês","dec",11),
         column("boxStatus","Validação Cx","text",16)

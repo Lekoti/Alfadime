@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+﻿import ExcelJS from "exceljs";
 import {selectExportColumns} from "./merchandiseColumns.service";
 import {buildColumns,PRICE_CRITERIA,PRICE_SOURCES,PERIOD_REFERENCES,MONTH_LABELS} from "../constants/merchandise-purchases.constants";
 import {buildMerchandiseReports,reportValue,REPORT_FORMATS} from "./merchandiseReport.service";
@@ -37,7 +37,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     const graphs=workbook.addWorksheet(GRAPHS);
     const support=workbook.addWorksheet("Apoio");
 
-    const columns=buildColumns(premises.closedMonth);
+    const columns=buildColumns(premises.closedMonth,premises.referenceDate);
     const positions=Object.fromEntries(columns.map((column,index)=>[column.key,index]));
     const outputColumns=selectExportColumns(columns,columnKeys);
     const outputPositions=Object.fromEntries(outputColumns.map((column,index)=>[column.key,index]));
@@ -138,7 +138,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     filtersSheet.getCell("G11").alignment={wrapText:true,vertical:"top"};
 
     filtersSheet.mergeCells("G15:K15");
-    filtersSheet.getCell("G15").value=`Últimos 12 meses fechados: ${getRollingRange(premises.closedMonth,12)}. Para mudar o histórico, ajuste no app e reexporte.`;
+    filtersSheet.getCell("G15").value=`Últimos 12 meses fechados: ${getRollingRange(premises.closedMonth,12,premises.referenceDate)}. Para mudar o histórico, ajuste no app e reexporte.`;
     filtersSheet.getCell("G15").alignment={wrapText:true};
     filtersSheet.getRow(15).height=32;
 
@@ -166,7 +166,7 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
         const row=20+index;
         filtersSheet.getCell(row,7).value=`Média ${size}M`;
         filtersSheet.mergeCells(row,8,row,15);
-        filtersSheet.getCell(row,8).value=getRollingRange(premises.closedMonth,size);
+        filtersSheet.getCell(row,8).value=getRollingRange(premises.closedMonth,size,premises.referenceDate);
     });
 
     const alternatives=PRICE_SOURCES.map(source=>rows.map(row=>resolvePrice(row,source.value)));
@@ -435,3 +435,4 @@ export async function exportMerchandiseExcel({rows,priceRows=rows,premises,filte
     link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
+

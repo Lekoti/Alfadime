@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from "react";
+﻿import {useEffect,useMemo,useState} from "react";
 import MerchandiseFilters from "../components/MerchandiseFilters";
 import MerchandiseImportPanel from "../components/MerchandiseImportPanel";
 import MerchandisePremises from "../components/MerchandisePremises";
@@ -37,7 +37,7 @@ export default function MerchandisePurchasesPage(){
     const [exportError,setExportError]=useState(null);
     const [exportOpen,setExportOpen]=useState(false);
 
-    const columns=useMemo(()=>buildColumns(premises.closedMonth),[premises.closedMonth]);
+    const columns=useMemo(()=>buildColumns(premises.closedMonth,premises.referenceDate),[premises.closedMonth,premises.referenceDate]);
     const {preferences,visibleColumns,toggleColumn,reorderColumn}=useMerchandiseColumns(columns);
     const reports=useMemo(()=>buildMerchandiseReports(rows),[rows]);
     const totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
@@ -152,3 +152,4 @@ export default function MerchandisePurchasesPage(){
         </main>
     );
 }
+

@@ -24,10 +24,7 @@ export function useMerchandisePurchases(){
     useEffect(()=>{
         mounted.current=true;
 
-        return ()=>{
-            mounted.current=false;
-            requestId.current+=1;
-        };
+        return ()=>{mounted.current=false;requestId.current+=1;};
     },[]);
 
     const importFile=useCallback(async file=>{
@@ -65,6 +62,7 @@ export function useMerchandisePurchases(){
             setPolicyError(warning);
             setOverrides({});
             setFilters(DEFAULT_FILTERS);
+            setPremises(current=>({...current,referenceDate:result.importedAt.slice(0,10)}));
         }catch(importError){
             if(mounted.current&&request===requestId.current){
                 setError(importError.message||"Não foi possível importar a planilha.");
@@ -89,76 +87,29 @@ export function useMerchandisePurchases(){
         setPolicyError(null);
         setOverrides({});
         setFilters(DEFAULT_FILTERS);
+        setPremises(createDefaultPremises());
         setError(null);
         setLoading(false);
         setPolicyLoading(false);
     },[]);
 
-    const enriched=useMemo(
-        ()=>applyCommercialPolicies(imported?.rows||[],policySnapshot),
-        [imported,policySnapshot]
-    );
-
-    const computed=useMemo(
-        ()=>computeRows(enriched,premises),
-        [enriched,premises]
-    );
-
-    const allRows=useMemo(
-        ()=>applyOverrides(computed,overrides),
-        [computed,overrides]
-    );
-
-    const options=useMemo(()=>({
-        companies:uniqueSorted(allRows,"company"),
-        laboratories:uniqueSorted(allRows,"lab"),
-        groups:uniqueSorted(allRows,"group"),
-        curves:uniqueSorted(allRows,"curve"),
-        priceOrigins:uniqueSorted(allRows,"priceOrigin")
-    }),[allRows]);
-
-    const rows=useMemo(
-        ()=>filterRows(allRows,filters),
-        [allRows,filters]
-    );
-
-    const summary=useMemo(
-        ()=>summarizeRows(rows),
-        [rows]
-    );
+    const enriched=useMemo(()=>applyCommercialPolicies(imported?.rows||[],policySnapshot),[imported,policySnapshot]);
+    const computed=useMemo(()=>computeRows(enriched,premises),[enriched,premises]);
+    const allRows=useMemo(()=>applyOverrides(computed,overrides),[computed,overrides]);
+    const options=useMemo(()=>({companies:uniqueSorted(allRows,"company"),laboratories:uniqueSorted(allRows,"lab"),groups:uniqueSorted(allRows,"group"),curves:uniqueSorted(allRows,"curve"),priceOrigins:uniqueSorted(allRows,"priceOrigin")}),[allRows]);
+    const rows=useMemo(()=>filterRows(allRows,filters),[allRows,filters]);
+    const summary=useMemo(()=>summarizeRows(rows),[rows]);
 
     const setQuantity=useCallback((id,quantity)=>{
         setOverrides(current=>{
             const next={...current};
 
-            if(quantity==null){
-                delete next[id];
-            }else{
-                next[id]=quantity;
-            }
+            if(quantity==null)delete next[id];
+            else next[id]=quantity;
 
             return next;
         });
     },[]);
 
-    return {
-        imported,
-        loading,
-        error,
-        premises,
-        setPremises,
-        filters,
-        setFilters,
-        options,
-        rows,
-        allRows,
-        summary,
-        overrides,
-        setQuantity,
-        importFile,
-        clearImport,
-        policySnapshot,
-        policyLoading,
-        policyError
-    };
+    return {imported,loading,error,premises,setPremises,filters,setFilters,options,rows,allRows,summary,overrides,setQuantity,importFile,clearImport,policySnapshot,policyLoading,policyError};
 }

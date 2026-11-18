@@ -15,7 +15,7 @@ export function suggestQuantity(monthly,days,balance,box){
 }
 
 export function computeRows(rows,premises){
-    const periods=getRollingPeriods(premises.closedMonth);
+    const periods=getRollingPeriods(premises.closedMonth,premises.referenceDate);
     const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
     const cheapest=new Map();
 
@@ -76,41 +76,16 @@ export function computeRows(rows,premises){
         const boxValid=Number.isFinite(boxValue)&&(boxValue===0||(Number.isInteger(boxValue)&&boxValue>0));
 
         return {
-            ...row,
-            id:index,
-            avgMonth,
-            avgAll,
-            avg12,
-            avg9,
-            avg6,
-            avg3,
-            hasHistory,
-            incompleteHistory,
-            historyWarning:incompleteHistory?"Histórico mensal incompleto":"",
-            maxPeriod,
-            maxQty,
-            minPeriod:hasHistory?lowMonths.join(", "):"Sem histórico",
-            minQty,
-            highMonths,
-            pending,
-            transferred,
-            consolidated,
-            targetDays,
-            ownPrice:base.price,
-            lowestPrice:low?.price||0,
-            lowestCompany:low?(low.price===base.price?"Igual":low.company):"Sem preço",
-            selectedPrice,
-            priceOrigin:selectedPrice>0?chosen.label:"Sem preço",
-            priceCompany:selectedPrice>0?chosen.company:"",
+            ...row,id:index,avgMonth,avgAll,avg12,avg9,avg6,avg3,hasHistory,incompleteHistory,
+            historyWarning:incompleteHistory?"Histórico mensal incompleto":"",maxPeriod,maxQty,
+            minPeriod:hasHistory?lowMonths.join(", "):"Sem histórico",minQty,highMonths,pending,transferred,
+            consolidated,targetDays,ownPrice:base.price,lowestPrice:low?.price||0,
+            lowestCompany:low?(low.price===base.price?"Igual":low.company):"Sem preço",selectedPrice,
+            priceOrigin:selectedPrice>0?chosen.label:"Sem preço",priceCompany:selectedPrice>0?chosen.company:"",
             selectedPriceWarning:chosen?.warning||(!selectedPrice?"Sem preço disponível":""),
-            priceViaLast:selectedPrice>0?(chosen.key==="lastPurchase"?"Sim":"Não"):"",
-            boxValid,
-            boxStatus:boxValid?"OK":"Caixa inválida",
-            stockMonths:avgMonth>0?consolidated/avgMonth:0,
-            refQty,
-            suggestedQty,
-            periodSuggestion,
-            periodValue:periodSuggestion*selectedPrice
+            priceViaLast:selectedPrice>0?(chosen.key==="lastPurchase"?"Sim":"Não"):"",boxValid,
+            boxStatus:boxValid?"OK":"Caixa inválida",stockMonths:avgMonth>0?consolidated/avgMonth:0,
+            refQty,suggestedQty,periodSuggestion,periodValue:periodSuggestion*selectedPrice
         };
     });
 }
@@ -120,19 +95,11 @@ export function applyOverrides(rows,overrides){
         const manual=overrides[row.id]!==undefined;
         const finalQty=manual?overrides[row.id]:row.suggestedQty;
 
-        return {
-            ...row,
-            manual,
-            finalQty,
-            finalValue:finalQty*row.selectedPrice
-        };
+        return {...row,manual,finalQty,finalValue:finalQty*row.selectedPrice};
     });
 }
 
-const normalize=value=>String(value??"")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g,"")
-    .toLowerCase();
+const normalize=value=>String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
 function matchesMultiple(value,selected){
     const options=Array.isArray(selected)?selected:[];
@@ -151,20 +118,12 @@ export function filterRows(rows,filters){
         if(filters.priceOrigin&&row.priceOrigin!==filters.priceOrigin)return false;
 
         const tests={
-            tobuy:row.finalQty>0,
-            nobuy:!(row.finalQty>0),
-            noprice:!(row.selectedPrice>0),
-            invalidbox:!row.boxValid,
-            nohistory:!row.hasHistory,
-            manual:row.manual,
-            expiredpolicy:row.policyExpired,
-            withpolicy:row.policyPrice>0,
-            withoutpolicy:!(row.policyPrice>0)
+            tobuy:row.finalQty>0,nobuy:!(row.finalQty>0),noprice:!(row.selectedPrice>0),
+            invalidbox:!row.boxValid,nohistory:!row.hasHistory,manual:row.manual,
+            expiredpolicy:row.policyExpired,withpolicy:row.policyPrice>0,withoutpolicy:!(row.policyPrice>0)
         };
 
-        if(filters.status&&Object.hasOwn(tests,filters.status)&&!tests[filters.status]){
-            return false;
-        }
+        if(filters.status&&Object.hasOwn(tests,filters.status)&&!tests[filters.status])return false;
 
         return !search||normalize(`${row.company} ${row.productCode} ${row.barcode} ${row.description} ${row.lab}`).includes(search);
     });
@@ -174,35 +133,18 @@ export function summarizeRows(rows){
     return rows.reduce((summary,row)=>{
         summary.products++;
 
-        if(row.finalQty>0){
-            summary.itemsToBuy++;
-            summary.totalQty+=row.finalQty;
-        }
+        if(row.finalQty>0){summary.itemsToBuy++;summary.totalQty+=row.finalQty;}
 
         summary.totalValue+=row.finalValue;
         summary.periodValue+=row.periodValue;
 
-        if(row.selectedPrice<=0){
-            summary.noPrice++;
-        }
-
-        if(!row.boxValid){
-            summary.invalidBox++;
-        }
+        if(row.selectedPrice<=0)summary.noPrice++;
+        if(!row.boxValid)summary.invalidBox++;
 
         return summary;
-    },{
-        products:0,
-        itemsToBuy:0,
-        totalQty:0,
-        totalValue:0,
-        periodValue:0,
-        noPrice:0,
-        invalidBox:0
-    });
+    },{products:0,itemsToBuy:0,totalQty:0,totalValue:0,periodValue:0,noPrice:0,invalidBox:0});
 }
 
 export function uniqueSorted(rows,key){
-    return [...new Set(rows.map(row=>row[key]).filter(Boolean))]
-        .sort((first,second)=>String(first).localeCompare(String(second),"pt-BR"));
+    return [...new Set(rows.map(row=>row[key]).filter(Boolean))].sort((first,second)=>String(first).localeCompare(String(second),"pt-BR"));
 }
