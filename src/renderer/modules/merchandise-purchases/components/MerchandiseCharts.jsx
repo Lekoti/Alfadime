@@ -1,9 +1,10 @@
 import {buildMerchandiseReports,formatReportCell,reportValue} from "../services/merchandiseReport.service";
 
-import {visibleReports,chartRows} from "../services/merchandisePresentation.service";
+import {visibleReports,chartReports,chartRows} from "../services/merchandisePresentation.service";
 
 export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
     const models=visibleReports(reports||buildMerchandiseReports(rows));
+    const chartModels=chartReports(reports||buildMerchandiseReports(rows));
 
     if(mode==="tables"){
         return (
@@ -43,7 +44,7 @@ export default function MerchandiseCharts({rows=[],reports,mode="charts"}){
 
     return (
         <div className="mp-chart-grid">
-            {models.map(report=>{
+            {chartModels.map(report=>{
                 const data=chartRows(report);
                 const maxValue=Math.max(...data.map(item=>Math.abs(item.value)),1);
 
