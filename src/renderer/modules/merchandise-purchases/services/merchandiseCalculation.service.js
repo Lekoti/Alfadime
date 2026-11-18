@@ -44,17 +44,18 @@ export function computeRows(rows,premises){
             return value===null||value===undefined?null:Number(value)||0;
         });
         const available=months.filter(value=>value!==null);
-        const average=size=>{
-            const values=months.slice(-size).filter(value=>value!==null);
+        const rollingAverage=size=>{
+            const values=months.slice(-size).map(value=>value===null?0:value);
+            const total=values.reduce((sum,value)=>sum+value,0);
 
-            return values.length?values.reduce((total,value)=>total+value,0)/values.length:0;
+            return total/size;
         };
 
-        const avgAll=average(12);
-        const avg12=average(12);
-        const avg9=average(9);
-        const avg6=average(6);
-        const avg3=average(3);
+        const avgAll=rollingAverage(12);
+        const avg12=rollingAverage(12);
+        const avg9=rollingAverage(9);
+        const avg6=rollingAverage(6);
+        const avg3=rollingAverage(3);
         const avgMonthSheet=row.avgMonthSheet;
         const hasSheetAverage=avgMonthSheet!==null&&avgMonthSheet!==undefined&&avgMonthSheet!=="";
         const avgMonth=hasSheetAverage?Number(avgMonthSheet)||0:avgAll;
