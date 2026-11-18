@@ -23,12 +23,12 @@ export function getRollingPeriods(closedMonth,referenceDate,now=new Date()){
         const month=date.getMonth()+1;
         const itemYear=date.getFullYear();
 
-        return {month,year:itemYear,index:month-1,label:`${LABELS[month-1]}/${itemYear}`};
+        return {month,year:itemYear,index:month-1,label:LABELS[month-1],fullLabel:`${LABELS[month-1]}/${itemYear}`};
     });
 }
 
 export function getRollingRange(closedMonth,size,referenceDate,now=new Date()){
     const months=getRollingPeriods(closedMonth,referenceDate,now).slice(-size);
 
-    return `${months[0].label} a ${months[months.length-1].label}`;
+    return `${months[0].fullLabel} a ${months[months.length-1].fullLabel}`;
 }
