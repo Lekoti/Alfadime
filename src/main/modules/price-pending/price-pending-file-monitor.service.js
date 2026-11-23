@@ -160,7 +160,7 @@ function getFileYear(fileName, fileMtimeMs) {
 
     if (Number.isNaN(fileDate.getTime())) {
         throw new Error(
-            "Data de modificação do arquivo inválida."
+            "Data de modificaÃ§Ã£o do arquivo invÃ¡lida."
         );
     }
 
@@ -175,7 +175,7 @@ function getFileDateParts(fileName, fileMtimeMs) {
 
     if (Number.isNaN(fileDate.getTime())) {
         throw new Error(
-            "Data de modificação do arquivo inválida."
+            "Data de modificaÃ§Ã£o do arquivo invÃ¡lida."
         );
     }
 
@@ -185,7 +185,7 @@ function getFileDateParts(fileName, fileMtimeMs) {
 
     if (!month) {
         throw new Error(
-            "Mês não identificado no nome do arquivo."
+            "MÃªs nÃ£o identificado no nome do arquivo."
         );
     }
 
@@ -212,8 +212,8 @@ function getFileDateParts(fileName, fileMtimeMs) {
         parsedDate.getUTCDate() !== day
     ) {
         throw new Error(
-            `Data inválida para o arquivo: ${formattedDay}/${formattedMonth}/${year}. ` +
-            "Confira o mês informado no nome do arquivo e a data de modificação."
+            `Data invÃ¡lida para o arquivo: ${formattedDay}/${formattedMonth}/${year}. ` +
+            "Confira o mÃªs informado no nome do arquivo e a data de modificaÃ§Ã£o."
         );
     }
 
@@ -264,10 +264,10 @@ function findMatchingRows(fileName) {
         }).join("; ");
 
         throw new Error(
-            `Arquivo com laboratório ambíguo: ${fileName}. ` +
-            `Correspondências: ${laboratories}. ` +
-            "Nenhuma célula foi atualizada por este arquivo. " +
-            "Confira o nome do arquivo e os cadastros dos laboratórios."
+            `Arquivo com laboratÃ³rio ambÃ­guo: ${fileName}. ` +
+            `CorrespondÃªncias: ${laboratories}. ` +
+            "Nenhuma cÃ©lula foi atualizada por este arquivo. " +
+            "Confira o nome do arquivo e os cadastros dos laboratÃ³rios."
         );
     }
 
@@ -389,7 +389,7 @@ function getFileSignature(filePath) {
 function listExcelFiles(folderPath) {
     if (!fs.existsSync(folderPath)) {
         throw new Error(
-            `Pasta não encontrada: ${folderPath}`
+            `Pasta nÃ£o encontrada: ${folderPath}`
         );
     }
 
@@ -632,13 +632,9 @@ function processCurrentFile(file, expectedType, context = {}) {
             fileName: file.name,
             reason: "nome_fora_do_padrao",
             message:
-                "Nome do arquivo fora do padrão: contém Preços e Pendências. " +
-                "Nenhuma atualização foi aplicada."
+                "Nome do arquivo fora do padrÃ£o: contÃ©m PreÃ§os e PendÃªncias. " +
+                "Nenhuma atualizaÃ§Ã£o foi aplicada."
         };
-    }
-
-    if (expectedType === "prices") {
-        return processPriceFile(file, context);
     }
 
     if (fileType !== expectedType) {
@@ -647,6 +643,10 @@ function processCurrentFile(file, expectedType, context = {}) {
             fileName: file.name,
             reason: "tipo_incompativel"
         };
+    }
+
+    if (expectedType === "prices") {
+        return processPriceFile(file, context);
     }
 
 
@@ -861,8 +861,8 @@ function refreshFromFolders() {
             success: false,
             code: "REFRESH_IN_PROGRESS",
             message:
-                "Outra atualização de Preços e Pendências " +
-                "está em andamento em outro computador. " +
+                "Outra atualizaÃ§Ã£o de PreÃ§os e PendÃªncias " +
+                "estÃ¡ em andamento em outro computador. " +
                 "Tente novamente em alguns instantes.",
             lockedBy:
                 lockResult.lock?.owner_name ||
@@ -912,8 +912,8 @@ function forceRefreshFromFolders() {
             success: false,
             code: "REFRESH_IN_PROGRESS",
             message:
-                "Outra atualização de Preços e Pendências " +
-                "está em andamento em outro computador. " +
+                "Outra atualizaÃ§Ã£o de PreÃ§os e PendÃªncias " +
+                "estÃ¡ em andamento em outro computador. " +
                 "Tente novamente em alguns instantes.",
             lockedBy:
                 lockResult.lock?.owner_name ||
@@ -941,14 +941,14 @@ function forceRefreshFromFolders() {
 class PricePendingFileMonitor {
     start() {
         console.log(
-            "Monitor automático de Preços e Pendências desativado."
+            "Monitor automÃ¡tico de PreÃ§os e PendÃªncias desativado."
         );
     }
 
 
     stop() {
         console.log(
-            "Monitor automático de Preços e Pendências permanece desativado."
+            "Monitor automÃ¡tico de PreÃ§os e PendÃªncias permanece desativado."
         );
     }
 }

@@ -14,6 +14,8 @@ const EDITABLE_COLUMNS = [
 const EXTERNAL_COLUMNS = EDITABLE_COLUMNS.filter((column) => column !== "laboratory" && column !== "observation");
 const VALID_BRANCHES = ["DPR", "AMS", "DMT", "DMS", "DSC"];
 let industryGlobalCodeMapCache = null;
+let industryGlobalCodeMapCacheAt = 0;
+const INDUSTRY_GLOBAL_CODE_CACHE_TTL_MS = 10 * 60 * 1000;
 
 function parseJsonObject(value) {
     if (value && typeof value === "object" && !Array.isArray(value)) return value;
@@ -58,13 +60,18 @@ function hasTable(database, tableName) {
 
 function getIndustryGlobalCodeMap(options = {}) {
     const forceRefresh = options.forceRefresh === true;
-    if (industryGlobalCodeMapCache && !forceRefresh) return industryGlobalCodeMapCache;
+    const cacheExpired = Date.now() - industryGlobalCodeMapCacheAt > INDUSTRY_GLOBAL_CODE_CACHE_TTL_MS;
+
+    if (industryGlobalCodeMapCache && !forceRefresh && !cacheExpired) {
+        return industryGlobalCodeMapCache;
+    }
 
     const codes = new Map();
     const database = getLocalDatabase();
 
     if (!hasTable(database, "product_purchase_curve")) {
         industryGlobalCodeMapCache = codes;
+        industryGlobalCodeMapCacheAt = Date.now();
         return codes;
     }
 
@@ -75,6 +82,7 @@ function getIndustryGlobalCodeMap(options = {}) {
 
     if (!hasGlobalCode || (!hasLab && !hasLaboratoryName)) {
         industryGlobalCodeMapCache = codes;
+        industryGlobalCodeMapCacheAt = Date.now();
         return codes;
     }
 
@@ -93,11 +101,12 @@ function getIndustryGlobalCodeMap(options = {}) {
     }
 
     industryGlobalCodeMapCache = codes;
+    industryGlobalCodeMapCacheAt = Date.now();
     return codes;
 }
 
 function getIndustryGlobalCode(database, laboratory, codeMap = getIndustryGlobalCodeMap()) {
-    const normalizedLaboratory = normalizeDatabaseText(laboratory);
+    const normalizedLaboratory = normalizeGlobalLaboratoryName(laboratory);
     if (!normalizedLaboratory) return "";
     return codeMap.get(normalizedLaboratory) || "";
 }
@@ -119,7 +128,7 @@ function decorateRow(database, row, codeMap) {
 
 function getBranchColumn(prefix, branch) {
     const normalizedBranch = normalizeBranch(branch);
-    if (!normalizedBranch) throw new Error(`Filial inválida: ${branch}`);
+    if (!normalizedBranch) throw new Error(`Filial invÃ¡lida: ${branch}`);
     return `${prefix}_${normalizedBranch.toLowerCase()}`;
 }
 
@@ -201,7 +210,7 @@ function findActiveRowByLaboratory(database, laboratory) {
     if (!normalizedLaboratory) return null;
 
     const rows = database.prepare(`
-        SELECT *
+        SELECT id, laboratory
         FROM price_pending_rows
         WHERE active = 1
     `).all();
@@ -239,10 +248,10 @@ function getPricePendingStatus(laboratory, branch, now = new Date()) {
     const pricesUpdated = isUpdatedPeriod(values.pricesValue, now);
     const pendingUpdated = isUpdatedPeriod(values.pendingValue, now);
 
-    if (pricesUpdated && pendingUpdated) return "Preços e pendências atualizados";
-    if (!pricesUpdated && pendingUpdated) return "Precisa atualizar preços";
-    if (pricesUpdated && !pendingUpdated) return "Precisa atualizar pendências";
-    return "Precisa atualizar preços e pendências";
+    if (pricesUpdated && pendingUpdated) return "PreÃ§os e pendÃªncias atualizados";
+    if (!pricesUpdated && pendingUpdated) return "Precisa atualizar preÃ§os";
+    if (pricesUpdated && !pendingUpdated) return "Precisa atualizar pendÃªncias";
+    return "Precisa atualizar preÃ§os e pendÃªncias";
 }
 
 function getPricePendingStatusMap(now = new Date()) {
@@ -264,11 +273,11 @@ function getPricePendingStatusMap(now = new Date()) {
             const suffix = branch.toLowerCase();
             const pricesUpdated = isUpdatedPeriod(row[`precos_ok_${suffix}`], now);
             const pendingUpdated = isUpdatedPeriod(row[`pendencias_ok_${suffix}`], now);
-            let status = "Precisa atualizar preços e pendências";
+            let status = "Precisa atualizar preÃ§os e pendÃªncias";
 
-            if (pricesUpdated && pendingUpdated) status = "Preços e pendências atualizados";
-            else if (!pricesUpdated && pendingUpdated) status = "Precisa atualizar preços";
-            else if (pricesUpdated && !pendingUpdated) status = "Precisa atualizar pendências";
+            if (pricesUpdated && pendingUpdated) status = "PreÃ§os e pendÃªncias atualizados";
+            else if (!pricesUpdated && pendingUpdated) status = "Precisa atualizar preÃ§os";
+            else if (pricesUpdated && !pendingUpdated) status = "Precisa atualizar pendÃªncias";
 
             statusMap.set(`${laboratory}:${branch}`, status);
         });
@@ -295,11 +304,11 @@ function createRow(data = {}) {
     const database = getPricePendingDatabase();
     const laboratory = String(data.laboratory || "").trim();
 
-    if (!laboratory) throw new Error("Laboratório obrigatório para criar o cadastro.");
+    if (!laboratory) throw new Error("LaboratÃ³rio obrigatÃ³rio para criar o cadastro.");
 
     const existingRow = findActiveRowByLaboratory(database, laboratory);
     if (existingRow) {
-        throw new Error(`Já existe um cadastro ativo para o laboratório: ${existingRow.laboratory}.`);
+        throw new Error(`JÃ¡ existe um cadastro ativo para o laboratÃ³rio: ${existingRow.laboratory}.`);
     }
 
     const now = new Date().toISOString();
@@ -339,7 +348,7 @@ function createRow(data = {}) {
 }
 
 function integrityUnsafe_updateCell(id, column, value) {
-    if (!EDITABLE_COLUMNS.includes(column)) throw new Error(`Coluna não permitida para edição: ${column}`);
+    if (!EDITABLE_COLUMNS.includes(column)) throw new Error(`Coluna nÃ£o permitida para ediÃ§Ã£o: ${column}`);
 
     const database = getPricePendingDatabase();
     const now = new Date().toISOString();
@@ -349,7 +358,7 @@ function integrityUnsafe_updateCell(id, column, value) {
         FROM price_pending_rows WHERE id = ? AND active = 1 LIMIT 1
     `).get(id);
 
-    if (!currentRow) throw new Error("Registro não encontrado para atualização.");
+    if (!currentRow) throw new Error("Registro nÃ£o encontrado para atualizaÃ§Ã£o.");
 
     const manualCells = parseJsonObject(currentRow.manual_cells);
     const pendingUpdates = parseJsonObject(currentRow.pending_external_updates);
@@ -364,7 +373,7 @@ function integrityUnsafe_updateCell(id, column, value) {
             WHERE id = ? AND active = 1
         `).run(stringifyJsonObject(manualCells), stringifyJsonObject(pendingUpdates), now, id);
 
-        if (result.changes === 0) throw new Error("Registro não encontrado para atualização.");
+        if (result.changes === 0) throw new Error("Registro nÃ£o encontrado para atualizaÃ§Ã£o.");
         return getRowById(id);
     }
 
@@ -375,12 +384,12 @@ function integrityUnsafe_updateCell(id, column, value) {
         WHERE id = ? AND active = 1
     `).run(normalizedValue, stringifyJsonObject(manualCells), now, id);
 
-    if (result.changes === 0) throw new Error("Registro não encontrado para atualização.");
+    if (result.changes === 0) throw new Error("Registro nÃ£o encontrado para atualizaÃ§Ã£o.");
     return getRowById(id);
 }
 
 function integrityUnsafe_applyExternalCellUpdate({ id, column, value, fileName = "", fileMtimeMs = null }) {
-    if (!EXTERNAL_COLUMNS.includes(column)) throw new Error(`Coluna externa não permitida: ${column}`);
+    if (!EXTERNAL_COLUMNS.includes(column)) throw new Error(`Coluna externa nÃ£o permitida: ${column}`);
 
     const database = getPricePendingDatabase();
     const now = new Date().toISOString();
@@ -389,7 +398,7 @@ function integrityUnsafe_applyExternalCellUpdate({ id, column, value, fileName =
         FROM price_pending_rows WHERE id = ? AND active = 1 LIMIT 1
     `).get(id);
 
-    if (!row) throw new Error("Registro não encontrado para atualização externa.");
+    if (!row) throw new Error("Registro nÃ£o encontrado para atualizaÃ§Ã£o externa.");
 
     const manualCells = parseJsonObject(row.manual_cells);
     const pendingUpdates = parseJsonObject(row.pending_external_updates);
@@ -440,7 +449,7 @@ function integrityUnsafe_applyExternalCellUpdate({ id, column, value, fileName =
 }
 
 function integrityUnsafe_acceptExternalCellUpdate({ id, column }) {
-    if (!EXTERNAL_COLUMNS.includes(column)) throw new Error(`Coluna externa não permitida: ${column}`);
+    if (!EXTERNAL_COLUMNS.includes(column)) throw new Error(`Coluna externa nÃ£o permitida: ${column}`);
 
     const database = getPricePendingDatabase();
     const now = new Date().toISOString();
@@ -449,7 +458,7 @@ function integrityUnsafe_acceptExternalCellUpdate({ id, column }) {
         FROM price_pending_rows WHERE id = ? AND active = 1 LIMIT 1
     `).get(id);
 
-    if (!row) throw new Error("Registro não encontrado para aceitar atualização.");
+    if (!row) throw new Error("Registro nÃ£o encontrado para aceitar atualizaÃ§Ã£o.");
 
     const pendingUpdates = parseJsonObject(row.pending_external_updates);
     const pendingUpdate = pendingUpdates[column];
@@ -460,6 +469,7 @@ function integrityUnsafe_acceptExternalCellUpdate({ id, column }) {
     const observation = String(row.observation ?? "").toUpperCase();
     const isProtectedManualCell = currentValue === "NAO TRABALHA" || observation.includes("INDUSTRIA DESATIVADA");
 
+    // CÃ©lulas protegidas preservam o valor manual e descartam a atualizaÃ§Ã£o externa pendente.
     delete pendingUpdates[column];
 
     if (isProtectedManualCell) {
@@ -484,29 +494,29 @@ function integrityUnsafe_acceptExternalCellUpdate({ id, column }) {
 function removeRow(id) {
     const database = getPricePendingDatabase();
     const result = database.prepare(`UPDATE price_pending_rows SET active = 0, updated_at = ? WHERE id = ? AND active = 1`).run(new Date().toISOString(), id);
-    if (result.changes === 0) throw new Error("Registro não encontrado para remoção.");
+    if (result.changes === 0) throw new Error("Registro nÃ£o encontrado para remoÃ§Ã£o.");
     return { success: true, id };
 }
 
 function getEmailReceiptColumn(type, branch) {
     const normalizedType = String(type || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
     const normalizedBranch = normalizeBranch(branch).toLowerCase();
-    if (!normalizedBranch) throw new Error(`Filial inválida para atualização: ${branch}`);
+    if (!normalizedBranch) throw new Error(`Filial invÃ¡lida para atualizaÃ§Ã£o: ${branch}`);
 
     if (["precos", "preco", "env_precos"].includes(normalizedType)) return `env_precos_${normalizedBranch}`;
     if (["pendencias", "pendencia", "env_pend"].includes(normalizedType)) return `env_pend_${normalizedBranch}`;
-    throw new Error(`Tipo inválido para atualização: ${type}`);
+    throw new Error(`Tipo invÃ¡lido para atualizaÃ§Ã£o: ${type}`);
 }
 
 function formatEmailReceiptDate(dateValue = new Date()) {
     const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) throw new Error("Data inválida para atualização.");
+    if (Number.isNaN(date.getTime())) throw new Error("Data invÃ¡lida para atualizaÃ§Ã£o.");
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
 }
 
 function integrityUnsafe_updateEmailReceiptStatus({ laboratory, branch, type, processedAt = new Date() }) {
     const normalizedLaboratory = normalizeDatabaseText(laboratory);
-    if (!normalizedLaboratory) throw new Error("Laboratório obrigatório para atualizar o status do recebimento.");
+    if (!normalizedLaboratory) throw new Error("LaboratÃ³rio obrigatÃ³rio para atualizar o status do recebimento.");
 
     const column = getEmailReceiptColumn(type, branch);
     const value = formatEmailReceiptDate(processedAt);
