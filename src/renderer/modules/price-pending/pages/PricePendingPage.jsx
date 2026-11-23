@@ -85,10 +85,10 @@ export default function PricePendingPage() {
             return { success: false, error: message };
         }
     }
-    async function handleAcceptExternalUpdate({ id, column }) {
+    async function handleAcceptExternalUpdate(payload) {
         rowsState.setError(""); rowsState.setSuccess("");
         try {
-            await rowsState.acceptExternalUpdate({ id, column });
+            await rowsState.acceptExternalUpdate(payload);
             rowsState.setSuccess("Proposta externa processada. Valores protegidos foram preservados.");
         } catch (error) {
             rowsState.setError(error?.message || "Não foi possível processar a proposta externa.");

@@ -16,6 +16,8 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
     const [readOnly, setReadOnly] = useState(false);
     const serverRowsRef = useRef([]);
     const journalRef = useRef(new PricePendingEditJournal());
+    const expectedValuesRef = useRef(new Map());
+    const conflictsRef = useRef(new Map());
     const loadingRef = useRef(false);
     const pendingRef = useRef(0);
     const structuralRef = useRef(false);
@@ -29,7 +31,13 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
     readOnlyRef.current = readOnly;
 
     const publish = useCallback(() => {
-        if (mountedRef.current) setRenderedRows(journalRef.current.apply(serverRowsRef.current));
+        if (mountedRef.current) {
+            const conflicts = [...conflictsRef.current.values()];
+            setRenderedRows(journalRef.current.apply(serverRowsRef.current).map(row => ({
+                ...row,
+                __ppConflicts: conflicts.filter(item => item.id === row.id).map(item => item.column)
+            })));
+        }
     }, []);
     const setAllRows = useCallback(next => {
         epochRef.current += 1;
@@ -73,11 +81,75 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
 
     const updateLocalValue = useCallback((id, column, value) => {
         if (readOnlyRef.current || structuralRef.current) return;
+        const key = JSON.stringify([id, column]);
+        if (!expectedValuesRef.current.has(key)) {
+            const current = serverRowsRef.current.find(row => row.id === id);
+            if (!current) return;
+            expectedValuesRef.current.set(key, String(current[column] ?? ""));
+        }
+        epochRef.current += 1;
         journalRef.current.write(id, column, value);
         publish();
     }, [publish]);
 
-    const saveCell = useCallback((row, column) => {
+    const saveCell = useCallback((row, column, options = {}) => {
+        const cellKey = JSON.stringify([row.id, column]);
+        if (options.resolveConflict) {
+            return (async () => {
+                const draft = journalRef.current.get(row.id, column);
+                if (!draft || pendingRef.current || structuralRef.current) return { success: false };
+                structuralRef.current = true;
+                epochRef.current += 1;
+                if (mountedRef.current) setStructuralSaving(true);
+                let retry = false;
+                try {
+                    const latest = await window.alfadime.pricePending.getById(row.id);
+                    if (!latest || latest.active === 0) {
+                        if (options.resolveConflict !== "discard") {
+                            throw new Error("Registro removido. Use Descartar rascunho para revisar o descarte desta linha.");
+                        }
+                        if (!window.confirm("Registro removido. Descartar todos os rascunhos locais desta linha?")) return { success: false };
+                        journalRef.current.removeRow(row.id);
+                        for (const key of [...expectedValuesRef.current.keys()]) {
+                            if (JSON.parse(key)[0] === row.id) expectedValuesRef.current.delete(key);
+                        }
+                        for (const [key, entry] of conflictsRef.current) {
+                            if (entry.id === row.id) conflictsRef.current.delete(key);
+                        }
+                        serverRowsRef.current = serverRowsRef.current.filter(item => item.id !== row.id);
+                        publish();
+                        return { success: false, discarded: true };
+                    }
+                    if (journalRef.current.get(row.id, column)?.version !== draft.version) return { success: false };
+                    serverRowsRef.current = serverRowsRef.current.map(item => item.id === latest.id ? { ...item, ...latest } : item);
+                    if (options.resolveConflict === "discard") {
+                        journalRef.current.removeVersion(row.id, column, draft.version);
+                        expectedValuesRef.current.delete(cellKey);
+                        conflictsRef.current.delete(cellKey);
+                        if (mountedRef.current) setError("");
+                    } else if (window.confirm(
+                        `Valor atual no banco: ${String(latest[column] ?? "")}\nSeu rascunho: ${draft.value}\n\nDeseja tentar salvar seu rascunho sobre esse valor?`
+                    )) {
+                        expectedValuesRef.current.set(cellKey, String(latest[column] ?? ""));
+                        conflictsRef.current.delete(cellKey);
+                        retry = true;
+                    }
+                    publish();
+                } catch (failure) {
+                    report(failure, "Não foi possível revisar o conflito.");
+                    return { success: false };
+                } finally {
+                    structuralRef.current = false;
+                    epochRef.current += 1;
+                    if (mountedRef.current) setStructuralSaving(false);
+                }
+                return retry ? saveCell(row, column) : { success: false };
+            })();
+        }
+        if (conflictsRef.current.has(cellKey)) {
+            if (mountedRef.current) setError("Existe conflito nesta célula. Use Revisar ou Descartar rascunho.");
+            return Promise.resolve({ success: false, conflict: true });
+        }
         const permission = permissionsRef.current;
         const allowed = column === "laboratory" ? permission.canEditLaboratory
             : column === "observation" ? permission.canEditObservation
@@ -86,6 +158,7 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
         if (!draft) return Promise.resolve({ unchanged: true });
         if (!allowed || readOnlyRef.current || structuralRef.current) {
             journalRef.current.removeVersion(row.id, column, draft.version);
+            if (!journalRef.current.get(row.id, column)) expectedValuesRef.current.delete(cellKey);
             publish();
             if (mountedRef.current) setError("Alteração não salva: sem permissão ou banco em modo somente leitura.");
             return Promise.resolve({ success: false });
@@ -98,6 +171,7 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
         if (mountedRef.current) setPendingSaves(pendingRef.current);
         const task = queueRef.current.then(async () => {
             try {
+                if (conflictsRef.current.has(cellKey)) return { success: false, conflict: true };
                 if (readOnlyRef.current) throw new Error("O banco está em modo somente leitura. Tente conectar novamente.");
                 const currentPermission = permissionsRef.current;
                 const canSave = column === "laboratory" ? currentPermission.canEditLaboratory
@@ -112,10 +186,28 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
                     return { unchanged: true };
                 }
                 if (mountedRef.current) { setSavingCell(`${row.id}:${column}`); setError(""); }
-                const saved = await window.alfadime.pricePending.updateCell(row.id, column, draft.value);
+                if (!expectedValuesRef.current.has(cellKey)) {
+                    throw new Error("Valor original indisponível. Recarregue a linha antes de editar.");
+                }
+                const saved = await window.alfadime.ipc.invoke("price-pending:update-cell", {
+                    id: row.id, column, value: draft.value,
+                    expectedValue: expectedValuesRef.current.get(cellKey)
+                });
+                if (saved?.pricePendingConflict === true) {
+                    if (saved.row?.id === row.id) {
+                        serverRowsRef.current = serverRowsRef.current.map(item => item.id === row.id ? { ...item, ...saved.row } : item);
+                    }
+                    conflictsRef.current.set(cellKey, { id: row.id, column });
+                    publish();
+                    if (mountedRef.current) setError("Outra edição alterou esta célula. Seu rascunho foi preservado; use Revisar ou Descartar rascunho.");
+                    return { success: false, conflict: true };
+                }
                 if (!saved || saved.id !== row.id) throw new Error("Resposta de salvamento inválida. Confira o registro antes de editar novamente.");
                 serverRowsRef.current = serverRowsRef.current.map(item => item.id === saved.id ? { ...item, ...saved } : item);
                 journalRef.current.removeVersion(row.id, column, draft.version);
+                if (journalRef.current.get(row.id, column)) expectedValuesRef.current.set(cellKey, String(saved[column] ?? ""));
+                else expectedValuesRef.current.delete(cellKey);
+                conflictsRef.current.delete(cellKey);
                 publish();
                 return { success: true };
             } catch (failure) {
@@ -124,6 +216,10 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
                 report(failure, "Não foi possível salvar a alteração.");
                 return { success: false };
             } finally {
+                if (!journalRef.current.get(row.id, column)) {
+                    expectedValuesRef.current.delete(cellKey);
+                    conflictsRef.current.delete(cellKey);
+                }
                 queuedVersionsRef.current.delete(taskKey);
                 pendingRef.current -= 1;
                 epochRef.current += 1;
@@ -153,7 +249,14 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
         const permission = permissionsRef.current;
         const allowed = permission.canEditValues && permission.canEditFunction(permission.moduleKey, payload.column);
         return runExclusive(allowed, async () => {
+            if (typeof payload.expectedValue !== "string" || !payload.expectedProposal) {
+                throw new Error("A proposta confirmada não foi informada. Recarregue os dados.");
+            }
             const saved = await window.alfadime.pricePending.acceptExternalUpdate(payload);
+            if (saved?.pricePendingConflict === true) {
+                if (saved.row?.id === payload.id) setAllRows(rows => rows.map(row => row.id === payload.id ? { ...row, ...saved.row } : row));
+                throw new Error("A célula ou proposta mudou. Confira os dados atualizados antes de aceitar novamente.");
+            }
             if (!saved || saved.id !== payload.id) throw new Error("Resposta inválida ao processar a proposta externa. Recarregue para conferir.");
             setAllRows(current => current.map(row => row.id === saved.id ? { ...row, ...saved } : row));
             return saved;

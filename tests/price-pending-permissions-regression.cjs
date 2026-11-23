@@ -55,6 +55,10 @@ function ipcEnvironment(kind, fixtureData = fixture()) {
         api = load(path.join(price, "price-pending.ipc.js"), {
             electron: { ipcMain: ipc }, "./price-pending-authorization": fixtureData.api,
             "./price-pending.repository": repo,
+            "./price-pending-cell-edits.service": {
+                updateCell(data) { return { conflict: false, row: repo.updateCell(data.id, data.column, data.value) }; },
+                acceptExternalUpdate(data) { return { conflict: false, row: repo.acceptExternalCellUpdate(data) }; }
+            },
             "./price-pending-export.service": { exportToExcel: count, exportToExcelByLaboratory: count },
             "./price-pending.database": { testSharedConnection: count, DEFAULT_SHARED_DATABASE_PATH: "temporary" },
             "./price-pending-db-config.repository": { getDbConfig: count, saveDbConfig: count },
@@ -180,7 +184,7 @@ test("IPC atualização de recebimento exige a coluna correta", () => {
 });
 test("IPC edição autorizada chega uma vez ao repositório", () => {
     const h = ipcEnvironment("price"); h.grant("laboratory", "can_view"); h.grant("laboratory", "can_edit");
-    h.call("price-pending:update-cell", { id: "r", column: "laboratory", value: "LAB" }); assert.equal(h.effects(), 1);
+    h.call("price-pending:update-cell", { id: "r", column: "laboratory", value: "LAB", expectedValue: "LAB" }); assert.equal(h.effects(), 1);
 });
 test("IPC lista preserva shape e remove coluna negada", () => {
     const h = ipcEnvironment("price"); h.grant("laboratory", "can_view");

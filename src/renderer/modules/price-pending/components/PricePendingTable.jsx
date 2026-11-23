@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import PricePendingPriorityMenu from "./PricePendingPriorityMenu";
 import { getUpdateDateClass } from "../utils/price-pending.utils";
 
 export default function PricePendingTable({
     rows = [], allRowsCount = 0, searchTerm = "", headerGroups = [], visibleColumnsList = [],
     permissions, savingCell = null, saving = false, readOnly = false, interactionLocked = false, tableWrapperRef, onScroll,
-    onUpdateValue, onSaveCell, onRemoveLaboratory, onSelectPriority
+    onUpdateValue, onSaveCell, onRemoveLaboratory, onSelectPriority, onAcceptExternalUpdate
 }) {
     const safeRows = Array.isArray(rows) ? rows : [];
     const totalColumns = useMemo(() => {
@@ -16,6 +16,19 @@ export default function PricePendingTable({
         if (permissions.canRemoveLaboratory) count += 1;
         return count;
     }, [permissions, visibleColumnsList]);
+
+    function conflictActions(row, column) {
+        if (!row.__ppConflicts?.includes(column)) return null;
+        return (
+            <div className="pp-conflict-actions" role="status">
+                <span>Conflito: rascunho não salvo.</span>
+                <button type="button" disabled={saving || readOnly || interactionLocked}
+                    onClick={() => onSaveCell(row, column, { resolveConflict: "review" })}>Revisar</button>
+                <button type="button" disabled={saving || interactionLocked}
+                    onClick={() => onSaveCell(row, column, { resolveConflict: "discard" })}>Descartar rascunho</button>
+            </div>
+        );
+    }
 
     return (
         <section className="price-pending-card">
@@ -54,6 +67,7 @@ export default function PricePendingTable({
                                         <input type="text" value={row.laboratory || ""} disabled={readOnly || interactionLocked || !permissions.canEditLaboratory}
                                             onChange={event => onUpdateValue(row.id, "laboratory", event.target.value)}
                                             onBlur={() => onSaveCell(row, "laboratory")} title="Edite e clique fora para salvar" />
+                                        {conflictActions(row, "laboratory")}
                                     </td>
                                 )}
                                 {permissions.canViewObservation && (
@@ -61,16 +75,36 @@ export default function PricePendingTable({
                                         <input type="text" value={row.observation || ""} disabled={readOnly || interactionLocked || !permissions.canEditObservation}
                                             onChange={event => onUpdateValue(row.id, "observation", event.target.value)}
                                             onBlur={() => onSaveCell(row, "observation")} title={row.observation || ""} />
+                                        {conflictActions(row, "observation")}
                                     </td>
                                 )}
                                 {visibleColumnsList.map(column => {
                                     const canEditColumn = permissions.canEditValues && permissions.canEditFunction(permissions.moduleKey, column.key);
+                                    const proposal = row.pending_external_updates?.[column.key];
                                     return (
                                         <td key={column.key} className={`editable-cell group-${column.group} ${getUpdateDateClass(row[column.key])}`}>
                                             <input type="text" value={row[column.key] || ""} disabled={readOnly || interactionLocked || !canEditColumn}
                                                 onChange={event => onUpdateValue(row.id, column.key, event.target.value)}
                                                 onBlur={() => onSaveCell(row, column.key)}
                                                 title={row[column.key] || ""} />
+                                            {conflictActions(row, column.key)}
+                                            {proposal && (
+                                                <div className="pp-external-proposal">
+                                                    <span title={`Proposta: ${String(proposal.value ?? "")}\nOrigem: ${proposal.fileName || "-"}\nRegistro: ${proposal.updatedAt || "-"}`}>Proposta externa</span>
+                                                    {canEditColumn && typeof onAcceptExternalUpdate === "function" && (
+                                                        <button type="button" disabled={saving || readOnly || interactionLocked}
+                                                            onClick={() => {
+                                                                if (window.confirm(
+                                                                    `Processar a proposta "${String(proposal.value ?? "")}"?\nOrigem: ${proposal.fileName || "-"}\n\nValores protegidos continuarão preservados.`
+                                                                )) onAcceptExternalUpdate({
+                                                                    id: row.id, column: column.key,
+                                                                    expectedValue: String(row[column.key] ?? ""),
+                                                                    expectedProposal: { ...proposal }
+                                                                });
+                                                            }}>Aceitar</button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </td>
                                     );
                                 })}

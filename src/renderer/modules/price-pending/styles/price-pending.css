@@ -153,3 +153,11 @@
 .priority-menu-title { padding: 5px 7px; border-bottom: 1px solid #e6ebf2; color: #344b65; font-size: 9px; }
 .priority-menu button { border: 0; background: transparent; color: #263241; cursor: pointer; font-family: inherit; font-size: 10px; padding: 6px 8px; text-align: left; }
 .priority-menu button:hover { background: #f0f4f8; }
+
+/* A01/A02: controles restritos à tabela existente. */
+.price-pending-table .pp-external-proposal, .price-pending-table .pp-conflict-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; padding: 2px 0; font-family: inherit; font-size: 9px; white-space: normal; }
+.price-pending-table .pp-external-proposal span { color: #917238; }
+.price-pending-table .pp-conflict-actions span { width: 100%; color: #9f414c; }
+.price-pending-table .pp-external-proposal button, .price-pending-table .pp-conflict-actions button { border: 1px solid #cdd6df; border-radius: 3px; padding: 1px 4px; background: #fff; color: #344b65; cursor: pointer; font-family: inherit; font-size: 9px; }
+.price-pending-table .pp-external-proposal button:hover:not(:disabled), .price-pending-table .pp-conflict-actions button:hover:not(:disabled) { border-color: #3b5f86; background: #f0f4f8; }
+.price-pending-table .pp-external-proposal button:disabled, .price-pending-table .pp-conflict-actions button:disabled { cursor: not-allowed; opacity: .55; }

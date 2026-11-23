@@ -2,6 +2,7 @@ const { ipcMain } = require("electron");
 const path = require("node:path");
 const authorization = require("./price-pending-authorization");
 const repository = require("./price-pending.repository");
+const cellEdits = require("./price-pending-cell-edits.service");
 const { exportToExcel, exportToExcelByLaboratory } = require("./price-pending-export.service");
 const { testSharedConnection, DEFAULT_SHARED_DATABASE_PATH } = require("./price-pending.database");
 const { getDbConfig, saveDbConfig } = require("./price-pending-db-config.repository");
@@ -50,7 +51,12 @@ function registerPricePendingIpc() {
         const auth = authorization.context();
         const payload = object(data);
         auth.requireCell(payload.column);
-        return auth.projectRow(repository.updateCell(id(payload.id), payload.column, payload.value));
+        const result = cellEdits.updateCell({
+            id: id(payload.id), column: payload.column,
+            value: payload.value, expectedValue: payload.expectedValue
+        });
+        const row = auth.projectRow(result.row);
+        return result.conflict ? { pricePendingConflict: true, row } : row;
     });
     ipcMain.handle("price-pending:remove", (_event, rowId) => {
         authorization.context().requireFunction("price-pending", "remove_laboratory");
@@ -80,7 +86,12 @@ function registerPricePendingIpc() {
         const auth = authorization.context();
         const payload = object(data);
         auth.requireCell(payload.column);
-        return auth.projectRow(repository.acceptExternalCellUpdate({ id: id(payload.id), column: payload.column }));
+        const result = cellEdits.acceptExternalUpdate({
+            id: id(payload.id), column: payload.column,
+            expectedValue: payload.expectedValue, expectedProposal: payload.expectedProposal
+        });
+        const row = auth.projectRow(result.row);
+        return result.conflict ? { pricePendingConflict: true, row } : row;
     });
     ipcMain.handle("price-pending:export", (_event, options = {}) => {
         const auth = authorization.context();
