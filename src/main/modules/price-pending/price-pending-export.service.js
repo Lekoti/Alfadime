@@ -194,7 +194,7 @@ function exportToExcel({
     };
 }
 
-function exportToExcelByLaboratory({ filePath, laboratory } = {}) {
+function exportToExcelByLaboratory({ filePath, laboratory, includeColumns } = {}) {
     const normalizedLaboratory = normalizeLaboratory(laboratory);
 
     if (!normalizedLaboratory) {
@@ -209,7 +209,9 @@ function exportToExcelByLaboratory({ filePath, laboratory } = {}) {
         throw new Error(`Nenhuma linha encontrada para o laboratório: ${laboratory}`);
     }
 
-    const columns = [...COLUMN_DEFINITIONS.keys()];
+    const columns = includeColumns === undefined
+        ? [...COLUMN_DEFINITIONS.keys()]
+        : validateColumns(includeColumns);
     writeWorkbook(filePath, rows, columns);
 
     return {

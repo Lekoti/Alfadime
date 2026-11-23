@@ -130,7 +130,7 @@ function registerPricePendingIpc() {
         const fileName = `precos-pendencias-${new Date().toISOString().slice(0, 10)}.xlsx`;
         const filePath = options.filePath || path.join(__dirname, "..", "..", "..", "exports", fileName);
         if (options.laboratory) {
-            return exportToExcelByLaboratory({ filePath, laboratory: options.laboratory });
+            return exportToExcelByLaboratory({ filePath, laboratory: options.laboratory, includeColumns });
         }
         return exportToExcel({ filePath, includeColumns, rowIds: options.rowIds });
     });
