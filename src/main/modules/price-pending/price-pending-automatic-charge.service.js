@@ -53,7 +53,7 @@ function setEnabled(enabled, actor) {
     if (enabled && executing) throw new Error("Aguarde a execução atual terminar antes de reativar.");
     repository.setEnabled(enabled, actor);
     if (!enabled && executing) requestStop();
-    if (enabled) runCharge(false).catch(error => console.error("[Cobrança automática]", error));
+    if (enabled) runCharge(true).catch(error => console.error("[Cobrança automática]", error));
     return buildStatus();
 }
 function setChargeInterval(hours, actor) {

@@ -8,10 +8,17 @@ const BRANCHES = ["DPR", "AMS", "DMT", "DMS", "DSC"];
 
 function getPeriod(value) {
     const text = String(value ?? "").trim();
-    const match = text.match(/^(?:Atualizado\s*)?(?:\d{1,2}\/)?(\d{1,2})\/(\d{4})$/i);
-    if (!match) return null;
-    const month = Number(match[1]);
-    return month >= 1 && month <= 12 ? Number(match[2]) * 12 + month : null;
+    let match = text.match(/^(?:Atualizado\s*)?(?:\d{1,2}\/)?(\d{1,2})\/(\d{4})$/i);
+    if (match) {
+        const month = Number(match[1]);
+        return month >= 1 && month <= 12 ? Number(match[2]) * 12 + month : null;
+    }
+    match = text.match(/^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/);
+    if (match) {
+        const month = Number(match[2]);
+        return month >= 1 && month <= 12 ? Number(match[1]) * 12 + month : null;
+    }
+    return null;
 }
 
 function buildNotifications(rows, now = new Date()) {

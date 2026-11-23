@@ -105,9 +105,6 @@ function registerPricePendingIpc() {
         const fileName = `precos-pendencias-${new Date().toISOString().slice(0, 10)}.xlsx`;
         const filePath = options.filePath || path.join(__dirname, "..", "..", "..", "exports", fileName);
         if (options.laboratory) {
-            if (!authorization.COLUMNS.every(auth.canViewColumn)) {
-                throw new Error("A exportação por laboratório inclui todas as colunas. Use a exportação por seleção de linhas/colunas autorizadas.");
-            }
             return exportToExcelByLaboratory({ filePath, laboratory: options.laboratory });
         }
         return exportToExcel({ filePath, includeColumns, rowIds: options.rowIds });
