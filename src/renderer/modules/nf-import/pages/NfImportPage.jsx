@@ -1,3 +1,4 @@
+import useNfPurchaseSession from "../hooks/useNfPurchaseSession";
 import React, { useState } from "react";
 import useNfImport from "../hooks/useNfImport";
 import { BRANCHES } from "../constants/nfImport.constants";
@@ -5,6 +6,7 @@ import NfInvoiceDetails from "../components/NfInvoiceDetails";
 import "../styles/nf-import.css";
 export default function NfImportPage() {
     const model = useNfImport();
+    const purchase = useNfPurchaseSession(model.selected);
     const [branch, setBranch] = useState(""), [search, setSearch] = useState("");
     const rows = model.rows.filter((row) => (!branch || row.folderBranch === branch) &&
         [row.fileName, row.issuer, row.number, row.cnpj].join(" ").toLowerCase().includes(search.toLowerCase()));
@@ -12,7 +14,7 @@ export default function NfImportPage() {
         <header className="nf-heading"><h1>Importação NF</h1><button type="button" disabled={model.busy} onClick={model.open}>Importar outro XML</button></header>
         <p className="nf-muted">Somente leitura · nenhuma alteração em XMLs, produtos ou estoque.</p>
         {model.error && <p className="nf-error" role="alert">{model.error}</p>}
-        <NfInvoiceDetails key={model.selected.id || model.selected.fileName} invoice={model.selected} onClose={() => model.setSelected(null)} />
+        <NfInvoiceDetails purchase={purchase} key={model.selected.id || model.selected.fileName} invoice={model.selected} onClose={() => model.setSelected(null)} />
     </main>;
     return <main className="nf-page">
         <header className="nf-heading"><h1>Importação NF</h1><div className="nf-actions">
@@ -42,6 +44,6 @@ export default function NfImportPage() {
                 {row.items?.filter((item) => item.warnings.length).length || 0} item(ns) com pendências ou necessidade de conferência</td>
             <td><button type="button" onClick={() => model.setSelected(row)}>Ver detalhes</button></td>
         </tr>)}{!rows.length && <tr><td colSpan={5}>Nenhum XML listado. Importe um arquivo ou atualize as pastas.</td></tr>}</tbody></table></div></section>
-        <NfInvoiceDetails invoice={model.selected} onClose={() => model.setSelected(null)} />
+        <NfInvoiceDetails purchase={purchase} invoice={model.selected} onClose={() => model.setSelected(null)} />
     </main>;
 }

@@ -1,3 +1,5 @@
+import NfCodeInput from "./NfCodeInput";
+import NfPurchasePanel from "./NfPurchasePanel";
 import React, { useState } from "react";
 import { ORIGIN_REASON } from "../constants/nfImport.constants";
 function show(value) { return value === undefined || value === null || value === "" ? "—" : String(value); }
@@ -11,7 +13,7 @@ function destination(item, invoice) {
     if (rows[0].basis !== "EAN tributável") return { code: rows[0].code, label: "Conferir unidade / EAN comercial", tone: "warning" };
     return { code: rows[0].code, label: "Localizado", tone: "found" };
 }
-export default function NfInvoiceDetails({ invoice, onClose }) {
+export default function NfInvoiceDetails({ invoice, onClose, purchase }) {
     const [expanded, setExpanded] = useState({});
     if (!invoice) return null;
     const toggle = (index) => setExpanded((current) => ({ ...current, [index]: !current[index] }));
@@ -35,12 +37,13 @@ export default function NfInvoiceDetails({ invoice, onClose }) {
             <tr><th>Item</th><th>EAN</th><th title="cProd: código do fornecedor no XML">Cód. fornecedor</th><th>Produto</th><th title="cEANTrib">EAN tributado</th><th title="uCom">UN/CX</th><th title="qCom">Qtd 1</th><th title="qTrib">QTD 2</th><th title="vUnTrib">Vlr unit.</th><th>Base ICMS</th><th>% ICMS</th><th>Valor ICMS</th><th title="Sem conversão definida">QTD CX</th><th className="nf-dest-header">Código interno</th><th className="nf-dest-header">QTD</th></tr></thead>
         <tbody>{invoice.items.map((item, index) => {
             const result = destination(item, invoice);
+            const codeField = purchase?.getItemCode(index);
             return <React.Fragment key={`${item.line}-${index}`}><tr className={index % 2 ? "nf-sheet-alt" : ""}>
                 <td><button type="button" className="nf-expand" onClick={() => toggle(index)} aria-expanded={Boolean(expanded[index])} aria-label={`Detalhes do item ${item.line}`}>{expanded[index] ? "−" : "+"} {item.line}</button></td>
                 <td>{show(item.ean)}</td><td>{show(item.supplierCode)}</td><td className="nf-product" title={item.description}>{show(item.description)}</td><td>{show(item.taxEan)}</td><td>{show(item.unit)}</td>
                 <td className="nf-number">{num(item.quantity)}</td><td className="nf-number">{num(item.tributaryQuantity)}</td><td className="nf-number">{num(item.tributaryUnitValue, 10, 2)}</td>
                 <td className="nf-number">{num(item.icmsBase, 2, 2)}</td><td className="nf-number">{num(item.icmsRate, 4, 2)}</td><td className="nf-number">{num(item.icmsValue, 2, 2)}</td><td className="nf-number" title="Conversão não definida na planilha">—</td>
-                <td className="nf-dest-cell"><strong>{result.code || "—"}</strong><button type="button" className={`nf-status nf-tone-${result.tone}`} onClick={() => toggle(index)}>{result.label}</button></td><td className="nf-dest-cell nf-number">{num(item.tributaryQuantity)}</td>
+                <td className="nf-dest-cell"><NfCodeInput value={codeField?.value ?? result.code} manual={Boolean(codeField?.manual)} label={codeField?.label || result.label} onChange={(value) => purchase?.setCode(index, value)} onRestore={() => purchase?.restoreCode(index)} onDetails={() => toggle(index)} /></td><td className="nf-dest-cell nf-number">{num(item.tributaryQuantity)}</td>
             </tr>{expanded[index] && <tr className="nf-extra-row"><td colSpan={15}><div className="nf-item-extra">
                 <section><h3>Fiscal e unidades</h3><p>NCM: {show(item.ncm)} · CFOP: {show(item.cfop)} · ICMS: {show(item.icmsGroup)}</p><p>Unidade comercial: {show(item.unit)} · tributável: {show(item.tributaryUnit)}</p><p>Vlr. unitário comercial: {num(item.unitValue, 10, 2)} · total do produto: {num(item.total, 2, 2)}</p><p>ICMS-ST: base {num(item.icmsStBase, 2, 2)} · valor {num(item.icmsStValue, 2, 2)}</p><p>QTD CX não estimada: regra de conversão não definida.</p></section>
                 <section><h3>Correspondências e sugestões</h3>{item.matches?.length ? <ul>{item.matches.map((match, i) => <li key={i}>{match.branch === invoice.destination?.key ? "Destino" : "Outra filial"}: {match.branch} · código {show(match.code)} · {show(match.description)}<br/>{match.basis}{!match.active && " · INATIVO"}</li>)}</ul> : <p>Nenhuma correspondência automática por EAN.</p>}<p>Informativo: conferir unidade e apresentação. Nenhuma duplicação é executada.</p></section>
@@ -49,6 +52,7 @@ export default function NfInvoiceDetails({ invoice, onClose }) {
             </div></td></tr>}</React.Fragment>;
         })}{!invoice.items.length && <tr><td colSpan={15}>Nenhum item disponível. Consulte o diagnóstico.</td></tr>}</tbody></table></div>
         <p className="nf-sheet-help">Clique no item ou na situação para ver detalhes. Qtd 1 = comercial; QTD 2 e QTD do destino = tributável. Valores em reais.</p>
+        <NfPurchasePanel key={purchase?.id} invoice={invoice} session={purchase} />
         <details className="nf-diagnostic" open={!invoice.readable}><summary>Diagnóstico e informações adicionais ({issueCount} apontamento(s))</summary>
             {invoice.folderBranch && <p className="nf-notice">Origem: ComErros / {invoice.folderBranch}. Motivo do sistema externo: {ORIGIN_REASON}</p>}
             {invoice.warnings.length ? <ul>{invoice.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul> : <p>Sem pendências gerais nas verificações implementadas. Isso não comprova importabilidade no ERP.</p>}

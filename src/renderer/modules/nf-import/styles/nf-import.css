@@ -69,3 +69,34 @@
 .nf-diagnostic summary { cursor:pointer; font-weight:600; } .nf-diagnostic li { line-height:1.5; } .nf-break { overflow-wrap:anywhere; }
 @media(max-width:1050px) { .nf-identity { grid-template-columns:1.5fr 1fr; } .nf-totals { grid-template-columns:repeat(3,minmax(100px,1fr)); } }
 @media(max-width:700px) { .nf-identity,.nf-item-extra { grid-template-columns:1fr; } }
+
+/* Pedido de compra e código manual — estilos exclusivos do módulo NF. */
+.nf-page .nf-code-field { display:flex; flex-direction:column; gap:4px; }
+.nf-page input.nf-code-input { width:100%; min-width:80px; font-size:12px; padding:5px 6px; background:#fff; font-variant-numeric:tabular-nums; }
+.nf-code-field>span { font-size:10px; line-height:1.35; }
+.nf-code-manual { color:#805b0d; }
+.nf-code-actions { display:flex; gap:5px; flex-wrap:wrap; }
+.nf-page .nf-code-actions button { font-size:10px; padding:2px 4px; }
+.nf-page input[aria-invalid="true"] { border-color:#b82d35; }
+.nf-purchase { margin:14px; padding:14px; border:1px solid #d5dfed; background:#fafcff; border-radius:6px; font-size:12px; }
+.nf-purchase header h3 { margin:0; font-size:14px; }
+.nf-purchase .nf-actions select,.nf-purchase .nf-actions button { font-size:12px; }
+.nf-paste { margin:10px 0; border:1px solid #dce1e8; padding:9px; border-radius:5px; background:#fff; }
+.nf-paste summary,.nf-report-preview summary { cursor:pointer; }
+.nf-paste textarea { display:block; width:100%; min-height:180px; resize:vertical; margin:9px 0; padding:8px; border:1px solid #cbd5e1; font:12px Consolas,monospace; white-space:pre; }
+.nf-unit-confirm { background:#fff5d9; border:1px solid #e9d799; padding:10px; border-radius:5px; line-height:1.5; }
+.nf-unit-confirm input { flex:0 0 auto; }
+.nf-purchase-message { padding:9px; border:1px solid #cedecf; background:#f0f7f0; border-radius:5px; }
+.nf-purchase-group { margin:12px 0; padding:11px; border:1px solid #d7e0ec; border-radius:5px; background:#fff; }
+.nf-purchase-group .nf-heading { align-items:flex-start; }
+.nf-purchase-group h3 { max-width:800px; line-height:1.5; }
+.nf-purchase-scroll { overflow:auto; max-height:420px; margin-top:8px; }
+.nf-page table.nf-purchase-table { border-collapse:collapse; width:100%; font-size:11px; }
+.nf-page .nf-purchase-table th { position:sticky; top:0; background:#e5edf9; color:#24466f; }
+.nf-page .nf-purchase-table td,.nf-page .nf-purchase-table th { min-width:85px; max-width:340px; padding:7px; vertical-align:middle; border:1px solid #d7dfeb; line-height:1.45; }
+.nf-page .nf-purchase-table tbody tr:nth-child(even) td { background:#f5f7fb; }
+.nf-page .nf-purchase-table button { display:block; margin:3px 0; font-size:11px; padding:5px 7px; white-space:nowrap; }
+.nf-page input.nf-allocation-input { min-width:125px; width:135px; font-size:12px; padding:6px; }
+.nf-report-preview { margin:10px 0; }
+.nf-release { margin-top:8px; }
+.nf-session-warning { color:#805b0d; line-height:1.5; border-top:1px solid #e0e5ed; margin-top:14px; padding-top:10px; }
