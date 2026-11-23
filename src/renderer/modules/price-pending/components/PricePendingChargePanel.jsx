@@ -56,7 +56,11 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
     onCloseRef.current = onClose;
     detailRef.current = detail;
 
+    const lastStatusJson = useRef("");
     const acceptStatus = useCallback(result => {
+        const serialized = JSON.stringify(result);
+        if (serialized === lastStatusJson.current) return;
+        lastStatusJson.current = serialized;
         statusRef.current = result;
         setStatus(result);
         if (!intervalDirty.current) setSelectedInterval(Number(result?.interval_hours || 48));
@@ -160,15 +164,11 @@ export default function PricePendingChargePanel({ open, onClose, canManage }) {
         if (!open) return undefined;
         loadStatus(); loadHistory();
         const timer = globalThis.setInterval(loadStatus, 1000);
-        const historyTimer = globalThis.setInterval(() => {
-            loadHistory();
-            if (detailRef.current?.id) loadDetail(detailRef.current.id).catch(failure => setError(failure.message));
-        }, 10000);
         const countdownTimer = globalThis.setInterval(() => setCountdown(remaining(statusRef.current?.next_allowed_ms)), 1000);
         function key(event) { if (event.key === "Escape") onCloseRef.current(); }
         document.addEventListener("keydown", key);
         return () => {
-            clearInterval(timer); clearInterval(historyTimer); clearInterval(countdownTimer);
+            clearInterval(timer); clearInterval(countdownTimer);
             statusVersion.current += 1; request.current += 1; detailRequest.current += 1;
             document.removeEventListener("keydown", key);
         };

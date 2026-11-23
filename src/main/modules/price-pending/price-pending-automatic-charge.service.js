@@ -50,6 +50,8 @@ function requestStop() {
     if (activePreview) favoritesService.cancelCharge({ preview_token: activePreview });
 }
 function setEnabled(enabled, actor) {
+    const currentStatus = repository.getStatus();
+    if (currentStatus.recovery_required) repository.recoverIfExpired(actor);
     if (enabled && executing) throw new Error("Aguarde a execução atual terminar antes de reativar.");
     repository.setEnabled(enabled, actor);
     if (!enabled && executing) requestStop();
@@ -85,7 +87,11 @@ async function runCharge(manual = false) {
     let result = null;
     let failure = null;
     try {
-        const status = repository.getStatus();
+        let status = repository.getStatus();
+        if (status.recovery_required) {
+            repository.recoverIfExpired("Sistema");
+            status = repository.getStatus();
+        }
         if (!status.enabled || status.running) return { success: false, reason: "disabled_or_locked" };
         if (!manual && Date.now() < status.next_allowed_ms) return { success: false, reason: "not_due" };
         owner = repository.tryLock(manual);

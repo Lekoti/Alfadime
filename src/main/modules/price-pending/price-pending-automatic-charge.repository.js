@@ -95,6 +95,18 @@ function clearLastError(actor) {
     }).immediate();
     return getStatus();
 }
+function recoverIfExpired(actor) {
+    const database = db();
+    return database.transaction(() => {
+        const row = database.prepare("SELECT * FROM price_pending_auto_v3 WHERE id = ?").get(KEY);
+        if (!row?.owner) return false;
+        if (Number(row.lease_until || 0) > Date.now()) return false;
+        database.prepare("UPDATE price_pending_auto_v3 SET owner = NULL, lease_until = NULL, updated_at = ? WHERE id = ?").run(iso(), KEY);
+        event("reserva-expirada-liberada", actor, row.owner);
+        return true;
+    }).immediate();
+}
+
 function tryLock(manual = false) {
     const database = db();
     return database.transaction(() => {
@@ -133,4 +145,4 @@ function finish(owner, result = {}, error = null) {
         }));
     }).immediate();
 }
-module.exports = { getStatus, setEnabled, setIntervalHours, clearLastError, tryLock, heartbeat, finish, event, DEFAULT_INTERVAL_HOURS };
+module.exports = { getStatus, setEnabled, setIntervalHours, clearLastError, recoverIfExpired, tryLock, heartbeat, finish, event, DEFAULT_INTERVAL_HOURS };
