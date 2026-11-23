@@ -18,21 +18,30 @@ function buildSummary(rows, visibleColumnsList) {
     const safeColumns = Array.isArray(visibleColumnsList) ? visibleColumnsList : [];
     const priceColumns = safeColumns.filter((c) => c.group === "precos_ok");
     const pendingColumns = safeColumns.filter((c) => c.group === "pendencias_ok");
+    const isNotWorking = (value) => String(value ?? "").trim().toUpperCase() === "NAO TRABALHA";
     const countUpdated = (columns) => {
         let updated = 0;
         safeRows.forEach((row) => columns.forEach((column) => {
             const value = row[column.key];
+            if (isNotWorking(value)) return;
             if (String(value ?? "").trim() !== "" && isUpdatedPeriod(value)) updated += 1;
         }));
         return updated;
     };
-    const pricesUpdated = countUpdated(priceColumns);
-    const pendingUpdated = countUpdated(pendingColumns);
+    const countPending = (columns) => {
+        let pending = 0;
+        safeRows.forEach((row) => columns.forEach((column) => {
+            const value = row[column.key];
+            if (isNotWorking(value)) return;
+            if (!(String(value ?? "").trim() !== "" && isUpdatedPeriod(value))) pending += 1;
+        }));
+        return pending;
+    };
     return {
-        pricesUpdated,
-        pricesPending: Math.max(0, safeRows.length * priceColumns.length - pricesUpdated),
-        pendingUpdated,
-        pendingPending: Math.max(0, safeRows.length * pendingColumns.length - pendingUpdated)
+        pricesUpdated: countUpdated(priceColumns),
+        pricesPending: countPending(priceColumns),
+        pendingUpdated: countUpdated(pendingColumns),
+        pendingPending: countPending(pendingColumns)
     };
 }
 
@@ -80,7 +89,7 @@ export default function PricePendingPage() {
             rowsState.setSuccess(priority ? "Prioridade atualizada." : "Prioridade removida.");
             return { success: true };
         } catch (error) {
-            const message = error?.message || "Não foi possível atualizar a prioridade.";
+            const message = error?.message || "NÃ£o foi possÃ­vel atualizar a prioridade.";
             rowsState.setError(message);
             return { success: false, error: message };
         }
@@ -91,7 +100,7 @@ export default function PricePendingPage() {
             await rowsState.acceptExternalUpdate(payload);
             rowsState.setSuccess("Proposta externa processada. Valores protegidos foram preservados.");
         } catch (error) {
-            rowsState.setError(error?.message || "Não foi possível processar a proposta externa.");
+            rowsState.setError(error?.message || "NÃ£o foi possÃ­vel processar a proposta externa.");
         }
     }
     async function handleExport(selectedColumns) {
