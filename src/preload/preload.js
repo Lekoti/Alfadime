@@ -551,6 +551,35 @@ contextBridge.exposeInMainWorld(
                     payload
                 ),
 
+            listCellVersions: (
+                rowIds
+            ) =>
+                invoke(
+                    "price-pending:list-cell-versions",
+                    rowIds
+                ),
+
+            listDrafts: () =>
+                invoke(
+                    "price-pending:list-drafts"
+                ),
+
+            saveDraft: (
+                payload
+            ) =>
+                invoke(
+                    "price-pending:save-draft",
+                    payload
+                ),
+
+            deleteDraft: (
+                payload
+            ) =>
+                invoke(
+                    "price-pending:delete-draft",
+                    payload
+                ),
+
 
 
 

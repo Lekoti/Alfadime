@@ -54,6 +54,23 @@ function ensurePricePendingSchema(database) {
         }
     }
     database.exec(`
+        CREATE TABLE IF NOT EXISTS price_pending_cell_versions (
+            row_id TEXT NOT NULL,
+            column_name TEXT NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (row_id, column_name)
+        );
+        CREATE TABLE IF NOT EXISTS price_pending_drafts (
+            row_id TEXT NOT NULL,
+            column_name TEXT NOT NULL,
+            owner_id TEXT NOT NULL,
+            value TEXT NOT NULL DEFAULT '',
+            base_value TEXT NOT NULL DEFAULT '',
+            base_version INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (row_id, column_name, owner_id)
+        );
         CREATE TABLE IF NOT EXISTS price_pending_processed_files (
             id TEXT PRIMARY KEY, file_path TEXT NOT NULL UNIQUE, file_name TEXT NOT NULL,
             file_type TEXT NOT NULL, file_size INTEGER NOT NULL, file_mtime_ms INTEGER NOT NULL,

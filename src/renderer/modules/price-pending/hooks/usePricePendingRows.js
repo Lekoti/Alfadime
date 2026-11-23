@@ -18,6 +18,9 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
     const journalRef = useRef(new PricePendingEditJournal());
     const expectedValuesRef = useRef(new Map());
     const conflictsRef = useRef(new Map());
+    const versionsRef = useRef(new Map());
+    const expectedVersionsRef = useRef(new Map());
+    const draftTimersRef = useRef(new Map());
     const loadingRef = useRef(false);
     const pendingRef = useRef(0);
     const structuralRef = useRef(false);
@@ -64,6 +67,18 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
             if (!Array.isArray(result)) throw new Error("O aplicativo retornou uma lista de laboratórios inválida.");
             if (!mountedRef.current || epoch !== epochRef.current) return { skipped: true };
             serverRowsRef.current = result;
+            const rowIds = result.map(item => item.id);
+            const [versions, drafts] = await Promise.all([
+                window.alfadime.pricePending.listCellVersions(rowIds),
+                window.alfadime.pricePending.listDrafts()
+            ]);
+            versionsRef.current = new Map((Array.isArray(versions) ? versions : []).map(item => [JSON.stringify([item.row_id, item.column_name]), Number(item.version)]));
+            for (const draft of (Array.isArray(drafts) ? drafts : [])) {
+                const draftKey = JSON.stringify([draft.row_id, draft.column_name]);
+                journalRef.current.write(draft.row_id, draft.column_name, draft.value);
+                expectedValuesRef.current.set(draftKey, String(draft.base_value ?? ""));
+                expectedVersionsRef.current.set(draftKey, Number(draft.base_version ?? 1));
+            }
             publish();
             readOnlyRef.current = false;
             setReadOnly(false);
@@ -87,9 +102,24 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
             if (!current) return;
             expectedValuesRef.current.set(key, String(current[column] ?? ""));
         }
+        if (!expectedVersionsRef.current.has(key)) {
+            expectedVersionsRef.current.set(key, Number(versionsRef.current.get(key) ?? 1));
+        }
         epochRef.current += 1;
         journalRef.current.write(id, column, value);
         publish();
+        const previousTimer = draftTimersRef.current.get(key);
+        if (previousTimer) clearTimeout(previousTimer);
+        draftTimersRef.current.set(key, setTimeout(() => {
+            draftTimersRef.current.delete(key);
+            window.alfadime.pricePending.saveDraft({
+                rowId: id,
+                column,
+                value,
+                baseValue: expectedValuesRef.current.get(key),
+                baseVersion: expectedVersionsRef.current.get(key)
+            }).catch(() => {});
+        }, 800));
     }, [publish]);
 
     const saveCell = useCallback((row, column, options = {}) => {
@@ -122,15 +152,24 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
                     }
                     if (journalRef.current.get(row.id, column)?.version !== draft.version) return { success: false };
                     serverRowsRef.current = serverRowsRef.current.map(item => item.id === latest.id ? { ...item, ...latest } : item);
+                    const versionRows = await window.alfadime.pricePending.listCellVersions([row.id]);
+                    for (const versionItem of (Array.isArray(versionRows) ? versionRows : [])) {
+                        versionsRef.current.set(JSON.stringify([versionItem.row_id, versionItem.column_name]), Number(versionItem.version));
+                    }
                     if (options.resolveConflict === "discard") {
                         journalRef.current.removeVersion(row.id, column, draft.version);
                         expectedValuesRef.current.delete(cellKey);
+                        expectedVersionsRef.current.delete(cellKey);
+                        const discardTimer = draftTimersRef.current.get(cellKey);
+                        if (discardTimer) { clearTimeout(discardTimer); draftTimersRef.current.delete(cellKey); }
+                        window.alfadime.pricePending.deleteDraft({ rowId: row.id, column }).catch(() => {});
                         conflictsRef.current.delete(cellKey);
                         if (mountedRef.current) setError("");
                     } else if (window.confirm(
                         `Valor atual no banco: ${String(latest[column] ?? "")}\nSeu rascunho: ${draft.value}\n\nDeseja tentar salvar seu rascunho sobre esse valor?`
                     )) {
                         expectedValuesRef.current.set(cellKey, String(latest[column] ?? ""));
+                        expectedVersionsRef.current.set(cellKey, Number(versionsRef.current.get(cellKey) ?? 1));
                         conflictsRef.current.delete(cellKey);
                         retry = true;
                     }
@@ -182,6 +221,9 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
                 if (!current) throw new Error("Registro não encontrado na lista atual.");
                 if (String(current[column] ?? "") === draft.value) {
                     journalRef.current.removeVersion(row.id, column, draft.version);
+                    const unchangedTimer = draftTimersRef.current.get(cellKey);
+                    if (unchangedTimer) { clearTimeout(unchangedTimer); draftTimersRef.current.delete(cellKey); }
+                    window.alfadime.pricePending.deleteDraft({ rowId: row.id, column }).catch(() => {});
                     publish();
                     return { unchanged: true };
                 }
@@ -191,7 +233,8 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
                 }
                 const saved = await window.alfadime.ipc.invoke("price-pending:update-cell", {
                     id: row.id, column, value: draft.value,
-                    expectedValue: expectedValuesRef.current.get(cellKey)
+                    expectedValue: expectedValuesRef.current.get(cellKey),
+                    expectedVersion: expectedVersionsRef.current.get(cellKey)
                 });
                 if (saved?.pricePendingConflict === true) {
                     if (saved.row?.id === row.id) {
@@ -207,6 +250,12 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
                 journalRef.current.removeVersion(row.id, column, draft.version);
                 if (journalRef.current.get(row.id, column)) expectedValuesRef.current.set(cellKey, String(saved[column] ?? ""));
                 else expectedValuesRef.current.delete(cellKey);
+                const nextVersion = Number(expectedVersionsRef.current.get(cellKey) ?? 1) + 1;
+                versionsRef.current.set(cellKey, nextVersion);
+                expectedVersionsRef.current.set(cellKey, nextVersion);
+                const successTimer = draftTimersRef.current.get(cellKey);
+                if (successTimer) { clearTimeout(successTimer); draftTimersRef.current.delete(cellKey); }
+                window.alfadime.pricePending.deleteDraft({ rowId: row.id, column }).catch(() => {});
                 conflictsRef.current.delete(cellKey);
                 publish();
                 return { success: true };
@@ -329,7 +378,11 @@ export default function usePricePendingRows({ permissions, enabled = true }) {
 
     useEffect(() => {
         mountedRef.current = true;
-        return () => { mountedRef.current = false; };
+        return () => {
+            mountedRef.current = false;
+            for (const timer of draftTimersRef.current.values()) clearTimeout(timer);
+            draftTimersRef.current.clear();
+        };
     }, []);
     useEffect(() => {
         if (!enabled) return;

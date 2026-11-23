@@ -576,8 +576,58 @@ function updateEmailReceiptStatus(payload) {
     return database.transaction(() => integrityUnsafe_updateEmailReceiptStatus(payload)).immediate();
 }
 
+function listCellVersions(rowIds) {
+    const database = getPricePendingDatabase();
+    const ids = (Array.isArray(rowIds) ? rowIds : []).filter(item => typeof item === "string" && item.trim());
+    if (!ids.length) return [];
+    const placeholders = ids.map(() => "?").join(",");
+    return database.prepare(`SELECT row_id, column_name, version FROM price_pending_cell_versions WHERE row_id IN (${placeholders})`).all(...ids);
+}
+
+function getCellVersion(rowId, column) {
+    const database = getPricePendingDatabase();
+    const row = database.prepare(`SELECT version FROM price_pending_cell_versions WHERE row_id = ? AND column_name = ?`).get(rowId, column);
+    return Number(row?.version ?? 1);
+}
+
+function bumpCellVersion(rowId, column) {
+    const database = getPricePendingDatabase();
+    const now = new Date().toISOString();
+    database.prepare(`
+        INSERT INTO price_pending_cell_versions (row_id, column_name, version, updated_at)
+        VALUES (?, ?, 2, ?)
+        ON CONFLICT(row_id, column_name) DO UPDATE SET version = version + 1, updated_at = excluded.updated_at
+    `).run(rowId, column, now);
+    return getCellVersion(rowId, column);
+}
+
+function saveDraft({ rowId, column, ownerId, value, baseValue, baseVersion }) {
+    const database = getPricePendingDatabase();
+    const now = new Date().toISOString();
+    database.prepare(`
+        INSERT INTO price_pending_drafts (row_id, column_name, owner_id, value, base_value, base_version, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(row_id, column_name, owner_id) DO UPDATE SET
+            value = excluded.value, base_value = excluded.base_value,
+            base_version = excluded.base_version, updated_at = excluded.updated_at
+    `).run(rowId, column, String(ownerId || ""), String(value ?? ""), String(baseValue ?? ""), Number(baseVersion ?? 1), now);
+    return { success: true };
+}
+
+function listDrafts(ownerId) {
+    const database = getPricePendingDatabase();
+    return database.prepare(`SELECT row_id, column_name, value, base_value, base_version FROM price_pending_drafts WHERE owner_id = ?`).all(String(ownerId || ""));
+}
+
+function deleteDraft({ rowId, column, ownerId }) {
+    const database = getPricePendingDatabase();
+    database.prepare(`DELETE FROM price_pending_drafts WHERE row_id = ? AND column_name = ? AND owner_id = ?`).run(rowId, column, String(ownerId || ""));
+    return { success: true };
+}
+
 module.exports = {
     listRows, createRow, updateCell, applyExternalCellUpdate, acceptExternalCellUpdate, removeRow, getRowById,
+    listCellVersions, getCellVersion, bumpCellVersion, saveDraft, listDrafts, deleteDraft,
     EDITABLE_COLUMNS, EXTERNAL_COLUMNS, updateEmailReceiptStatus, normalizeLaboratoryName, getIndustryGlobalCode,
     getIndustryGlobalCodeMap, getIndustryGlobalCodeByLaboratory, getPricePendingValues, getPricePendingStatus,
     getPricePendingStatusMap, VALID_BRANCHES

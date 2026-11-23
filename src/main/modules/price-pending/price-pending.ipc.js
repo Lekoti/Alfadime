@@ -53,7 +53,8 @@ function registerPricePendingIpc() {
         auth.requireCell(payload.column);
         const result = cellEdits.updateCell({
             id: id(payload.id), column: payload.column,
-            value: payload.value, expectedValue: payload.expectedValue
+            value: payload.value, expectedValue: payload.expectedValue,
+            expectedVersion: Number(payload.expectedVersion), ownerId: String(auth.id)
         });
         const row = auth.projectRow(result.row);
         return result.conflict ? { pricePendingConflict: true, row } : row;
@@ -92,6 +93,30 @@ function registerPricePendingIpc() {
         });
         const row = auth.projectRow(result.row);
         return result.conflict ? { pricePendingConflict: true, row } : row;
+    });
+    ipcMain.handle("price-pending:list-cell-versions", (_event, rowIds) => {
+        authorization.context().requireModule("price-pending");
+        return repository.listCellVersions(Array.isArray(rowIds) ? rowIds : []);
+    });
+    ipcMain.handle("price-pending:list-drafts", () => {
+        const auth = authorization.context();
+        auth.requireModule("price-pending");
+        return repository.listDrafts(String(auth.id));
+    });
+    ipcMain.handle("price-pending:save-draft", (_event, data) => {
+        const auth = authorization.context();
+        const payload = object(data);
+        auth.requireCell(payload.column);
+        return repository.saveDraft({
+            rowId: id(payload.rowId), column: payload.column, ownerId: String(auth.id),
+            value: payload.value, baseValue: payload.baseValue, baseVersion: payload.baseVersion
+        });
+    });
+    ipcMain.handle("price-pending:delete-draft", (_event, data) => {
+        const auth = authorization.context();
+        const payload = object(data);
+        auth.requireCell(payload.column);
+        return repository.deleteDraft({ rowId: id(payload.rowId), column: payload.column, ownerId: String(auth.id) });
     });
     ipcMain.handle("price-pending:export", (_event, options = {}) => {
         const auth = authorization.context();

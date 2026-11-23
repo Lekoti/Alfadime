@@ -20,7 +20,8 @@ function fixture() {
         EDITABLE_COLUMNS: ["laboratory", "observation", "precos_ok_dpr"], EXTERNAL_COLUMNS: ["precos_ok_dpr"],
         getRowById() { return clone(row); },
         updateCell(id, col, value) { assert.equal(inside, true); writes++; row[col] = String(value ?? ""); return clone(row); },
-        acceptExternalCellUpdate({column}) { assert.equal(inside, true); writes++; row[column] = row.pending_external_updates[column].value; delete row.pending_external_updates[column]; return clone(row); }
+        acceptExternalCellUpdate({column}) { assert.equal(inside, true); writes++; row[column] = row.pending_external_updates[column].value; delete row.pending_external_updates[column]; return clone(row); },
+        getCellVersion: () => 1, bumpCellVersion: () => {}, deleteDraft: () => {}
     };
     const module = { exports: {} };
     vm.runInNewContext(fs.readFileSync(file, "utf8"), { module, exports: module.exports, require(name) {
@@ -29,7 +30,7 @@ function fixture() {
         throw new Error(`Dependência real bloqueada: ${name}`);
     } }, { filename: file });
     return { api: module.exports, row: () => row, writes: () => writes,
-        payload: () => ({ id: "r", column: "precos_ok_dpr", value: "20/11/2026", expectedValue: "01/11/2026" }) };
+        payload: () => ({ id: "r", column: "precos_ok_dpr", value: "20/11/2026", expectedValue: "01/11/2026", expectedVersion: 1, ownerId: "u" }) };
 }
 test("serviço: grava dentro da transação quando a base coincide", () => {
     const f = fixture(); assert.equal(f.api.updateCell(f.payload()).conflict, false); assert.equal(f.writes(), 1);
