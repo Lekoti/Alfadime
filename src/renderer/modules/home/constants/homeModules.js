@@ -1,4 +1,5 @@
 ﻿const MODULES = [
+    { path: "/nf-import", moduleKey: "products", icon: "ShoppingCart", title: "Importação NF", description: "Consulta de XMLs e diagnóstico das pastas ComErros, somente leitura." },
     {
         path: "/products",
         moduleKey: "products",

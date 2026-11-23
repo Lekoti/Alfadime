@@ -19,6 +19,7 @@ function Sidebar({ collapsed = false, onToggle }) {
     }, []);
 
     const menuItems = [
+        { key: "/nf-import", label: "Importação NF", icon: "▤" },
         { key: "/", label: "Início", icon: "⌂", exact: true },
         { key: "/products", label: "Produtos", icon: "▤" },
         { key: "/product-audit", label: "Auditoria de Produtos", icon: "✓" },

@@ -2154,3 +2154,13 @@ contextBridge.exposeInMainWorld(
         }
     }
 );
+
+// Importação NF: ponte isolada, sem substituir a API existente.
+contextBridge.exposeInMainWorld("alfadimeNfImport", {
+    root: () => ipcRenderer.invoke("nf-import:root"),
+    chooseRoot: () => ipcRenderer.invoke("nf-import:choose-root"),
+    scan: () => ipcRenderer.invoke("nf-import:scan"),
+    read: (id) => ipcRenderer.invoke("nf-import:read", id),
+    products: (eans) => ipcRenderer.invoke("nf-import:products", eans),
+    open: () => ipcRenderer.invoke("nf-import:open")
+});

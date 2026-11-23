@@ -1,3 +1,4 @@
+import NfImportPage from "./modules/nf-import/pages/NfImportPage.jsx";
 ﻿import React from "react";
 
 
@@ -88,6 +89,7 @@ function ApplicationRoutes() {
 
 
 
+                <Route path="nf-import" element={<PermissionRoute moduleKey="products"><NfImportPage /></PermissionRoute>} />
                 <Route
                     path="products"
                     element={

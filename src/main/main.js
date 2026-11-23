@@ -1,3 +1,4 @@
+const { registerNfImportIpc } = require("./modules/nf-import/nf-import.ipc");
 require("dotenv").config();
 
 
@@ -265,6 +266,7 @@ function registerAllIpc() {
     registerPricePendingIpc(ipcMain);
     registerPricePendingExtensionsIpc();
     registerProductsIpc(ipcMain);
+    registerNfImportIpc(ipcMain);
     registerIndustryContactsIpc(ipcMain);
     registerContactsChargeIpc();
     registerNotificationsIpc(ipcMain);
