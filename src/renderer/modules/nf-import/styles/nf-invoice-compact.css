@@ -1,0 +1,64 @@
+/* Parte 2B: estilos exclusivos da NF aberta; lista e cores 2A preservadas. */
+.nf-page.nf-page-invoice { min-width:0; max-width:100%; padding:10px; overflow:auto; }
+.nf-page-invoice .nf-invoice-compact,.nf-page-invoice .nf-invoice-compact * { box-sizing:border-box; }
+.nf-page-invoice .nf-invoice-compact { min-width:0; max-width:100%; margin-top:0; }
+.nf-page-invoice .nf-invoice-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:8px; border-bottom:1px solid #d1dce8; background:#f5f8fc; }
+.nf-page-invoice .nf-invoice-toolbar>div { min-width:0; max-width:100%; }
+.nf-page-invoice .nf-invoice-toolbar h1 { display:inline; margin-right:10px; font-size:16px; }
+.nf-page-invoice .nf-invoice-toolbar span { font-size:12px; overflow-wrap:anywhere; }
+.nf-invoice-toolbar-actions { display:flex; gap:5px; flex-wrap:wrap; }
+.nf-page-invoice .nf-invoice-toolbar-actions button { min-width:0; max-width:100%; padding:5px 8px; font-size:11px; white-space:normal; overflow-wrap:anywhere; }
+.nf-page-invoice button.nf-diagnostic-alert { color:#795408; border-color:#d9bd74; background:#fff2cf; }
+.nf-invoice-overview { padding:7px 8px; }
+.nf-invoice-identity { display:grid; grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr)); gap:8px; font-size:11px; }
+.nf-invoice-identity>div { display:flex; flex-direction:column; min-width:0; gap:2px; }
+.nf-invoice-identity span,.nf-invoice-identity small { font-size:10px; color:#626c7a; }
+.nf-invoice-identity strong { font-size:11px; font-weight:600; overflow-wrap:anywhere; }
+.nf-invoice-totals { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); margin-top:7px; border-top:1px solid #d5dfeb; border-left:1px solid #d5dfeb; }
+.nf-invoice-totals>div { min-width:0; padding:4px 6px; border-right:1px solid #d5dfeb; border-bottom:1px solid #d5dfeb; background:#f6f8fb; }
+.nf-invoice-totals>div:nth-child(2) { background:#fff1c5; }
+.nf-invoice-totals span { display:block; font-size:10px; color:#566275; }
+.nf-invoice-totals strong { display:block; margin-top:2px; text-align:right; font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.nf-invoice-items { width:100%; min-width:0; max-width:100%; max-height:42vh; overflow:auto; }
+.nf-page-invoice table.nf-invoice-sheet { width:100%; min-width:0; max-width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:11px; }
+.nf-invoice-sheet .nf-item-col { width:5%; }
+.nf-invoice-sheet .nf-description-col { width:32%; }
+.nf-invoice-sheet .nf-unit-col { width:6%; }
+.nf-invoice-sheet .nf-quantity-col { width:12%; }
+.nf-invoice-sheet .nf-price-col { width:13%; }
+.nf-invoice-sheet .nf-internal-col { width:20%; }
+.nf-invoice-sheet .nf-total-col { width:12%; }
+.nf-page-invoice .nf-invoice-sheet th,.nf-page-invoice .nf-invoice-sheet td { min-width:0; max-width:none; padding:5px 6px; border:0; border-right:1px solid #d3deea; border-bottom:1px solid #d3deea; vertical-align:middle; line-height:1.35; white-space:normal; overflow-wrap:anywhere; }
+.nf-page-invoice .nf-invoice-sheet th { position:sticky; top:0; z-index:2; background:#315d86; color:#fff; font-size:10.5px; }
+.nf-page-invoice .nf-invoice-sheet>tbody>tr>td { background:#fff; }
+.nf-page-invoice .nf-invoice-sheet>tbody>tr.nf-item-alternate>td { background:#f1f5fa; }
+.nf-page-invoice .nf-invoice-sheet>tbody>tr>td.nf-invoice-code { background:#e8f1fb; }
+.nf-page-invoice .nf-invoice-sheet .nf-number { text-align:right; font-variant-numeric:tabular-nums; white-space:normal; }
+.nf-page-invoice button.nf-invoice-expand { min-width:0; max-width:100%; padding:2px; font-size:11px; background:transparent; border-color:transparent; white-space:normal; overflow-wrap:anywhere; }
+.nf-page-invoice .nf-invoice-code .nf-code-field { min-width:0; max-width:100%; gap:3px; }
+.nf-page.nf-page-invoice input.nf-code-input { width:100%; min-width:0; max-width:100%; padding:4px 5px; font-size:11px; }
+.nf-page-invoice .nf-code-field>span { overflow-wrap:anywhere; }
+.nf-page-invoice .nf-code-actions { min-width:0; max-width:100%; gap:3px; }
+.nf-page-invoice .nf-code-actions button { min-width:0; max-width:100%; padding:2px 3px; white-space:normal; overflow-wrap:anywhere; }
+.nf-page-invoice .nf-invoice-sheet .nf-invoice-extra-row>td { padding:7px; background:#eaf0f7; }
+.nf-invoice-extra { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; min-width:0; font-size:11px; }
+.nf-invoice-extra section { min-width:0; padding:7px; background:#fff; border:1px solid #d3deea; border-radius:4px; overflow-wrap:anywhere; }
+.nf-page-invoice .nf-invoice-extra h3 { margin:0 0 5px; font-size:11px; }
+.nf-invoice-extra p,.nf-invoice-extra li { margin:4px 0; line-height:1.4; }
+.nf-invoice-extra ul { padding-left:17px; }
+.nf-page-invoice .nf-info-dialog { width:min(1100px,calc(100% - 24px)); max-width:calc(100% - 24px); max-height:calc(100vh - 24px); margin:auto; padding:0; border:1px solid #b8cce0; border-radius:6px; background:#fff; color:#202124; box-sizing:border-box; }
+.nf-page-invoice .nf-info-dialog:not([open]) { display:none; }
+.nf-page-invoice .nf-info-dialog[open] { display:flex; flex-direction:column; }
+.nf-info-dialog::backdrop { background:rgba(24,42,65,.45); }
+.nf-page-invoice .nf-info-dialog-heading { display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:8px 10px; background:#e8f0fa; border-bottom:1px solid #cbd9e8; }
+.nf-page-invoice .nf-info-dialog-heading h2 { min-width:0; margin:0; font-size:13px; overflow-wrap:anywhere; }
+.nf-page-invoice .nf-info-dialog-heading button { padding:5px 8px; font-size:11px; }
+.nf-info-dialog-body { min-height:0; min-width:0; padding:10px; overflow:auto; max-height:75vh; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+@media(max-width:700px) {
+    .nf-page.nf-page-invoice { padding:6px; }
+    .nf-invoice-identity { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .nf-invoice-identity>div:first-child { grid-column:1/-1; }
+    .nf-invoice-totals { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .nf-page-invoice .nf-invoice-sheet th,.nf-page-invoice .nf-invoice-sheet td { padding:4px 3px; }
+    .nf-invoice-extra { grid-template-columns:minmax(0,1fr); }
+}

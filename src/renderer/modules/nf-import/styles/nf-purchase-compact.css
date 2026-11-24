@@ -1,38 +1,60 @@
-/* Painel compacto: mantém o padrão de fonte e as funções da conferência. */
-.nf-page .nf-purchase-compact { margin:12px 14px; padding:12px; background:#fff; }
-.nf-purchase-compact .nf-heading { gap:8px; }
-.nf-purchase-compact .nf-actions { gap:6px; }
-.nf-purchase-compact .nf-actions button,.nf-purchase-compact .nf-actions select { padding:6px 9px; font-size:12px; }
-.nf-purchase-compact .nf-paste { margin:8px 0; padding:7px 9px; }
-.nf-purchase-compact .nf-unit-confirm { padding:7px 9px; font-size:11px; margin:8px 0; }
-.nf-compact-source { margin:7px 0; color:#626c7a; font-size:11px; }
-.nf-compact-notice { margin:8px 0; padding:7px 9px; background:#f0f7f0; border:1px solid #cedecf; border-radius:5px; font-size:11px; }
-.nf-compact-scroll { overflow:auto; margin-top:10px; max-height:60vh; border:1px solid #cbd4df; }
-.nf-page table.nf-control-summary { width:100%; min-width:900px; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:12px; }
-.nf-control-summary .nf-summary-product { width:35%; }
-.nf-control-summary .nf-summary-quantity { width:15%; }
-.nf-control-summary .nf-summary-code { width:12%; }
-.nf-control-summary .nf-summary-control { width:23%; }
-.nf-page .nf-control-summary th,.nf-page .nf-control-summary td { min-width:0; max-width:none; padding:7px 9px; border:0; border-right:1px solid #d6dce5; border-bottom:1px solid #d6dce5; vertical-align:middle; line-height:1.4; }
-.nf-page .nf-control-summary th { position:sticky; top:0; z-index:2; text-align:left; background:#edf1f6; color:#28384b; font-size:11px; font-weight:600; white-space:nowrap; }
-.nf-page .nf-control-summary .nf-number { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.nf-page .nf-control-summary .nf-compact-code { font-variant-numeric:tabular-nums; white-space:nowrap; }
-.nf-page .nf-control-summary .nf-control-balance { background:#e8f1fc; }
-.nf-page .nf-control-summary .nf-balance-exact { background:#dff1dd; color:#245c25; }
-.nf-page .nf-control-summary .nf-balance-lower,.nf-page .nf-control-summary .nf-balance-tie { background:#fff3cf; color:#7a580a; }
-.nf-page .nf-control-summary .nf-balance-blocked,.nf-page .nf-control-summary .nf-balance-missing { background:#f7e8e8; color:#8c3333; }
-.nf-compact-control>span { display:block; font-variant-numeric:tabular-nums; }
-.nf-compact-control small { display:block; font-size:10px; color:#627084; margin-top:2px; overflow-wrap:anywhere; }
-.nf-page button.nf-compact-toggle { display:block; width:100%; padding:0; border:0; border-radius:0; background:transparent; text-align:left; font:inherit; color:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.nf-page button.nf-compact-toggle:hover { background:transparent; color:#285c95; }
-.nf-compact-toggle>span { display:inline-block; width:14px; font-weight:600; color:#42638d; }
-.nf-page .nf-control-summary .nf-compact-detail-row>td { padding:10px; background:#f6f8fb; }
-.nf-compact-detail { min-width:0; }
-.nf-compact-detail h3 { margin:0; font-size:12px; }
-.nf-compact-detail p { margin:7px 0; font-size:11px; line-height:1.5; }
-.nf-compact-warning { padding:8px; border:1px solid #e9d799; background:#fff5d9; }
-.nf-compact-help,.nf-compact-session { margin:8px 0 0; color:#626c7a; font-size:11px; line-height:1.5; }
-.nf-compact-information { margin-top:10px; padding:8px; border:1px solid #dce1e8; border-radius:5px; font-size:11px; }
+/* Parte 2A: consulta de controles responsiva, sem alterar regras ou dados. */
+.nf-page .nf-purchase-compact { box-sizing:border-box; min-width:0; max-width:calc(100% - 16px); margin:8px; padding:8px; background:#fff; border-color:#cbd9e8; font-size:11px; }
+.nf-purchase-compact * { box-sizing:border-box; }
+.nf-purchase-compact .nf-heading { gap:6px; min-width:0; }
+.nf-page .nf-purchase-compact header h3 { font-size:12px; }
+.nf-purchase-compact .nf-actions { gap:5px; min-width:0; max-width:100%; }
+.nf-purchase-compact .nf-actions>* { min-width:0; max-width:100%; }
+.nf-purchase-compact .nf-actions button,.nf-purchase-compact .nf-actions select { padding:5px 7px; font-size:11px; }
+.nf-purchase-compact .nf-actions button { white-space:normal; overflow-wrap:anywhere; }
+.nf-purchase-compact .nf-paste { margin:6px 0; padding:6px 8px; }
+.nf-purchase-compact .nf-paste textarea { min-width:0; max-width:100%; }
+.nf-compact-source { margin:6px 0; color:#626c7a; font-size:10px; overflow-wrap:anywhere; }
+.nf-purchase-compact .nf-compact-scroll { width:100%; min-width:0; max-width:100%; overflow:auto; margin-top:7px; max-height:60vh; border:1px solid #bdcfe2; border-radius:4px; }
+.nf-page .nf-purchase-compact table.nf-control-summary { width:100%; min-width:0; max-width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:11px; }
+.nf-control-summary .nf-summary-product { width:34%; }
+.nf-control-summary .nf-summary-quantity { width:13%; }
+.nf-control-summary .nf-summary-code { width:13%; }
+.nf-control-summary .nf-summary-control { width:27%; }
+.nf-page .nf-purchase-compact .nf-control-summary th,.nf-page .nf-purchase-compact .nf-control-summary td { min-width:0; max-width:none; padding:5px 6px; border:0; border-right:1px solid #d4deea; border-bottom:1px solid #d4deea; vertical-align:middle; line-height:1.35; white-space:normal; overflow-wrap:anywhere; }
+.nf-page .nf-purchase-compact .nf-control-summary th { position:sticky; top:0; z-index:2; text-align:left; background:#315d86; color:#fff; font-size:10.5px; font-weight:600; }
+.nf-page .nf-control-summary>tbody>tr:not(.nf-compact-detail-row)>td { background:#fff; }
+.nf-page .nf-control-summary>tbody>tr:nth-child(even):not(.nf-compact-detail-row)>td { background:#f1f5fa; }
+.nf-page .nf-control-summary>tbody>tr:not(.nf-compact-detail-row)>td:nth-child(2),.nf-page .nf-control-summary>tbody>tr:not(.nf-compact-detail-row)>td.nf-compact-code { background:#edf4fc; color:#264b70; }
+.nf-page .nf-purchase-compact .nf-control-summary .nf-number { text-align:right; font-variant-numeric:tabular-nums; white-space:normal; overflow-wrap:anywhere; }
+.nf-page .nf-purchase-compact .nf-control-summary .nf-compact-code { font-variant-numeric:tabular-nums; white-space:normal; overflow-wrap:anywhere; }
+.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-control-balance { background:#e8f1fc; color:#24547c; }
+.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-balance-exact { background:#dff1e3; color:#245d38; font-weight:600; }
+.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-balance-higher { background:#dfeefa; color:#24547c; }
+.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-balance-lower,.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-balance-tie { background:#fff0cc; color:#77520a; }
+.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-balance-blocked,.nf-page .nf-purchase-compact .nf-control-summary>tbody>tr>td.nf-balance-missing { background:#fbe3e5; color:#8a2932; }
+.nf-page .nf-control-summary>tbody>tr.nf-suggestion-exact>td:first-child { border-left:3px solid #529569; }
+.nf-page .nf-control-summary>tbody>tr.nf-suggestion-lower>td:first-child,.nf-page .nf-control-summary>tbody>tr.nf-suggestion-tie>td:first-child { border-left:3px solid #c69228; }
+.nf-page .nf-control-summary>tbody>tr.nf-suggestion-higher>td:first-child { border-left:3px solid #4b89b9; }
+.nf-page .nf-control-summary>tbody>tr.nf-suggestion-missing>td:first-child,.nf-page .nf-control-summary>tbody>tr.nf-suggestion-blocked>td:first-child { border-left:3px solid #c45d65; }
+.nf-compact-control>span { display:block; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.nf-compact-control small { display:block; font-size:10px; color:#526277; margin-top:2px; overflow-wrap:anywhere; }
+.nf-page .nf-purchase-compact button.nf-compact-toggle { display:block; width:100%; min-width:0; max-width:100%; padding:0; border:0; border-radius:0; background:transparent; text-align:left; font:inherit; color:inherit; white-space:normal; overflow-wrap:anywhere; }
+.nf-page .nf-purchase-compact button.nf-compact-toggle:hover { background:transparent; color:#285c95; }
+.nf-compact-toggle>span { display:inline-block; width:12px; font-weight:600; color:#42638d; }
+.nf-page .nf-purchase-compact .nf-control-summary .nf-compact-detail-row>td { padding:7px; background:#eaf0f7; }
+.nf-compact-detail { min-width:0; max-width:100%; }
+.nf-compact-detail h3 { margin:0; font-size:11px; }
+.nf-compact-detail p { margin:6px 0; font-size:11px; line-height:1.4; }
+.nf-purchase-compact .nf-purchase-scroll { width:100%; min-width:0; max-width:100%; overflow:auto; margin-top:6px; }
+.nf-page .nf-purchase-compact table.nf-purchase-table { width:100%; min-width:0; max-width:100%; table-layout:fixed; font-size:10.5px; }
+.nf-page .nf-purchase-compact .nf-purchase-table th,.nf-page .nf-purchase-compact .nf-purchase-table td { min-width:0; max-width:none; padding:5px; line-height:1.35; white-space:normal; overflow-wrap:anywhere; }
+.nf-page .nf-purchase-compact .nf-purchase-table th { background:#dce8f5; color:#24496e; }
+.nf-page .nf-purchase-compact .nf-purchase-table tbody tr:nth-child(even) td { background:#f1f5fa; }
+.nf-page .nf-purchase-compact .nf-compact-detail .nf-purchase-table th:nth-child(3) { width:40%; }
+.nf-compact-information { margin-top:8px; padding:7px; border:1px solid #cbd9e8; border-radius:4px; background:#f8fafc; font-size:11px; overflow-wrap:anywhere; }
 .nf-compact-information summary { cursor:pointer; }
-.nf-compact-information p { line-height:1.5; }
-.nf-compact-session { border-top:1px solid #e1e5eb; padding-top:8px; }
+.nf-compact-information p { line-height:1.4; }
+@media(max-width:700px) {
+    .nf-page .nf-purchase-compact { margin:6px; max-width:calc(100% - 12px); padding:6px; }
+    .nf-page .nf-purchase-compact .nf-control-summary th,.nf-page .nf-purchase-compact .nf-control-summary td { padding:5px 3px; }
+    .nf-control-summary .nf-summary-product { width:30%; }
+    .nf-control-summary .nf-summary-quantity { width:14%; }
+    .nf-control-summary .nf-summary-code { width:15%; }
+    .nf-control-summary .nf-summary-control { width:27%; }
+}

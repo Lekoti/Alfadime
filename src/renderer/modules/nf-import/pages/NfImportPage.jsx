@@ -10,11 +10,9 @@ export default function NfImportPage() {
     const [branch, setBranch] = useState(""), [search, setSearch] = useState("");
     const rows = model.rows.filter((row) => (!branch || row.folderBranch === branch) &&
         [row.fileName, row.issuer, row.number, row.cnpj].join(" ").toLowerCase().includes(search.toLowerCase()));
-    if (model.selected) return <main className="nf-page">
-        <header className="nf-heading"><h1>Importação NF</h1><button type="button" disabled={model.busy} onClick={model.open}>Importar outro XML</button></header>
-        <p className="nf-muted">Somente leitura · nenhuma alteração em XMLs, produtos ou estoque.</p>
+    if (model.selected) return <main className="nf-page nf-page-invoice">
         {model.error && <p className="nf-error" role="alert">{model.error}</p>}
-        <NfInvoiceDetails purchase={purchase} key={model.selected.id || model.selected.fileName} invoice={model.selected} onClose={() => model.setSelected(null)} />
+        <NfInvoiceDetails purchase={purchase} key={model.selected.id || model.selected.fileName} invoice={model.selected} onClose={() => model.setSelected(null)} onImport={model.open} busy={model.busy} />
     </main>;
     return <main className="nf-page">
         <header className="nf-heading"><h1>Importação NF</h1><div className="nf-actions">

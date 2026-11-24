@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { formatUnits } from "../services/nfPurchaseReport.service";
 import { suggestPurchaseControl } from "../services/nfPurchaseSuggestion.service";
+import NfInfoDialog from "./NfInfoDialog";
 import "../styles/nf-purchase-compact.css";
 function statusFor(suggestion) {
     if (suggestion.issue) return suggestion.issue;
@@ -10,7 +11,7 @@ function statusFor(suggestion) {
     if (suggestion.relation === "lower") return `Faltam ${formatUnits(-suggestion.difference)} para completar a NF`;
     return `Saldo excede a NF em ${formatUnits(suggestion.difference)}`;
 }
-export default function NfPurchasePanel({ invoice, session }) {
+export default function NfPurchasePanel({ invoice, session, reportOpen = false, onCloseReport }) {
     const [pasted, setPasted] = useState(""), [encoding, setEncoding] = useState("auto"), [loading, setLoading] = useState(false);
     const [expanded, setExpanded] = useState({});
     const fileInput = useRef(null), alive = useRef(true);
@@ -73,12 +74,12 @@ export default function NfPurchasePanel({ invoice, session }) {
                     </td></tr>}</React.Fragment>;
                 })}{!session.groups.length && <tr><td colSpan={5}>Nenhum item da NF disponível para consultar.</td></tr>}</tbody>
             </table></div>
-            <details className="nf-compact-information"><summary>Informações da conferência e relatório completo</summary>
+            <NfInfoDialog open={reportOpen} title="Relatório de pedidos" onClose={onCloseReport}>
                 <p>O saldo mostrado é o Pendente do TXT importado. Para refletir operações posteriores no sistema externo, importe um relatório atualizado.</p>
                 <p>A comparação usa a quantidade total tributável da NF. O TXT não informa a unidade de medida do produto; não há conversão automática de caixas.</p>
                 <p>{report.pages} cabeçalho(s) de página reconhecido(s). Prévia de até 200 linhas; todas as linhas válidas participam da consulta.</p>
                 <div className="nf-purchase-scroll"><table className="nf-purchase-table"><thead><tr><th>Linha</th><th>Filial</th><th>Produto</th><th>Código</th><th>Controle</th><th>Pendente anterior</th><th>Atendida</th><th>Cancelada</th><th>Pendente atual</th></tr></thead><tbody>{report.rows.slice(0,200).map((row) => <tr key={row.id}><td>{row.line}</td><td>{row.branch} / {row.unit}</td><td>{row.description}</td><td>{row.code}</td><td>{row.control}</td><td>{formatUnits(row.previous)}</td><td>{formatUnits(row.attended)}</td><td>{formatUnits(row.cancelled)}</td><td>{formatUnits(row.pending)}</td></tr>)}</tbody></table></div>
-            </details>
+            </NfInfoDialog>
         </>}
     </section>;
 }
