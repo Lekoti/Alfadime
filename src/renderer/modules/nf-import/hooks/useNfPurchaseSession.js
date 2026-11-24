@@ -8,10 +8,7 @@ export default function useNfPurchaseSession(invoice) {
         getItemCode: (index) => itemCode(invoice, note.manual, index),
         setCode: (index, value) => dispatch({ type: "CODE", invoice, index, value }),
         restoreCode: (index) => dispatch({ type: "CODE", invoice, index, restore: true }),
-        confirm: (value) => dispatch({ type: "CONFIRM", invoice, value }),
-        allocate: (rowId, value) => dispatch({ type: "ALLOCATE", invoice, rowId, value }),
-        remove: (rowId) => dispatch({ type: "REMOVE", invoice, rowId }),
-        clear: () => dispatch({ type: "CLEAR_REPORT" }), releaseAll: () => dispatch({ type: "RELEASE_ALL" }),
+        clear: () => dispatch({ type: "CLEAR_REPORT" }),
         fail: (message) => dispatch({ type: "ERROR", message }),
         loadText: (text, name, encoding) => {
             try { dispatch({ type: "IMPORT", report: parsePurchaseReport(text, name, encoding) }); }

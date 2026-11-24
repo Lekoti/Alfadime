@@ -1,13 +1,8 @@
-import { rowReserved } from "./nfPurchaseMatch.service";
 const abs = (value) => value < 0n ? -value : value;
-export function suggestPurchaseControl({ group, report, branch, notes, invoiceId, blocked = "" }) {
+export function suggestPurchaseControl({ group, report, branch, blocked = "" }) {
     const candidates = (report?.rows || []).filter((row) => group.code && row.branch === branch && row.normalizedCode === group.code)
-        .map((row) => {
-            const reserved = rowReserved(notes || {}, row.id, invoiceId);
-            const balance = row.pending - reserved;
-            const available = balance > 0n ? balance : 0n;
-            return { row, reserved, available, distance: abs(available - group.total) };
-        }).sort((a, b) => {
+        .map((row) => ({ row, available: row.pending, distance: abs(row.pending - group.total) }))
+        .sort((a, b) => {
             if ((a.available > 0n) !== (b.available > 0n)) return a.available > 0n ? -1 : 1;
             if (a.distance !== b.distance) return a.distance < b.distance ? -1 : 1;
             return String(a.row.control).localeCompare(String(b.row.control));

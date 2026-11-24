@@ -1,4 +1,4 @@
-import { normalizeCode, xmlUnits, brUnits } from "./nfPurchaseReport.service";
+import { normalizeCode, xmlUnits } from "./nfPurchaseReport.service";
 export function autoDestination(item, invoice) {
     if (!invoice?.destination) return { value: "", label: "Destino desconhecido" };
     const rows = (item.matches || []).filter((row) => row.branch === invoice.destination.key && row.code && row.isPrimary);
@@ -28,7 +28,7 @@ export function invoiceGroups(invoice, manual = {}) {
         const group = grouped.get(key);
         group.descriptions.push(item.description); group.indexes.push(index);
         const unit = String(item.tributaryUnit || "").trim().toUpperCase();
-        if (unit) group.units.add(unit); else group.error = "Unidade tributável ausente; não é seguro vincular.";
+        if (unit) group.units.add(unit); else group.error = "Unidade tributável ausente; confira os dados da NF.";
         if (!code) group.error = "Informe um código interno numérico válido (até 20 dígitos).";
         try { group.total += xmlUnits(item.tributaryQuantity); } catch (error) { group.error = "Quantidade tributável ausente ou inválida."; }
     });
@@ -37,55 +37,23 @@ export function invoiceGroups(invoice, manual = {}) {
 }
 export function reportBlock(report, invoice) {
     if (!report) return "Importe ou cole o relatório de pedidos.";
-    if (report.errors.length) return "Relatório contém linhas não reconhecidas ou inconsistências. Corrija antes de vincular.";
-    if (!invoice?.readable || !invoice.destination?.key) return "NF sem filial destinatária identificada; vínculo bloqueado.";
+    if (report.errors.length) return "Relatório contém linhas não reconhecidas ou inconsistências. Confira o TXT antes de usar a sugestão.";
+    if (!invoice?.readable || !invoice.destination?.key) return "NF sem filial destinatária identificada; sugestão indisponível.";
     if (report.branch !== invoice.destination.key) return `Filial do TXT (${report.branch}) difere da NF (${invoice.destination.key}).`;
     return "";
 }
-export function rowReserved(notes, rowId, exceptInvoice = "") {
-    return Object.entries(notes).reduce((sum, [id, note]) => sum + (id === exceptInvoice ? 0n : (note.allocations[rowId] || 0n)), 0n);
-}
-export function groupLinked(group, note, report, exceptRow = "") {
-    return report.rows.filter((row) => row.normalizedCode === group.code && row.id !== exceptRow)
-        .reduce((sum, row) => sum + (note.allocations[row.id] || 0n), 0n);
-}
-export function emptyNote() { return { manual: {}, allocations: {}, confirmed: false }; }
+export function emptyNote() { return { manual: {} }; }
 export const initialPurchaseState = { notes: {}, report: null, error: "", notice: "" };
 export function purchaseReducer(state, action) {
-    const id = action.invoice ? invoiceIdentity(action.invoice) : "";
-    const note = state.notes[id] || emptyNote();
-    const save = (value, notice = "") => ({ ...state, notes: { ...state.notes, [id]: value }, error: "", notice });
     if (action.type === "ERROR") return { ...state, error: action.message, notice: "" };
     if (action.type === "IMPORT" || action.type === "CLEAR_REPORT") {
-        const notes = Object.fromEntries(Object.entries(state.notes).map(([key, current]) => [key, { ...current, allocations: {}, confirmed: false }]));
-        return { ...state, notes, report: action.type === "IMPORT" ? { ...action.report, version: (state.report?.version || 0) + 1 } : null, error: "", notice: "Relatório substituído/limpo; vínculos da sessão foram zerados. Códigos manuais preservados." };
+        const notes = Object.fromEntries(Object.entries(state.notes).map(([key, current]) => [key, { manual: current.manual || {} }]));
+        return { ...state, notes, report: action.type === "IMPORT" ? { ...action.report, version: (state.report?.version || 0) + 1 } : null, error: "", notice: "" };
     }
-    if (action.type === "RELEASE_ALL") return { ...state, error: "", notice: "Todos os vínculos da sessão foram removidos.", notes: Object.fromEntries(Object.entries(state.notes).map(([key, current]) => [key, { ...current, allocations: {} }])) };
-    if (!action.invoice) return state;
-    if (action.type === "CODE") {
-        const manual = { ...note.manual };
-        if (action.restore) delete manual[action.index]; else manual[action.index] = String(action.value).slice(0, 20);
-        return save({ ...note, manual, allocations: {} }, "Código alterado: vínculos desta NF foram zerados para nova conferência.");
-    }
-    if (action.type === "CONFIRM") return save({ ...note, confirmed: Boolean(action.value), allocations: action.value ? note.allocations : {} });
-    if (action.type === "REMOVE") {
-        const allocations = { ...note.allocations }; delete allocations[action.rowId];
-        return save({ ...note, allocations });
-    }
-    if (action.type !== "ALLOCATE") return state;
-    try {
-        const blocked = reportBlock(state.report, action.invoice);
-        if (blocked) throw new Error(blocked);
-        if (!note.confirmed) throw new Error("Confirme que as quantidades do relatório estão na mesma unidade tributável da NF.");
-        const row = state.report.rows.find((item) => item.id === action.rowId);
-        if (!row || row.branch !== action.invoice.destination.key) throw new Error("Controle não pertence à filial da NF.");
-        const group = invoiceGroups(action.invoice, note.manual).find((item) => item.code === row.normalizedCode);
-        if (!group || group.error) throw new Error(group?.error || "Código do controle não corresponde à NF.");
-        const amount = brUnits(action.value);
-        if (amount <= 0n) throw new Error("Informe uma quantidade maior que zero; use Remover para desfazer.");
-        if (groupLinked(group, note, state.report, row.id) + amount > group.total) throw new Error("A soma dos vínculos ultrapassa a quantidade da NF para esse código.");
-        const otherNotes = rowReserved(state.notes, row.id, id);
-        if (otherNotes + amount > row.pending) throw new Error("Quantidade ultrapassa o saldo pendente, considerando os vínculos das outras notas nesta sessão.");
-        return save({ ...note, allocations: { ...note.allocations, [row.id]: amount } }, "Vínculo registrado apenas na conferência. Nada foi enviado ao sistema externo.");
-    } catch (error) { return { ...state, error: error.message, notice: "" }; }
+    if (action.type !== "CODE" || !action.invoice) return state;
+    if (!Number.isInteger(action.index) || action.index < 0 || action.index >= action.invoice.items.length) return state;
+    const id = invoiceIdentity(action.invoice), note = state.notes[id] || emptyNote();
+    const manual = { ...note.manual };
+    if (action.restore) delete manual[action.index]; else manual[action.index] = String(action.value).slice(0, 20);
+    return { ...state, notes: { ...state.notes, [id]: { manual } }, error: "", notice: "" };
 }

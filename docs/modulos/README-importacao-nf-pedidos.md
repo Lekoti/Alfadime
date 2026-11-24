@@ -1,45 +1,37 @@
-# Importação NF — códigos manuais e pedidos de compra
+# Importação NF — códigos manuais e consulta de pedidos
 
-Data: 23/11/2026. Atualização sobre a versão de layout já enviada ao GitHub pelo usuário. Sem novos IPCs, dependências ou alterações no banco.
-
-## Arquivos e arquitetura
-Novos: constants/nfPurchase.constants.js; services/nfPurchaseReport.service.js; services/nfPurchaseMatch.service.js; hooks/useNfPurchaseSession.js; components/NfCodeInput.jsx; components/NfPurchasePanel.jsx; components/NfPurchaseAllocation.jsx. Alterados: NfInvoiceDetails.jsx, NfImportPage.jsx, nf-import.css. Esta documentação registra as modificações. Hooks de leitura de XML/rede, parser fiscal, main/preload, produtos e permissões não são modificados.
+## Estado atual — 24/11/2026, parte 1
+O Alfadime apenas lê e compara dados para o usuário realizar vínculos no sistema externo. Não registra vínculos, quantidades consumidas, reservas de saldo ou confirmação de unidade. Não altera XML, cadastro, estoque ou banco e não envia operações ao ERP.
 
 ## Uso
-1. Abrir uma NF. Na coluna Código interno, editar o valor se necessário. O campo aceita até 20 dígitos e preserva zeros. Restaurar consulta desfaz a informação manual.
-2. Importar TXT ou colar relatório completo com cabeçalho da filial. A escolha do TXT é feita por input de arquivo do navegador: somente leitura em memória, sem caminho arbitrário de disco.
-3. Conferir nome, filial, quantidade de linhas e prévia do relatório. Se acentos estiverem incorretos, selecionar UTF-8, Windows-1252 ou OEM 850 e importar novamente. Automático tenta UTF-8 e depois Windows-1252; não detecta OEM 850 automaticamente.
-4. Confirmar manualmente que os saldos do TXT estão na mesma unidade tributável qTrib/uTrib da NF. O relatório não fornece unidade; o app NÃO presume ou converte caixas.
-5. No painel de pedidos, escolher quantidade por controle e clicar Vincular na conferência. Nenhuma ação é enviada ao ERP.
-6. Remover desfaz um vínculo. Remover vínculos da sessão libera todos os saldos simulados de todas as notas.
-
-## Dados temporários
-Código manual não é cadastro validado, não altera XML nem banco do Alfadime. Relatório, códigos e vínculos são mantidos no componente da página durante a sessão do módulo. Voltar à lista mantém esses dados. Sair do módulo, atualizar a janela ou fechar o app perde tudo. Não usa localStorage, arquivos temporários de relatório ou gravações no banco.
-O relatório é um retrato do saldo, sem sincronização em tempo real com o sistema externo. Saldos reservados são apenas da sessão.
-
-## Leitura do TXT
-Lê de trás para frente as seis colunas de quantidade/código/controle por expressão ancorada: descrição, Pendente Ant, Q.Atendida, Q.Cancelada, Pendente, código, controle. O saldo é a coluna Pendente final; não subtrai atendida/cancelada novamente. Ponto é milhar e vírgula é decimal. '-' equivale a zero nas colunas numéricas do relatório.
-Reconhece filiais 0001 DPR, 0002 AMS, 0003 DMT, 0005 DMS, 0006 DSC pelo cabeçalho (0001.001). O sufixo/unidade do relatório é preservado na prévia, mas não prova a unidade comercial/tributável dos produtos.
-Ignora separadores, cabeçalhos repetidos, rodapé LWHELP e caractere de fim de arquivo. Limites: 5 MB, 50.000 linhas, 2.048 caracteres por linha. A prévia mostra 200 linhas, mas todas as linhas válidas são consideradas.
-Linha desconhecida, filial não mapeada, relatório sem itens, múltiplas filiais e mesmo código/controle repetido na filial bloqueiam a utilização. Não descarta silenciosamente nem soma duplicatas: corrigir o relatório ou o texto colado.
-Se a leitura falhar por arquivo excessivo/codificação inválida, o relatório anterior continua identificado pelo nome e uma mensagem de erro é exibida. Relatório analisado com inconsistências substitui o anterior, mas fica bloqueado.
+1. Abrir a NF e editar Código interno quando necessário. Até 20 dígitos, com zeros preservados; Restaurar consulta retorna ao cadastro consultado.
+2. Importar TXT ou colar relatório com cabeçalho de filial. Permanecem UTF-8, Windows-1252 e OEM 850, limites e validações do parser existente.
+3. Conferir produto, quantidade NF, saldo controle, código produto e controle sugerido. Saldo controle é exatamente a coluna Pendente do relatório, sem subtrair atendida/cancelada novamente e sem reservas entre notas.
+4. Se houver vários controles, o sinal + mostra somente controle, código, produto e saldo. Não existem campos de quantidade ou ações de vínculo. Não existe expansão de operações para um único controle.
+5. Realizar a operação no sistema externo. Para refletir um saldo posterior, gerar/importar outro TXT. A consulta não acompanha operações externas em tempo real.
 
 ## Correspondência e quantidades
-Compara filial e código interno numérico; 00696 e 696 equivalem para comparar, mas o texto original permanece visível. Não cruza por descrição aproximada ou código do fornecedor. O código manual é responsabilidade da conferência do usuário.
-Agrupa linhas da NF pelo mesmo código somando qTrib uma única vez. Exige unidade tributável informada e igual em todas as linhas desse grupo; divergência/ausência bloqueia. Não calcula quantidades ausentes.
-Quantidades calculadas como inteiros BigInt em escala de seis casas decimais, sem comparação monetária. Máximo suportado por quantidade: 1 trilhão. Campos da NF são decimais XML (ponto decimal), campos digitados/TXT usam formato brasileiro.
-A soma dos vínculos de um código não ultrapassa a quantidade da NF. A soma por controle, considerando também outras notas desta sessão, não ultrapassa o saldo do relatório. Mesma chave de NF e mesmos itens, mesmo com outro nome de arquivo, reutilizam a identidade da conferência; sem chave válida utiliza metadados e assinatura dos itens. XML de mesmo documento com conteúdo de itens diferente é tratado como outra conferência: revisar/liberar a anterior antes de substituir XML alterado.
-Nenhum controle é escolhido por ordem numérica ou suposta data. Usuário distribui explicitamente. Os dados do TXT não confirmam vínculo com fornecedor/CNPJ do emissor: conferir descrições e origem do relatório manualmente.
+Filial e código interno normalizado, sem busca aproximada por descrição ou código de fornecedor. 00696 e 696 equivalem na comparação; o texto original do TXT permanece exibido.
+Agrupa linhas pelo mesmo código e soma qTrib. Exige quantidade válida e unidade tributável consistente no grupo. Não calcula valores ausentes ou conversão de caixas. O sufixo/unidade do cabeçalho do relatório NÃO informa a unidade de medida do produto; confirmar essa compatibilidade é responsabilidade da operação externa. Remover a caixa não equivale a validar a unidade do TXT.
+Quantidades BigInt em seis casas decimais; parser preservado. Filial divergente, relatório inconsistente, código inválido e grupo com unidades incompatíveis continuam impedindo sugestão.
 
-## Invalidação das escolhas
-Editar/restaurar qualquer código remove todos os vínculos desta NF para recalcular com segurança. Importar/substituir/limpar relatório remove todos os vínculos da sessão e exige nova confirmação de unidades; códigos manuais permanecem. Desmarcar confirmação de unidades remove os vínculos da NF atual.
+## Sugestão
+Exata primeiro; depois, menor diferença absoluta entre Pendente do controle e quantidade TOTAL da NF. Saldo menor pode ser sugerido e mostra falta; maior mostra excedente. Controles sem saldo positivo não são sugeridos. Empate não escolhe automaticamente. Ordem numérica dos controles não indica data ou prioridade. Um saldo não muda ao abrir outra NF ou editar código. Descrições/fornecedor devem ser conferidos no sistema externo.
 
-## Aplicação e reversão
-Um único ZIP, sem depender de pacotes anteriores. O instalador verifica os SHAs Git dos três arquivos alterados e de três dependências lidas na versão atual do GitHub. Se houver divergência, para sem substituir. Prepara fontes completos, abre VS Code com comparativos, pede APLICAR, revalida hashes de revisão e faz backup em Downloads. Reversão é impressa no terminal. Não executa commit/push.
+## Estado temporário
+São mantidos apenas relatório e códigos manuais por identidade da NF, na sessão da página. Voltar à lista mantém os códigos. Sair do módulo, atualizar a janela ou fechar o app descarta os dados. Sem localStorage, arquivos de dados ou escrita no banco. Importar/limpar TXT preserva códigos manuais. Editar código apenas recalcula a consulta.
 
-## Testes locais obrigatórios
-Executar npm run build e depois npm start se o build passar. Testar código ausente, código manual 00696, restaurar consulta, TXT de duas páginas, filial diferente, relatório com problema, ausência de unidade/quantidade, mesmo código em duas linhas, produto em vários controles, saldo insuficiente, reserva entre duas NFs, reimportação e retorno à lista. Conferir que importação de XMLs e contagem de ComErros permanecem iguais.
-Os testes Node incluídos verificam o parser de TXT e o motor de conferência. Não substituem build JSX/Vite, Electron, Windows, acesso ao banco e rede reais.
+## Arquitetura e escopo da parte 1
+Atualizados: services/nfPurchaseMatch.service.js; services/nfPurchaseSuggestion.service.js; hooks/useNfPurchaseSession.js; components/NfPurchasePanel.jsx; components/NfCodeInput.jsx; duas documentações.
+Removido: components/NfPurchaseAllocation.jsx, que só renderizava operações internas autorizadas para retirada pelo usuário.
+Mantidos: parser TXT e constantes, parser XML, detalhes fiscais, tabela de itens, rotas, permissões, main/preload, banco, importação/varredura ComErros e estilos. Os seletores legados de alocação no CSS não são usados; sua limpeza fica na etapa de layout.
+A próxima parte tratará layout responsivo, cores e botões no topo. Não foram incluídos nesta entrega.
+
+## Aplicação e testes
+Instalador confere SHA Git dos arquivos atuais e dependências, prepara cópias completas para revisão no VS Code, exige APLICAR, revalida arquivos e cria backup. Também verifica referências aos símbolos removidos dentro do módulo. Arquivo divergente interrompe a instalação. Reversão restaura inclusive o componente removido. Sem commit/push.
+Testes Node exercitam parser original, edição/restauração de código, agrupamento, estado sem operações e ranking de controles. Build JSX/Vite, Electron e PowerShell devem ser executados no computador do usuário.
+Após instalar: npm run build; se passar, npm start. Testar código manual/zeros, restauração, TXT/colagem, várias NFs, vários controles/empate, filial divergente, quantidade/unidade ausentes, relatório inválido, retorno à lista e importação XML/ComErros.
 
 ## Histórico
-2026-11-23: campo manual com origem explícita; parser TXT/colagem com prévia e bloqueios; unidade confirmada; distribuição manual por controle; prevenção de excedentes e duplicidades de consumo dentro da sessão; estado temporário; instalador com hashes/backup/reversão. Nenhuma alteração remota.
+2026-11-23: versão inicial com códigos manuais, parser TXT, confirmação de unidade e simulação de vínculos internos.
+2026-11-24 — parte 1: retirada de vínculos internos, reservas, confirmação e componente de alocação. Saldo agora corresponde diretamente ao Pendente do TXT. Código editável, leitura e sugestões preservados. Sem alteração remota.
