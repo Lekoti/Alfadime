@@ -11,7 +11,7 @@ const preferencesRepository = require(
 const {
     exportProductsExcel
 } = require(
-    "../modules/products/products-export.service"
+    "../modules/products/services/products-export.service"
 );
 
 
@@ -25,7 +25,7 @@ const {
 const {
     exportCorrectionsExcel
 } = require(
-    "../modules/products/products-corrections-export.service"
+    "../modules/products/services/products-corrections-export.service"
 );
 
 

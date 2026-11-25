@@ -45,7 +45,7 @@ const automaticCharge = require("./modules/price-pending/price-pending-automatic
 
 const {
     registerProductsIpc
-} = require("./modules/products/products.ipc");
+} = require("./modules/products/ipc/products.ipc");
 
 
 const {
@@ -65,7 +65,7 @@ const {
 
 const {
     registerProductCorrectionsIpc
-} = require("./modules/products/products-corrections.ipc");
+} = require("./modules/products/ipc/products-corrections.ipc");
 
 
 const {
