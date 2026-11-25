@@ -1,4 +1,4 @@
-﻿const repository = require(
+const repository = require(
     "./products.repository"
 );
 
@@ -36,47 +36,38 @@ function formatBoolean(value) {
 
 
 
-function getProductsForExport(filters = {}) {
-    const database = getDatabase();
-    
-    console.log("[EXPORT] Filters recebidos:", filters);
-    
-    // Build WHERE clause igual ao products.repository.js
+function buildExportFilters(filters = {}) {
     let whereClause = "WHERE 1 = 1";
     const params = [];
-    
+
     if (filters.active !== "" && filters.active !== undefined) {
         whereClause += " AND pc.active = ?";
         params.push(toSafeNumber(filters.active, 0));
     }
-    
+
     if (filters.branch) {
         whereClause += " AND pc.branch = ?";
         params.push(String(filters.branch));
     }
-    
+
     if (filters.group_code) {
         whereClause += " AND pc.group_code = ?";
         params.push(String(filters.group_code));
     }
-    
+
     if (filters.category_code) {
         whereClause += " AND pc.category_code = ?";
         params.push(String(filters.category_code));
     }
-    
-    // CORREÇÃO: laboratory_code e laboratory usam product_purchase_curve
-    // brand usa campo direto pc.brand
+
     const laboratory = filters.laboratory_code ?? filters.laboratory;
-    
+
     if (laboratory) {
         const laboratoryValues = getMatchingGlobalLaboratoryCodes(
-            database,
+            getDatabase(),
             laboratory
         );
-        
-        console.log("[EXPORT] Laboratory values:", laboratoryValues);
-        
+
         if (laboratoryValues.length) {
             whereClause += `
                 AND EXISTS (
@@ -89,65 +80,102 @@ function getProductsForExport(filters = {}) {
             params.push(...laboratoryValues);
         } else {
             whereClause += " AND 1 = 0";
-            console.log("[EXPORT] Sem laboratory values, adicionando AND 1 = 0");
         }
     }
-    
-    // CORREÇÃO: Filtro brand direto no campo pc.brand (não usa laboratório)
+
     if (filters.brand) {
         whereClause += " AND pc.brand = ?";
         params.push(String(filters.brand));
     }
-    
+
     if (filters.controls_lot !== "" && filters.controls_lot !== undefined) {
         whereClause += " AND pc.controls_lot = ?";
         params.push(toSafeNumber(filters.controls_lot, 0));
     }
-    
+
     if (filters.search) {
         const search = `%${String(filters.search).trim()}%`;
+
         whereClause += `
             AND (
-                pc.branch LIKE ? OR
-                ppc.cod_prod LIKE ? OR
-                ppc.cod_prod_global LIKE ? OR
-                pc.ean LIKE ? OR
-                pc.sap_code LIKE ? OR
-                pc.active_ingredient LIKE ? OR
-                pc.commercial_name LIKE ? OR
-                pc.brand LIKE ? OR
-                pc.ms_registration LIKE ?
+                pc.branch LIKE ?
+                OR pc.ean LIKE ?
+                OR pc.sap_code LIKE ?
+                OR pc.active_ingredient LIKE ?
+                OR pc.commercial_name LIKE ?
+                OR pc.brand LIKE ?
+                OR pc.ms_registration LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM product_purchase_curve AS search_curve
+                    WHERE search_curve.product_id = pc.id
+                        AND (
+                            search_curve.cod_prod LIKE ?
+                            OR search_curve.cod_prod_global LIKE ?
+                        )
+                )
             )
         `;
+
         params.push(
-            search, search, search, search, search,
-            search, search, search, search
+            search,
+            search,
+            search,
+            search,
+            search,
+            search,
+            search,
+            search,
+            search
         );
     }
-    
-    console.log("[EXPORT] WHERE clause:", whereClause);
-    console.log("[EXPORT] Params:", params);
-    
-    // Busca TODOS os produtos sem LIMIT/OFFSET para exportação
+
+    return {
+        whereClause,
+        params
+    };
+}
+
+
+
+function getProductsForExport(filters = {}) {
+    const database = getDatabase();
+    const {
+        whereClause,
+        params
+    } = buildExportFilters(filters);
+
     const rows = database
         .prepare(`
             SELECT
                 pc.*,
-                ppc.cod_prod AS code,
-                ppc.cod_prod_global AS sirius_code
+                (
+                    SELECT curve.cod_prod
+                    FROM product_purchase_curve AS curve
+                    WHERE curve.product_id = pc.id
+                        AND curve.cod_prod IS NOT NULL
+                        AND TRIM(CAST(curve.cod_prod AS TEXT)) <> ''
+                    ORDER BY curve.empresa ASC
+                    LIMIT 1
+                ) AS code,
+                (
+                    SELECT curve.cod_prod_global
+                    FROM product_purchase_curve AS curve
+                    WHERE curve.product_id = pc.id
+                        AND curve.cod_prod_global IS NOT NULL
+                        AND TRIM(CAST(curve.cod_prod_global AS TEXT)) <> ''
+                        AND CAST(curve.cod_prod_global AS TEXT) <> '1'
+                    ORDER BY curve.empresa ASC
+                    LIMIT 1
+                ) AS sirius_code
             FROM product_catalog AS pc
-            LEFT JOIN product_purchase_curve AS ppc
-                ON ppc.product_id = pc.id
             ${whereClause}
             ORDER BY
                 pc.branch ASC,
-                pc.commercial_name ASC,
-                ppc.cod_prod ASC
+                pc.commercial_name ASC
         `)
         .all(...params);
-    
-    console.log("[EXPORT] Total de produtos encontrados:", rows.length);
-    
+
     const result = rows.map((product) => ({
         branch: product.branch || "",
         code: product.code || "",
@@ -183,9 +211,7 @@ function getProductsForExport(filters = {}) {
             product.active
         )
     }));
-    
-    console.log("[EXPORT] Total de produtos mapeados:", result.length);
-    
+
     return result;
 }
 
@@ -193,75 +219,18 @@ function getProductsForExport(filters = {}) {
 
 function countProductsForExport(filters = {}) {
     const database = getDatabase();
-
-
-
-    let whereClause = "WHERE 1 = 1";
-    const params = [];
-
-
-
-    if (filters.branch) {
-        whereClause += " AND branch = ?";
-        params.push(String(filters.branch));
-    }
-
-
-
-    if (filters.active !== "" && filters.active !== undefined) {
-        whereClause += " AND active = ?";
-        params.push(toSafeNumber(filters.active, 0));
-    }
-
-
-
-    if (filters.category_code) {
-        whereClause += " AND category_code = ?";
-        params.push(String(filters.category_code));
-    }
-
-
-
-    if (filters.group_code) {
-        whereClause += " AND group_code = ?";
-        params.push(String(filters.group_code));
-    }
-
-
-
-    if (filters.brand) {
-        whereClause += " AND brand = ?";
-        params.push(String(filters.brand));
-    }
-
-
-
-    if (filters.search) {
-        const search = `%${String(filters.search).trim()}%`;
-        whereClause += ` AND (
-            branch LIKE ? OR
-            code LIKE ? OR
-            sirius_code LIKE ? OR
-            ean LIKE ? OR
-            sap_code LIKE ? OR
-            active_ingredient LIKE ? OR
-            commercial_name LIKE ? OR
-            brand LIKE ? OR
-            ms_registration LIKE ?
-        )`;
-        params.push(
-            search, search, search, search, search,
-            search, search, search, search
-        );
-    }
-
-
+    const {
+        whereClause,
+        params
+    } = buildExportFilters(filters);
 
     const result = database
-        .prepare(`SELECT COUNT(*) AS total FROM product_catalog ${whereClause}`)
+        .prepare(`
+            SELECT COUNT(*) AS total
+            FROM product_catalog AS pc
+            ${whereClause}
+        `)
         .get(...params);
-
-
 
     return result.total;
 }
@@ -273,10 +242,6 @@ async function exportProductsExcel(
     columns
 ) {
     const rows = getProductsForExport(filters);
-    
-    console.log("[EXPORT EXCEL] Rows:", rows.length);
-
-
 
     return exportRowsToExcel({
         moduleKey: "PRODUTOS",
@@ -293,10 +258,6 @@ async function exportProductsAdvanced(
     columns
 ) {
     const rows = getProductsForExport(filters);
-    
-    console.log("[EXPORT ADVANCED] Rows:", rows.length);
-
-
 
     return exportRowsToExcel({
         moduleKey: "PRODUTOS",
@@ -311,8 +272,6 @@ async function exportProductsAdvanced(
 async function getExportTemplates(moduleKey) {
     const database = getDatabase();
 
-
-
     const templates = database
         .prepare(`
             SELECT id, name, modulekey, filters_json, columns_json, createdat
@@ -321,8 +280,6 @@ async function getExportTemplates(moduleKey) {
             ORDER BY name ASC
         `)
         .all(moduleKey);
-
-
 
     return templates.map((t) => ({
         id: t.id,
@@ -340,19 +297,13 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
-
-
     const existing = database
         .prepare(`SELECT id FROM exporttemplates WHERE modulekey = ? AND name = ?`)
         .get(moduleKey, name);
 
-
-
     if (existing) {
         throw new Error("Template com este nome ja existe.");
     }
-
-
 
     const template = {
         id: crypto.randomUUID(),
@@ -362,8 +313,6 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
         columns_json: JSON.stringify(columns),
         createdat: now
     };
-
-
 
     database
         .prepare(`
@@ -380,8 +329,6 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
             template.createdat
         );
 
-
-
     return template;
 }
 
@@ -390,19 +337,13 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
 async function deleteExportTemplate(moduleKey, templateId) {
     const database = getDatabase();
 
-
-
     const result = database
         .prepare(`DELETE FROM exporttemplates WHERE id = ? AND modulekey = ?`)
         .run(templateId, moduleKey);
 
-
-
     if (result.changes === 0) {
         throw new Error("Template nao encontrado.");
     }
-
-
 
     return { success: true };
 }
