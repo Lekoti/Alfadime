@@ -3,7 +3,6 @@ const repository = require(
 );
 
 
-
 const {
     exportRowsToExcel
 } = require(
@@ -11,13 +10,11 @@ const {
 );
 
 
-
 const {
     getDatabase
 } = require(
     "../../../database/connection"
 );
-
 
 
 const crypto = require("crypto");
@@ -237,22 +234,6 @@ function countProductsForExport(filters = {}) {
 
 
 
-async function exportProductsExcel(
-    filters,
-    columns
-) {
-    const rows = getProductsForExport(filters);
-
-    return exportRowsToExcel({
-        moduleKey: "PRODUTOS",
-        sheetName: "Produtos",
-        columns,
-        rows
-    });
-}
-
-
-
 async function exportProductsAdvanced(
     filters,
     columns
@@ -351,7 +332,6 @@ async function deleteExportTemplate(moduleKey, templateId) {
 
 
 module.exports = {
-    exportProductsExcel,
     exportProductsAdvanced,
     getProductsForExport,
     countProductsForExport,

@@ -507,27 +507,28 @@ function cancelCorrections(correctionIds = []) {
 
         database
             .prepare(`
-                DELETE FROM product_change_history
-                WHERE correction_id IN (${existingPlaceholders})
-            `)
-            .run(...existingIds);
-
-        database
-            .prepare(`
-                DELETE FROM product_corrections
+                UPDATE product_corrections
+                SET
+                    status = 'cancelled',
+                    cancelled_at = ?,
+                    updated_at = ?
                 WHERE id IN (${existingPlaceholders})
             `)
-            .run(...existingIds);
+            .run(
+                new Date().toISOString(),
+                new Date().toISOString(),
+                ...existingIds
+            );
 
         return existingIds.length;
     });
 
-    const deleted = transaction();
+    const cancelled = transaction();
 
     return {
         success: true,
-        deleted,
-        updated: deleted
+        deleted: cancelled,
+        updated: cancelled
     };
 }
 
@@ -633,6 +634,7 @@ function revertCorrections(correctionIds = []) {
     }
 
     const results = [];
+    const errors = [];
 
     for (const correctionId of correctionIds) {
         try {
@@ -645,12 +647,19 @@ function revertCorrections(correctionIds = []) {
                 correctionId,
                 error.message
             );
+
+            errors.push({
+                id: correctionId,
+                error: error.message
+            });
         }
     }
 
     return {
-        success: true,
-        updated: results.length
+        success: errors.length === 0,
+        updated: results.length,
+        failed: errors.length,
+        errors
     };
 }
 
@@ -766,6 +775,13 @@ function markCorrectionsAsSent(correctionIds = []) {
     };
 }
 
+function normalizeComparableValue(value) {
+    return String(value ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toUpperCase();
+}
+
 function confirmCorrectionsFromExcel() {
     const database = getDatabase();
     const now = new Date().toISOString();
@@ -793,15 +809,15 @@ function confirmCorrectionsFromExcel() {
                 continue;
             }
 
-            const excelValue = String(
+            const excelValue = normalizeComparableValue(
                 product[
                     correction.field_name
-                ] ?? ""
-            ).trim();
+                ]
+            );
 
-            const correctedValue = String(
-                correction.new_value ?? ""
-            ).trim();
+            const correctedValue = normalizeComparableValue(
+                correction.new_value
+            );
 
             if (excelValue === correctedValue) {
                 database

@@ -1,4 +1,4 @@
-﻿const {
+const {
     ipcMain
 } = require("electron");
 
@@ -9,7 +9,7 @@ const preferencesRepository = require(
 
 
 const {
-    exportProductsExcel
+    exportProductsAdvanced
 } = require(
     "../modules/products/services/products-export.service"
 );
@@ -72,7 +72,7 @@ function registerExportIpc() {
     ipcMain.handle(
         "export:products",
         (event, filters, columns) => {
-            return exportProductsExcel(
+            return exportProductsAdvanced(
                 filters,
                 columns
             );
