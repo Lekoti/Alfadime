@@ -39,6 +39,7 @@ export function reportBlock(report, invoice) {
     if (!report) return "Importe ou cole o relatório de pedidos.";
     if (report.errors.length) return "Relatório contém linhas não reconhecidas ou inconsistências. Confira o TXT antes de usar a sugestão.";
     if (!invoice?.readable || !invoice.destination?.key) return "NF sem filial destinatária identificada; sugestão indisponível.";
+    if ((report.branches || []).length !== 1) return "Relatório deve conter uma única filial; confira o TXT antes de usar a sugestão.";
     if (report.branch !== invoice.destination.key) return `Filial do TXT (${report.branch}) difere da NF (${invoice.destination.key}).`;
     return "";
 }

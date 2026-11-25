@@ -70,6 +70,9 @@ export function parsePurchaseReport(input, name = "Texto colado", encoding = "Te
         } catch (issue) { error(lineNumber, issue.message, value); }
     });
     if (!rows.length) error(0, "Nenhum item reconhecido no relatório.", "");
-    if (branches.size !== 1) error(0, "Importe um relatório de uma única filial por vez.", "");
-    return { name, encoding, rows, errors, branches: [...branches], branch: rows[0]?.branch || "", pages };
+    if (branches.size !== 1) {
+        error(0, "Importe um relatório de uma única filial por vez. As linhas não serão usadas enquanto houver mais de uma filial.", "");
+        rows.length = 0;
+    }
+    return { name, encoding, rows, errors, branches: [...branches], branch: branches.size === 1 ? rows[0]?.branch || "" : "", pages };
 }
