@@ -6,6 +6,7 @@ const {
 } = require("../../utils/laboratory-filter.utils");
 
 
+
 const BRANCHES = {
     DPR: "DIMEBRAS PR",
     AMS: "ALFAMED MS",
@@ -15,8 +16,10 @@ const BRANCHES = {
 };
 
 
+
 const MAX_PAGE_SIZE = 10000;
 const RELATED_CHUNK_SIZE = 500;
+
 
 
 function ensureQuantityOverrideColumn(database) {
@@ -25,9 +28,11 @@ function ensureQuantityOverrideColumn(database) {
         .all();
 
 
+
     const exists = columns.some(
         (column) => column.name === "quantity_override"
     );
+
 
 
     if (!exists) {
@@ -38,15 +43,18 @@ function ensureQuantityOverrideColumn(database) {
 }
 
 
+
 function ensureContentHashColumn(database) {
     const columns = database
         .prepare("PRAGMA table_info(purchase_curve_products)")
         .all();
 
 
+
     const exists = columns.some(
         (column) => column.name === "content_hash"
     );
+
 
 
     if (!exists) {
@@ -55,6 +63,7 @@ function ensureContentHashColumn(database) {
         );
     }
 }
+
 
 
 function getValue(object, ...keys) {
@@ -68,8 +77,10 @@ function getValue(object, ...keys) {
     }
 
 
+
     return null;
 }
+
 
 
 function normalizeText(value) {
@@ -78,11 +89,14 @@ function normalizeText(value) {
     }
 
 
+
     const text = String(value).trim();
+
 
 
     return text || null;
 }
+
 
 
 function normalizeNumber(value, fallback = 0) {
@@ -95,7 +109,9 @@ function normalizeNumber(value, fallback = 0) {
     }
 
 
+
     const number = Number(value);
+
 
 
     return Number.isFinite(number)
@@ -104,9 +120,11 @@ function normalizeNumber(value, fallback = 0) {
 }
 
 
+
 function buildWhereClause(filters = {}) {
     let whereClause = "WHERE 1 = 1";
     const params = [];
+
 
 
     if (filters.company) {
@@ -115,10 +133,12 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     const laboratoryCode = filters.laboratory_code ??
         filters.laboratory ??
         filters.laboratoryname ??
         filters.laboratory_name;
+
 
 
     if (laboratoryCode) {
@@ -126,6 +146,7 @@ function buildWhereClause(filters = {}) {
             getDatabase(),
             laboratoryCode
         );
+
 
 
         if (laboratoryValues.length) {
@@ -140,6 +161,7 @@ function buildWhereClause(filters = {}) {
             `;
 
 
+
             params.push(...laboratoryValues);
         } else {
             whereClause += " AND 1 = 0";
@@ -147,13 +169,16 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     const effectiveCurve =
         filters.effective_curve ??
         filters.effectivecurve;
 
 
+
     if (effectiveCurve) {
         whereClause += " AND effective_curve = ?";
+
 
 
         params.push(
@@ -164,8 +189,10 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     if (filters.search) {
         const search = `%${String(filters.search).trim()}%`;
+
 
 
         whereClause += `
@@ -179,6 +206,7 @@ function buildWhereClause(filters = {}) {
         `;
 
 
+
         params.push(
             search,
             search,
@@ -189,6 +217,7 @@ function buildWhereClause(filters = {}) {
     }
 
 
+
     return {
         whereClause,
         params
@@ -196,11 +225,13 @@ function buildWhereClause(filters = {}) {
 }
 
 
+
 function getRelatedRowsByProductCodes(
     database,
     productCodes
 ) {
     const relatedRows = [];
+
 
 
     for (
@@ -214,9 +245,11 @@ function getRelatedRowsByProductCodes(
         );
 
 
+
         const chunkPlaceholders = productCodeChunk
             .map(() => "?")
             .join(", ");
+
 
 
         const chunkStatement = database.prepare(`
@@ -236,6 +269,7 @@ function getRelatedRowsByProductCodes(
         `);
 
 
+
         relatedRows.push(
             ...chunkStatement.all(
                 ...productCodeChunk,
@@ -249,8 +283,10 @@ function getRelatedRowsByProductCodes(
     }
 
 
+
     return relatedRows;
 }
+
 
 
 function buildRelatedRowsByProduct(relatedRows) {
@@ -263,7 +299,9 @@ function buildRelatedRowsByProduct(relatedRows) {
     );
 
 
+
     const relatedByProduct = new Map();
+
 
 
     for (const row of relatedRows) {
@@ -271,9 +309,11 @@ function buildRelatedRowsByProduct(relatedRows) {
         const branch = branchByCompany[row.company];
 
 
+
         if (!branch) {
             continue;
         }
+
 
 
         if (!relatedByProduct.has(productCode)) {
@@ -281,13 +321,16 @@ function buildRelatedRowsByProduct(relatedRows) {
         }
 
 
+
         relatedByProduct
             .get(productCode)[branch] = row;
     }
 
 
+
     return relatedByProduct;
 }
+
 
 
 function decorateCurveRow(
@@ -299,6 +342,7 @@ function decorateCurveRow(
     ) || {};
 
 
+
     const branchPriceValues = Object.values(branchPrices)
         .map((branch) => branch.last_purchase_price)
         .filter((price) =>
@@ -308,7 +352,9 @@ function decorateCurveRow(
         );
 
 
+
     let averageCost = row.average_cost;
+
 
 
     if (
@@ -323,9 +369,11 @@ function decorateCurveRow(
         );
 
 
+
         averageCost =
             sum / branchPriceValues.length;
     }
+
 
 
     return {
@@ -368,18 +416,22 @@ function decorateCurveRow(
 }
 
 
+
 function listCurveProducts(filters = {}) {
     const database = getDatabase();
+
 
 
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
 
 
+
     const {
         whereClause,
         params
     } = buildWhereClause(filters);
+
 
 
     const pageSize = Math.min(
@@ -391,10 +443,12 @@ function listCurveProducts(filters = {}) {
     );
 
 
+
     const page = Math.max(
         Number(filters.page) || 1,
         1
     );
+
 
 
     const total = database
@@ -407,10 +461,12 @@ function listCurveProducts(filters = {}) {
         .total;
 
 
+
     const totalPages = Math.max(
         Math.ceil(total / pageSize),
         1
     );
+
 
 
     const currentPage = Math.min(
@@ -419,9 +475,11 @@ function listCurveProducts(filters = {}) {
     );
 
 
+
     const offset = (
         currentPage - 1
     ) * pageSize;
+
 
 
     const baseRows = database
@@ -444,6 +502,7 @@ function listCurveProducts(filters = {}) {
         );
 
 
+
     if (!baseRows.length) {
         return {
             rows: [],
@@ -458,11 +517,13 @@ function listCurveProducts(filters = {}) {
     }
 
 
+
     const productCodes = [
         ...new Set(
             baseRows.map((row) => String(row.product_code))
         )
     ];
+
 
 
     const relatedRows =
@@ -472,10 +533,12 @@ function listCurveProducts(filters = {}) {
         );
 
 
+
     const relatedByProduct =
         buildRelatedRowsByProduct(
             relatedRows
         );
+
 
 
     const rows = baseRows.map(
@@ -485,6 +548,7 @@ function listCurveProducts(filters = {}) {
                 relatedByProduct
             )
     );
+
 
 
     return {
@@ -500,18 +564,22 @@ function listCurveProducts(filters = {}) {
 }
 
 
+
 function listAllCurveProducts(filters = {}) {
     const database = getDatabase();
+
 
 
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
 
 
+
     const {
         whereClause,
         params
     } = buildWhereClause(filters);
+
 
 
     const baseRows = database
@@ -528,9 +596,11 @@ function listAllCurveProducts(filters = {}) {
         .all(...params);
 
 
+
     if (!baseRows.length) {
         return [];
     }
+
 
 
     const productCodes = [
@@ -540,6 +610,7 @@ function listAllCurveProducts(filters = {}) {
     ];
 
 
+
     const relatedRows =
         getRelatedRowsByProductCodes(
             database,
@@ -547,10 +618,12 @@ function listAllCurveProducts(filters = {}) {
         );
 
 
+
     const relatedByProduct =
         buildRelatedRowsByProduct(
             relatedRows
         );
+
 
 
     return baseRows.map(
@@ -561,6 +634,7 @@ function listAllCurveProducts(filters = {}) {
             )
     );
 }
+
 
 
 function getFilterOptions(field) {
@@ -589,12 +663,15 @@ function getFilterOptions(field) {
     };
 
 
+
     const actualField = fieldMap[field] || field;
+
 
 
     if (actualField === "laboratory_name") {
         return getUnifiedLaboratoryOptions(getDatabase());
     }
+
 
 
     return getDatabase()
@@ -610,18 +687,22 @@ function getFilterOptions(field) {
 }
 
 
+
 function upsertCurveProducts(products, source = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
 
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
 
 
+
     database.exec("CREATE INDEX IF NOT EXISTS idx_product_catalog_branch_code ON product_catalog(branch, code)");
     database.exec("CREATE INDEX IF NOT EXISTS idx_product_catalog_branch_ean ON product_catalog(branch, ean)");
     database.exec("CREATE INDEX IF NOT EXISTS idx_purchase_curve_company_code ON purchase_curve_products(company, product_code)");
+
 
 
     console.log("Carregando produtos em memória...");
@@ -632,8 +713,10 @@ function upsertCurveProducts(products, source = {}) {
     `).all();
 
 
+
     const productByBranchCode = new Map();
     const productByBranchEan = new Map();
+
 
 
     for (const product of allProducts) {
@@ -642,12 +725,14 @@ function upsertCurveProducts(products, source = {}) {
         const ean = String(product.ean || "").trim();
 
 
+
         if (code && code !== "null") {
             productByBranchCode.set(
                 `${branch}|${code}`,
                 product
             );
         }
+
 
 
         if (
@@ -663,12 +748,15 @@ function upsertCurveProducts(products, source = {}) {
     }
 
 
+
     const loadTime = ((Date.now() - loadStart) / 1000).toFixed(2);
+
 
 
     console.log(
         `Produtos carregados: ${allProducts.length} em ${loadTime}s`
     );
+
 
 
     const columns = [
@@ -689,6 +777,7 @@ function upsertCurveProducts(products, source = {}) {
     ];
 
 
+
     const hashColumns = columns.filter(
         (column) =>
             ![
@@ -700,6 +789,7 @@ function upsertCurveProducts(products, source = {}) {
                 "content_hash"
             ].includes(column)
     );
+
 
 
     const updateColumns = columns.filter(
@@ -715,6 +805,7 @@ function upsertCurveProducts(products, source = {}) {
     );
 
 
+
     const insertCurve = database.prepare(`
         INSERT INTO purchase_curve_products (
             ${columns.join(", ")}
@@ -727,6 +818,7 @@ function upsertCurveProducts(products, source = {}) {
     `);
 
 
+
     const findExisting = database.prepare(`
         SELECT id, content_hash
         FROM purchase_curve_products
@@ -736,8 +828,9 @@ function upsertCurveProducts(products, source = {}) {
     `);
 
 
+
     const insertProductPurchaseCurve = database.prepare(`
-        INSERT OR REPLACE INTO product_purchase_curve (
+        INSERT INTO product_purchase_curve (
             product_id, empresa, cod_prod, cod_prod_global, cod_fabr_global,
             cod_barras, descricao, lab, estoque, estoque_bloq, media_mes,
             ult_comp, penult_comp, curva_valor, curva_unidade,
@@ -748,7 +841,24 @@ function upsertCurveProducts(products, source = {}) {
             @ult_comp, @penult_comp, @curva_valor, @curva_unidade,
             @curva_fabr_valor, @cx_padrao, @created_at, @updated_at
         )
+        ON CONFLICT(product_id, empresa, cod_prod) DO UPDATE SET
+            cod_prod_global = excluded.cod_prod_global,
+            cod_fabr_global = excluded.cod_fabr_global,
+            cod_barras = excluded.cod_barras,
+            descricao = excluded.descricao,
+            lab = excluded.lab,
+            estoque = excluded.estoque,
+            estoque_bloq = excluded.estoque_bloq,
+            media_mes = excluded.media_mes,
+            ult_comp = excluded.ult_comp,
+            penult_comp = excluded.penult_comp,
+            curva_valor = excluded.curva_valor,
+            curva_unidade = excluded.curva_unidade,
+            curva_fabr_valor = excluded.curva_fabr_valor,
+            cx_padrao = excluded.cx_padrao,
+            updated_at = excluded.updated_at
     `);
+
 
 
     let inserted = 0;
@@ -761,6 +871,7 @@ function upsertCurveProducts(products, source = {}) {
     let invalidRows = 0;
 
 
+
     const process = database.transaction((items) => {
         for (const product of items) {
             const company = normalizeText(
@@ -768,14 +879,17 @@ function upsertCurveProducts(products, source = {}) {
             );
 
 
+
             const productCode = normalizeText(
                 getValue(product, "product_code", "productCode", "cod_prod", "codProd", "code")
             );
 
 
+
             const barcode = normalizeText(
                 getValue(product, "barcode", "bar_code", "cod_barras", "codBarras", "ean")
             );
+
 
 
             if (!company || !productCode) {
@@ -784,15 +898,18 @@ function upsertCurveProducts(products, source = {}) {
             }
 
 
+
             let productRow = productByBranchCode.get(
                 `${company}|${productCode}`
             );
+
 
 
             if (!productRow && barcode) {
                 productRow = productByBranchEan.get(
                     `${company}|${barcode}`
                 );
+
 
 
                 if (productRow) {
@@ -803,16 +920,19 @@ function upsertCurveProducts(products, source = {}) {
             }
 
 
+
             if (!productRow) {
                 notLinked += 1;
                 continue;
             }
 
 
+
             const existing = findExisting.get(
                 company,
                 productCode
             );
+
 
 
             const row = {
@@ -859,6 +979,7 @@ function upsertCurveProducts(products, source = {}) {
             };
 
 
+
             const contentHash = crypto
                 .createHash("sha256")
                 .update(
@@ -871,7 +992,9 @@ function upsertCurveProducts(products, source = {}) {
                 .digest("hex");
 
 
+
             row.content_hash = contentHash;
+
 
 
             if (
@@ -883,6 +1006,7 @@ function upsertCurveProducts(products, source = {}) {
             }
 
 
+
             insertCurve.run(
                 ...columns.map(
                     (column) => row[column]
@@ -890,11 +1014,13 @@ function upsertCurveProducts(products, source = {}) {
             );
 
 
+
             if (existing) {
                 updated += 1;
             } else {
                 inserted += 1;
             }
+
 
 
             insertProductPurchaseCurve.run({
@@ -920,12 +1046,15 @@ function upsertCurveProducts(products, source = {}) {
             });
 
 
+
             curveInserted += 1;
         }
     });
 
 
+
     process(products);
+
 
 
     return {
@@ -941,9 +1070,11 @@ function upsertCurveProducts(products, source = {}) {
 }
 
 
+
 function createImportHistory(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
 
 
     const item = {
@@ -977,6 +1108,7 @@ function createImportHistory(data = {}) {
         created_at: now,
         started_at: now
     };
+
 
 
     database
@@ -1020,8 +1152,10 @@ function createImportHistory(data = {}) {
         );
 
 
+
     return item;
 }
+
 
 
 function finishImportHistory(id, data = {}) {
@@ -1051,12 +1185,15 @@ function finishImportHistory(id, data = {}) {
 }
 
 
+
 function getPurchaseSuggestionsByIds(selectedIds) {
     const database = getDatabase();
 
 
+
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
+
 
 
     if (
@@ -1067,9 +1204,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
     }
 
 
+
     const placeholders = selectedIds
         .map(() => "?")
         .join(", ");
+
 
 
     const rows = database
@@ -1085,9 +1224,11 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         .all(...selectedIds);
 
 
+
     if (!rows.length) {
         return [];
     }
+
 
 
     const productCodes = [
@@ -1097,6 +1238,7 @@ function getPurchaseSuggestionsByIds(selectedIds) {
     ];
 
 
+
     const relatedRows =
         getRelatedRowsByProductCodes(
             database,
@@ -1104,10 +1246,12 @@ function getPurchaseSuggestionsByIds(selectedIds) {
         );
 
 
+
     const relatedByProduct =
         buildRelatedRowsByProduct(
             relatedRows
         );
+
 
 
     return rows.map(
@@ -1120,12 +1264,15 @@ function getPurchaseSuggestionsByIds(selectedIds) {
 }
 
 
+
 function setQuantityOverride(id, quantity) {
     const database = getDatabase();
 
 
+
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
+
 
 
     const value =
@@ -1134,6 +1281,7 @@ function setQuantityOverride(id, quantity) {
         quantity === ""
             ? null
             : Number(quantity);
+
 
 
     database
@@ -1145,6 +1293,7 @@ function setQuantityOverride(id, quantity) {
         .run(value, id);
 
 
+
     return {
         id,
         quantity: value
@@ -1152,12 +1301,15 @@ function setQuantityOverride(id, quantity) {
 }
 
 
+
 function getQuantityOverridesCount() {
     const database = getDatabase();
 
 
+
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
+
 
 
     return database
@@ -1171,12 +1323,15 @@ function getQuantityOverridesCount() {
 }
 
 
+
 function clearQuantityOverrides() {
     const database = getDatabase();
 
 
+
     ensureQuantityOverrideColumn(database);
     ensureContentHashColumn(database);
+
 
 
     const result = database
@@ -1188,10 +1343,12 @@ function clearQuantityOverrides() {
         .run();
 
 
+
     return {
         removed: result.changes
     };
 }
+
 
 
 module.exports = {
