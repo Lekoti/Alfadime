@@ -505,8 +505,7 @@ function syncProducts(products = [], source = {}) {
             source_file_name = @source_file_name,
             imported_at = @imported_at,
             updated_at = @updated_at
-        WHERE branch = @branch
-          AND code = @code
+        WHERE id = @id
     `);
 
     const syncTransaction = database.transaction(() => {
@@ -550,7 +549,10 @@ function syncProducts(products = [], source = {}) {
             );
 
             if (existing) {
-                updateProduct.run(item);
+                updateProduct.run({
+                    ...item,
+                    id: existing.id
+                });
                 updated++;
             } else {
                 insertProduct.run(item);
