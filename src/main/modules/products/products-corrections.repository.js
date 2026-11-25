@@ -4,6 +4,10 @@ const {
     getDatabase
 } = require("../../database/connection");
 
+const {
+    PRODUCT_CATALOG_FIELDS
+} = require("./products.constants");
+
 function getProductById(productId) {
     const database = getDatabase();
 
@@ -15,6 +19,14 @@ function getProductById(productId) {
             LIMIT 1
         `)
         .get(productId);
+}
+
+function assertEditableField(fieldName) {
+    if (!PRODUCT_CATALOG_FIELDS.includes(fieldName)) {
+        throw new Error(
+            `Campo nao permitido: ${fieldName}`
+        );
+    }
 }
 
 function createHistoryEntry(data) {
@@ -60,7 +72,8 @@ function createHistoryEntry(data) {
                 data.old_value ?? null,
             new_value:
                 data.new_value ?? null,
-            reason: data.reason || null,
+            reason:
+                data.reason || null,
             changed_by:
                 data.changed_by || null,
             created_at: new Date().toISOString()
@@ -238,7 +251,6 @@ function buildCorrectionsQuery(filters = {}) {
         query += `
             AND correction.status = ?
         `;
-
         params.push(filters.status);
     }
 
@@ -246,7 +258,6 @@ function buildCorrectionsQuery(filters = {}) {
         query += `
             AND correction.branch = ?
         `;
-
         params.push(filters.branch);
     }
 
@@ -254,7 +265,6 @@ function buildCorrectionsQuery(filters = {}) {
         query += `
             AND correction.field_name = ?
         `;
-
         params.push(filters.field_name);
     }
 
@@ -441,6 +451,7 @@ function cancelCorrection(correctionId) {
         id: correctionId
     };
 }
+
 function cancelCorrections(correctionIds = []) {
     if (
         !Array.isArray(correctionIds) ||
@@ -519,6 +530,7 @@ function cancelCorrections(correctionIds = []) {
         updated: deleted
     };
 }
+
 function revertCorrection(correctionId) {
     const database = getDatabase();
     const now = new Date().toISOString();
@@ -543,6 +555,8 @@ function revertCorrection(correctionId) {
             "Somente correcoes marcadas como feito/atualizado podem ser revertidas."
         );
     }
+
+    assertEditableField(correction.field_name);
 
     const product = getProductById(
         correction.product_id
@@ -639,6 +653,7 @@ function revertCorrections(correctionIds = []) {
         updated: results.length
     };
 }
+
 function markCorrectionsAsSent(correctionIds = []) {
     if (
         !Array.isArray(correctionIds) ||
@@ -667,6 +682,8 @@ function markCorrectionsAsSent(correctionIds = []) {
 
     const transaction = database.transaction(() => {
         for (const correction of corrections) {
+            assertEditableField(correction.field_name);
+
             const product = database
                 .prepare(`
                     SELECT *
@@ -827,19 +844,6 @@ function confirmCorrectionsFromExcel() {
     };
 }
 
-module.exports = {
-    getProductById,
-    createCorrection,
-    listCorrections,
-    getCorrectionFilterOptions,
-    listPendingCorrectionsByProductIds,
-    cancelCorrection,
-    cancelCorrections,
-    revertCorrection,
-    revertCorrections,
-    markCorrectionsAsSent,
-    confirmCorrectionsFromExcel
-};
 function getProductsByEan(ean) {
     const database = getDatabase();
     const normalizedEan = String(ean ?? "").trim();
@@ -877,5 +881,18 @@ function createCorrectionsBatch(items = []) {
     return transaction();
 }
 
-module.exports.getProductsByEan = getProductsByEan;
-module.exports.createCorrectionsBatch = createCorrectionsBatch;
+module.exports = {
+    getProductById,
+    createCorrection,
+    listCorrections,
+    getCorrectionFilterOptions,
+    listPendingCorrectionsByProductIds,
+    cancelCorrection,
+    cancelCorrections,
+    revertCorrection,
+    revertCorrections,
+    markCorrectionsAsSent,
+    confirmCorrectionsFromExcel,
+    getProductsByEan,
+    createCorrectionsBatch
+};
