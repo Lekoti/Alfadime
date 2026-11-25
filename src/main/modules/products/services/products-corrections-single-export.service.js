@@ -14,29 +14,20 @@ const {
     toSafeNumber
 } = require("../../../utils/validation.utils");
 
+const {
+    PRODUCT_CSV_BRANCH_EXPORTS
+} = require(
+    "../constants/products.config"
+);
 
-const BRANCH_EXPORTS = {
-    "DIMEBRAS PR": {
-        fileName: "PRODUTOS_0001.csv",
-        sheetName: "PRODUTOS_0001"
-    },
-    "ALFAMED MS": {
-        fileName: "PRODUTOS_0002.csv",
-        sheetName: "PRODUTOS_0002"
-    },
-    "DIMEBRAS MT": {
-        fileName: "PRODUTOS_0003.csv",
-        sheetName: "PRODUTOS_0003"
-    },
-    "DIMEBRAS MS": {
-        fileName: "PRODUTOS_0005.csv",
-        sheetName: "PRODUTOS_0005"
-    },
-    "DIMEBRAS SC": {
-        fileName: "PRODUTOS_0006.csv",
-        sheetName: "PRODUTOS_0006"
-    }
-};
+const {
+    PURCHASES_CONFIG
+} = require(
+    "../../../config/app.config"
+);
+
+
+const BRANCH_EXPORTS = PRODUCT_CSV_BRANCH_EXPORTS;
 
 
 const EXPORT_COLUMNS = [
