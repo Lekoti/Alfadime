@@ -2,13 +2,11 @@ const repository = require("./purchases.repository");
 const { calculatePurchaseSuggestion } = require("./purchases-calculation.service");
 
 
-
 function getSuggestedQuantity(row) {
     return Number(
         (row.suggestedQuantity ?? row.suggestedquantity) || 0
     );
 }
-
 
 
 function buildCleanObservation(row, status) {
@@ -20,13 +18,11 @@ function buildCleanObservation(row, status) {
     const targetText = target > 0 ? `${target} dias` : "não definida";
 
 
-
     if (status === "suggestion") {
         return quantity > 0
             ? `Comprar ${quantity} un. para atingir a meta de ${targetText}.`
             : "Sem necessidade de compra.";
     }
-
 
 
     if (status === "belowtarget") {
@@ -36,7 +32,6 @@ function buildCleanObservation(row, status) {
     }
 
 
-
     if (status === "critical") {
         return quantity > 0
             ? `Crítico: cobertura de ${coverageText}. Comprar ${quantity} un.`
@@ -44,11 +39,9 @@ function buildCleanObservation(row, status) {
     }
 
 
-
     if (status === "nobuy") {
         return "Estoque suficiente. Não comprar.";
     }
-
 
 
     if (status === "excessstock") {
@@ -56,17 +49,14 @@ function buildCleanObservation(row, status) {
     }
 
 
-
     if (status === "promotion") {
         return "Estoque muito alto. Avaliar ação promocional.";
     }
 
 
-
     if (status === "nosales") {
         return "Sem média de venda suficiente para calcular.";
     }
-
 
 
     if (status === "noprice") {
@@ -76,11 +66,9 @@ function buildCleanObservation(row, status) {
     }
 
 
-
     if (quantity > 0) {
         return `Comprar ${quantity} un. para meta de ${targetText}.`;
     }
-
 
 
     if (hasCoverage) {
@@ -88,128 +76,163 @@ function buildCleanObservation(row, status) {
     }
 
 
-
     return "Sem média de venda suficiente para calcular.";
 }
 
 
+function decorateCalculatedRow(row, filters = {}) {
+    const calculated = calculatePurchaseSuggestion(
+        row,
+        {
+            quantityoverride: row.quantity_override
+        },
+        filters.curveDays || {}
+    );
+
+
+    const coverageDays = calculated.coverageDays;
+    const hasCoverage =
+        coverageDays !== null &&
+        coverageDays !== undefined;
+
+
+    const decorated = {
+        ...calculated,
+        lastPurchaseDPR: row.lastPurchaseDPR ?? null,
+        lastPurchaseAMS: row.lastPurchaseAMS ?? null,
+        lastPurchaseDMT: row.lastPurchaseDMT ?? null,
+        lastPurchaseDMS: row.lastPurchaseDMS ?? null,
+        lastPurchaseDSC: row.lastPurchaseDSC ?? null,
+        averageCost: row.averageCost ?? calculated.averageCost ?? null,
+        curveValue: row.curveValue ?? null,
+        curveUnit: row.curveUnit ?? null,
+        standardBox: row.standardBox ?? null,
+        priceSource: calculated.priceSource || "-",
+        isCritical:
+            hasCoverage && coverageDays <= 15,
+        observation: buildCleanObservation(
+            {
+                ...row,
+                ...calculated
+            },
+            filters.status || ""
+        )
+    };
+
+
+    return decorated;
+}
+
+
+function matchesStatusFilter(row, status) {
+    const coverageDays = row.coverageDays;
+    const targetDays = Number(row.targetDays || 0);
+    const suggestedQuantity = getSuggestedQuantity(row);
+    const hasCoverage = coverageDays !== null && coverageDays !== undefined;
+    const hasPrice = row.unitprice !== null && row.unitprice !== undefined && Number(row.unitprice) > 0;
+
+
+    if (status === "suggestion") {
+        return suggestedQuantity > 0;
+    }
+
+
+    if (status === "belowtarget") {
+        return hasCoverage && coverageDays < targetDays;
+    }
+
+
+    if (status === "critical") {
+        return hasCoverage && coverageDays <= 15;
+    }
+
+
+    if (status === "nobuy") {
+        return hasCoverage && coverageDays >= targetDays;
+    }
+
+
+    if (status === "excessstock") {
+        return hasCoverage && targetDays > 0 && coverageDays >= targetDays * 2;
+    }
+
+
+    if (status === "promotion") {
+        return hasCoverage && targetDays > 0 && coverageDays >= targetDays * 3;
+    }
+
+
+    if (status === "nosales") {
+        return !hasCoverage;
+    }
+
+
+    if (status === "noprice") {
+        return suggestedQuantity > 0 && !hasPrice;
+    }
+
+
+    return true;
+}
+
+
+function paginateRows(rows, filters = {}) {
+    const pageSize = Math.min(
+        Math.max(Number(filters.pageSize) || 50, 1),
+        10000
+    );
+    const page = Math.max(Number(filters.page) || 1, 1);
+    const total = rows.length;
+    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+    const currentPage = Math.min(page, totalPages);
+    const offset = (currentPage - 1) * pageSize;
+
+
+    return {
+        rows: rows.slice(offset, offset + pageSize),
+        pagination: {
+            page: currentPage,
+            pageSize,
+            total,
+            totalPages,
+            offset
+        }
+    };
+}
+
 
 function listPurchaseSuggestions(filters = {}) {
-    const result = repository.listCurveProducts(filters);
-
-
-
     const status = filters.status || "";
 
 
-
-    const rows = result.rows.map((row) => {
-        const calculated = calculatePurchaseSuggestion(
-            row,
-            {
-                quantityoverride: row.quantity_override
-            },
-            filters.curveDays || {}
-        );
+    if (status) {
+        const allRows = repository.listAllCurveProducts(filters);
+        const calculatedRows = allRows.map((row) => decorateCalculatedRow(row, filters));
+        const filteredRows = calculatedRows.filter((row) => matchesStatusFilter(row, status));
+        const paginated = paginateRows(filteredRows, filters);
 
 
-
-        const coverageDays = calculated.coverageDays;
-        const hasCoverage =
-            coverageDays !== null &&
-            coverageDays !== undefined;
-
+        const summary = filteredRows.reduce((total, row) => ({
+            products: total.products + 1,
+            suggestedQuantity: total.suggestedQuantity + getSuggestedQuantity(row),
+            suggestedValue: total.suggestedValue + Number(row.totalsuggestionvalue || 0),
+            criticalProducts: total.criticalProducts + (row.isCritical ? 1 : 0)
+        }), { products: 0, suggestedQuantity: 0, suggestedValue: 0, criticalProducts: 0 });
 
 
         return {
-            ...calculated,
-            lastPurchaseDPR: row.lastPurchaseDPR ?? null,
-            lastPurchaseAMS: row.lastPurchaseAMS ?? null,
-            lastPurchaseDMT: row.lastPurchaseDMT ?? null,
-            lastPurchaseDMS: row.lastPurchaseDMS ?? null,
-            lastPurchaseDSC: row.lastPurchaseDSC ?? null,
-            averageCost: row.averageCost ?? calculated.averageCost ?? null,
-            curveValue: row.curveValue ?? null,
-            curveUnit: row.curveUnit ?? null,
-            standardBox: row.standardBox ?? null,
-            priceSource: calculated.priceSource || "-",
-            isCritical:
-                hasCoverage && coverageDays <= 15,
-            observation: buildCleanObservation(
-                {
-                    ...row,
-                    ...calculated
-                },
-                status
-            )
+            rows: paginated.rows,
+            summary,
+            pagination: paginated.pagination
         };
-    });
+    }
 
 
-
-    const filteredRows = rows.filter((row) => {
-        const coverageDays = row.coverageDays;
-        const targetDays = Number(row.targetDays || 0);
-        const suggestedQuantity = getSuggestedQuantity(row);
-        const hasCoverage = coverageDays !== null && coverageDays !== undefined;
-        const hasPrice = row.unitprice !== null && row.unitprice !== undefined && Number(row.unitprice) > 0;
+    const result = repository.listCurveProducts(filters);
+    const rows = result.rows.map((row) => decorateCalculatedRow(row, filters));
 
 
-
-        if (status === "suggestion") {
-            return suggestedQuantity > 0;
-        }
-
-
-
-        if (status === "belowtarget") {
-            return hasCoverage && coverageDays < targetDays;
-        }
-
-
-
-        if (status === "critical") {
-            return hasCoverage && coverageDays <= 15;
-        }
-
-
-
-        if (status === "nobuy") {
-            return hasCoverage && coverageDays >= targetDays;
-        }
-
-
-
-        if (status === "excessstock") {
-            return hasCoverage && targetDays > 0 && coverageDays >= targetDays * 2;
-        }
-
-
-
-        if (status === "promotion") {
-            return hasCoverage && targetDays > 0 && coverageDays >= targetDays * 3;
-        }
-
-
-
-        if (status === "nosales") {
-            return !hasCoverage;
-        }
-
-
-
-        if (status === "noprice") {
-            return suggestedQuantity > 0 && !hasPrice;
-        }
-
-
-
-        return true;
-    });
-
-
-
-    const summary = filteredRows.reduce((total, row) => ({
+    const summary = rows.reduce((total, row) => ({
         products: total.products + 1,
         suggestedQuantity: total.suggestedQuantity + getSuggestedQuantity(row),
         suggestedValue: total.suggestedValue + Number(row.totalsuggestionvalue || 0),
@@ -217,33 +240,12 @@ function listPurchaseSuggestions(filters = {}) {
     }), { products: 0, suggestedQuantity: 0, suggestedValue: 0, criticalProducts: 0 });
 
 
-
-    const pageSize = result.pagination.pageSize;
-    const filteredTotal = filteredRows.length;
-    const filteredTotalPages = Math.max(
-        Math.ceil(filteredTotal / pageSize),
-        1
-    );
-    const currentPage = Math.min(
-        result.pagination.page,
-        filteredTotalPages
-    );
-
-
-
     return {
-        rows: filteredRows,
+        rows,
         summary,
-        pagination: {
-            page: currentPage,
-            pageSize,
-            total: filteredTotal,
-            totalPages: filteredTotalPages,
-            offset: result.pagination.offset
-        }
+        pagination: result.pagination
     };
 }
-
 
 
 function getPurchaseFilterOptions(field) {
@@ -251,11 +253,9 @@ function getPurchaseFilterOptions(field) {
 }
 
 
-
 function getAllCurveProducts(filters = {}) {
     return repository.listAllCurveProducts(filters);
 }
-
 
 
 module.exports = {
