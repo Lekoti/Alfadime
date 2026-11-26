@@ -9,6 +9,7 @@ const {
 } = require("../constants/products-corrections.constants");
 
 const MAX_PRODUCTS_BY_EAN = 500;
+const MAX_FILTER_OPTIONS = 500;
 const DEFAULT_CORRECTIONS_PAGE_SIZE = 100;
 const MAX_CORRECTIONS_PAGE_SIZE = 500;
 
@@ -406,8 +407,9 @@ function getCorrectionFilterOptions() {
             WHERE branch IS NOT NULL
               AND TRIM(branch) <> ''
             ORDER BY branch ASC
+            LIMIT ?
         `)
-        .all()
+        .all(MAX_FILTER_OPTIONS)
         .map((row) => row.branch);
 
     const fields = database
@@ -417,8 +419,9 @@ function getCorrectionFilterOptions() {
             WHERE field_name IS NOT NULL
               AND TRIM(field_name) <> ''
             ORDER BY field_name ASC
+            LIMIT ?
         `)
-        .all()
+        .all(MAX_FILTER_OPTIONS)
         .map((row) => row.field_name);
 
     return {
@@ -550,7 +553,7 @@ function cancelCorrections(correctionIds = []) {
     const transaction = database.transaction(() => {
         const corrections = database
             .prepare(`
-                SELECT id
+                SELECT *
                 FROM product_corrections
                 WHERE id IN (${placeholders})
             `)
@@ -562,38 +565,63 @@ function cancelCorrections(correctionIds = []) {
             );
         }
 
-        const existingIds = corrections.map(
-            (correction) => correction.id
+        const pending = corrections.filter(
+            (correction) =>
+                correction.status === "pending_excel"
         );
 
-        const existingPlaceholders = existingIds
-            .map(() => "?")
-            .join(", ");
+        if (!pending.length) {
+            throw new Error(
+                "Somente correcoes pendentes podem ser excluidas. Reverter a correcao feita antes de excluir."
+            );
+        }
 
-        database
-            .prepare(`
-                UPDATE product_corrections
-                SET
-                    status = 'cancelled',
-                    cancelled_at = ?,
-                    updated_at = ?
-                WHERE id IN (${existingPlaceholders})
-            `)
-            .run(
-                new Date().toISOString(),
-                new Date().toISOString(),
-                ...existingIds
+        const now = new Date().toISOString();
+
+        const cancelStatement = database.prepare(`
+            UPDATE product_corrections
+            SET
+                status = 'cancelled',
+                cancelled_at = ?,
+                updated_at = ?
+            WHERE id = ?
+        `);
+
+        for (const correction of pending) {
+            cancelStatement.run(
+                now,
+                now,
+                correction.id
             );
 
-        return existingIds.length;
+            createHistoryEntry({
+                correction_id: correction.id,
+                product_id: correction.product_id,
+                action_type: "manual_correction_cancelled",
+                source: "alfadime",
+                field_name: correction.field_name,
+                old_value: correction.new_value,
+                new_value: correction.old_value,
+                reason:
+                    "Correcao excluida no Alfadime.",
+                changed_by: null
+            });
+        }
+
+        return {
+            cancelled: pending.length,
+            skipped: uniqueIds.length - pending.length
+        };
     });
 
-    const cancelled = transaction();
+    const result = transaction();
 
     return {
         success: true,
-        deleted: cancelled,
-        updated: cancelled
+        cancelled: result.cancelled,
+        deleted: result.cancelled,
+        updated: result.cancelled,
+        skipped: result.skipped
     };
 }
 
@@ -896,11 +924,27 @@ function confirmCorrectionsFromExcel() {
         `)
         .all();
 
+    const productStatement = database.prepare(`
+        SELECT *
+        FROM product_catalog
+        WHERE id = ?
+        LIMIT 1
+    `);
+
+    const confirmStatement = database.prepare(`
+        UPDATE product_corrections
+        SET
+            status = 'confirmed_in_excel',
+            confirmed_in_excel_at = ?,
+            updated_at = ?
+        WHERE id = ?
+    `);
+
     let confirmed = 0;
 
     const transaction = database.transaction(() => {
         for (const correction of corrections) {
-            const product = getProductById(
+            const product = productStatement.get(
                 correction.product_id
             );
 
@@ -919,20 +963,11 @@ function confirmCorrectionsFromExcel() {
             );
 
             if (excelValue === correctedValue) {
-                database
-                    .prepare(`
-                        UPDATE product_corrections
-                        SET
-                            status = 'confirmed_in_excel',
-                            confirmed_in_excel_at = ?,
-                            updated_at = ?
-                        WHERE id = ?
-                    `)
-                    .run(
-                        now,
-                        now,
-                        correction.id
-                    );
+                confirmStatement.run(
+                    now,
+                    now,
+                    correction.id
+                );
 
                 createHistoryEntry({
                     correction_id: correction.id,
