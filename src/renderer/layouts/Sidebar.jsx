@@ -9,6 +9,7 @@ import {
     Mail,
     Package,
     Phone,
+    Settings,
     ShoppingCart
 } from "lucide-react";
 
@@ -190,7 +191,7 @@ function Sidebar({ collapsed = false, onToggle }) {
                         title="Configurações"
                         aria-label="Abrir configurações"
                     >
-                        <Package size={18} strokeWidth={2} />
+                        <Settings size={18} strokeWidth={2} />
                     </button>
 
                     {!collapsed && (
