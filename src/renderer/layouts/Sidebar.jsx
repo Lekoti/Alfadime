@@ -1,5 +1,16 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+    Bell,
+    ClipboardCheck,
+    FilePen,
+    Home,
+    ListChecks,
+    Mail,
+    Package,
+    Phone,
+    ShoppingCart
+} from "lucide-react";
 
 import useAuth from "../modules/auth/hooks/useAuth.js";
 
@@ -19,17 +30,17 @@ function Sidebar({ collapsed = false, onToggle }) {
     }, []);
 
     const menuItems = [
-        { key: "/nf-import", label: "Importação NF", icon: "▤" },
-        { key: "/", label: "Início", icon: "⌂", exact: true },
-        { key: "/products", label: "Produtos", icon: "▤" },
-        { key: "/product-audit", label: "Auditoria de Produtos", icon: "✓" },
-        { key: "/product-corrections", label: "Correções de Produtos", icon: "✎" },
-        { key: "/price-pending", label: "Preços e Pendências", icon: "≡" },
-        { key: "/purchases", label: "Compras", icon: "↙" },
-        { key: "/merchandise-purchases", label: "Compras de Mercadorias", icon: "\u25A3" },
-        { key: "/industry-contacts", label: "Contatos", icon: "☎" },
-        { key: "/notifications", label: "Notificações", icon: "!" },
-        { key: "/email", label: "E-mail", icon: "✉" }
+        { key: "/", label: "Início", icon: Home, exact: true },
+        { key: "/product-audit", label: "Auditoria de Produtos", icon: ClipboardCheck },
+        { key: "/purchases", label: "Compras", icon: ShoppingCart },
+        { key: "/merchandise-purchases", label: "Compras de Mercadorias", icon: ShoppingCart },
+        { key: "/industry-contacts", label: "Contatos", icon: Phone },
+        { key: "/product-corrections", label: "Correções de Produtos", icon: FilePen },
+        { key: "/email", label: "E-mail", icon: Mail },
+        { key: "/nf-import", label: "Importação NF", icon: ShoppingCart },
+        { key: "/notifications", label: "Notificações", icon: Bell },
+        { key: "/price-pending", label: "Preços e Pendências", icon: ListChecks },
+        { key: "/products", label: "Produtos", icon: Package }
     ];
 
     function isActive(item) {
@@ -69,80 +80,83 @@ function Sidebar({ collapsed = false, onToggle }) {
                     </span>
                 )}
 
-                {menuItems.map((item) => (
-                    <div key={item.key}>
-                        <button
-                            type="button"
-                            className={
-                                isActive(item)
-                                    ? "alfadime-menu-item active"
-                                    : "alfadime-menu-item"
-                            }
-                            onClick={() => navigate(item.key)}
-                            title={item.label}
-                        >
-                            <span className="alfadime-menu-icon">
-                                {item.icon}
-                            </span>
+                {menuItems.map((item) => {
+                    const Icon = item.icon;
 
-                            {!collapsed && (
-                                <span>
-                                    {item.label}
+                    return (
+                        <div key={item.key}>
+                            <button
+                                type="button"
+                                className={
+                                    isActive(item)
+                                        ? "alfadime-menu-item active"
+                                        : "alfadime-menu-item"
+                                }
+                                onClick={() => navigate(item.key)}
+                                title={item.label}
+                            >
+                                <span className="alfadime-menu-icon">
+                                    <Icon size={18} strokeWidth={2} />
                                 </span>
+
+                                {!collapsed && (
+                                    <span>
+                                        {item.label}
+                                    </span>
+                                )}
+                            </button>
+
+                            {!collapsed && item.key === "/industry-contacts" && isActive(item) && (
+                                <div className="alfadime-menu-subitems">
+                                    <button
+                                        type="button"
+                                        className={pathname === "/industry-contacts"
+                                            ? "alfadime-menu-item active" : "alfadime-menu-item"}
+                                        onClick={() => navigate("/industry-contacts")}
+                                    >
+                                        Contatos
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={pathname === "/contacts/charge-favorites"
+                                            ? "alfadime-menu-item active" : "alfadime-menu-item"}
+                                        onClick={() => navigate("/contacts/charge-favorites")}
+                                    >
+                                        Favoritos de cobrança
+                                    </button>
+                                </div>
                             )}
-                        </button>
 
-                        {!collapsed && item.key === "/industry-contacts" && isActive(item) && (
-                            <div className="alfadime-menu-subitems">
-                                <button
-                                    type="button"
-                                    className={pathname === "/industry-contacts"
-                                        ? "alfadime-menu-item active" : "alfadime-menu-item"}
-                                    onClick={() => navigate("/industry-contacts")}
-                                >
-                                    Contatos
-                                </button>
-                                <button
-                                    type="button"
-                                    className={pathname === "/contacts/charge-favorites"
-                                        ? "alfadime-menu-item active" : "alfadime-menu-item"}
-                                    onClick={() => navigate("/contacts/charge-favorites")}
-                                >
-                                    Favoritos de cobrança
-                                </button>
-                            </div>
-                        )}
+                            {!collapsed && item.key === "/email" && isActive(item) && (
+                                <div className="alfadime-menu-subitems">
+                                    <button
+                                        type="button"
+                                        className={
+                                            pathname === "/email"
+                                                ? "alfadime-menu-item active"
+                                                : "alfadime-menu-item"
+                                        }
+                                        onClick={() => navigate("/email")}
+                                    >
+                                        Campanhas
+                                    </button>
 
-
-                        {!collapsed && item.key === "/email" && isActive(item) && (
-                            <div className="alfadime-menu-subitems">
-                                <button
-                                    type="button"
-                                    className={
-                                        pathname === "/email"
-                                            ? "alfadime-menu-item active"
-                                            : "alfadime-menu-item"
-                                    }
-                                    onClick={() => navigate("/email")}
-                                >
-                                    Campanhas
-                                </button>
-
-                                <button
-                                    type="button"
-                                    className={
-                                        pathname === "/email/received"
-                                            ? "alfadime-menu-item active"
-                                            : "alfadime-menu-item"
-                                    }
-                                    onClick={() => navigate("/email/received")}
-                                >
-                                    Recebidos
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                                    <button
+                                        type="button"
+                                        className={
+                                            pathname === "/email/received"
+                                                ? "alfadime-menu-item active"
+                                                : "alfadime-menu-item"
+                                        }
+                                        onClick={() => navigate("/email/received")}
+                                    >
+                                        Recebidos
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </nav>
 
             <div className="alfadime-sidebar-footer">
@@ -176,7 +190,7 @@ function Sidebar({ collapsed = false, onToggle }) {
                         title="Configurações"
                         aria-label="Abrir configurações"
                     >
-                        ⚙
+                        <Package size={18} strokeWidth={2} />
                     </button>
 
                     {!collapsed && (
@@ -197,4 +211,3 @@ function Sidebar({ collapsed = false, onToggle }) {
 }
 
 export default Sidebar;
-
