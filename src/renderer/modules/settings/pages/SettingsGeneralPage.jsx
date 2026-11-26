@@ -50,8 +50,7 @@ function SettingsGeneralPage() {
 
 
 
-    const [syncingProducts, setSyncingProducts] = useState(false);
-    const [syncingPurchases, setSyncingPurchases] = useState(false);
+    const [syncingDatabase, setSyncingDatabase] = useState(false);
     const [productsLastSync, setProductsLastSync] = useState(null);
     const [purchasesLastSync, setPurchasesLastSync] = useState(null);
     const [syncResult, setSyncResult] = useState("");
@@ -159,14 +158,11 @@ function SettingsGeneralPage() {
                 );
 
 
-
                 setVersion(result.data.version || version);
-
 
 
                 return;
             }
-
 
 
             setPublishError(
@@ -178,7 +174,6 @@ function SettingsGeneralPage() {
                 "[SETTINGS] Erro ao publicar atualização:",
                 error
             );
-
 
 
             setPublishError(
@@ -205,12 +200,10 @@ function SettingsGeneralPage() {
                 );
 
 
-
             if (result?.success) {
                 setDatabaseResult(result.message || "Conexão realizada com sucesso.");
                 return;
             }
-
 
 
             setDatabaseError(result?.message || "Não foi possível conectar ao banco.");
@@ -240,7 +233,6 @@ function SettingsGeneralPage() {
                 });
 
 
-
             setDatabasePath(result?.path || databasePath);
             setDatabaseResult("Configuração do banco salva com sucesso.");
         } catch (saveError) {
@@ -256,9 +248,9 @@ function SettingsGeneralPage() {
 
 
 
-    async function handleSyncProducts() {
+    async function handleSyncDatabase() {
         const confirmed = window.confirm(
-            "Atualizar Produtos com base na planilha agora?"
+            "Atualizar Banco de Dados com base nas planilhas de Produtos e Curva Compras agora?"
         );
 
 
@@ -267,7 +259,7 @@ function SettingsGeneralPage() {
         }
 
 
-        setSyncingProducts(true);
+        setSyncingDatabase(true);
         setSyncResult("");
         setSyncError("");
 
@@ -276,61 +268,25 @@ function SettingsGeneralPage() {
             await window.alfadime?.products?.syncExcel?.();
 
 
-            const result =
+            const productsResult =
                 await window.alfadime?.products?.getLastSync?.();
 
 
-
-            setProductsLastSync(result?.last_sync_at || null);
-            setSyncResult("Produtos atualizados com sucesso.");
-        } catch (productsSyncError) {
-            console.error(productsSyncError);
-            setSyncError(
-                productsSyncError?.message ||
-                "Não foi possível atualizar os Produtos."
-            );
-        } finally {
-            setSyncingProducts(false);
-        }
-    }
-
-
-
-    async function handleSyncPurchases() {
-        const confirmed = window.confirm(
-            "Atualizar Curva Compras com base na planilha agora?"
-        );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        setSyncingPurchases(true);
-        setSyncResult("");
-        setSyncError("");
-
-
-        try {
-            await window.alfadime?.purchases?.syncCurveExcel?.();
-
-
-            const result =
+            const purchasesResult =
                 await window.alfadime?.purchases?.getLastSync?.();
 
 
-
-            setPurchasesLastSync(result?.last_sync_at || null);
-            setSyncResult("Curva Compras atualizada com sucesso.");
-        } catch (purchasesSyncError) {
-            console.error(purchasesSyncError);
+            setProductsLastSync(productsResult?.last_sync_at || null);
+            setPurchasesLastSync(purchasesResult?.last_sync_at || null);
+            setSyncResult("Banco de Dados atualizado com sucesso.");
+        } catch (databaseSyncError) {
+            console.error(databaseSyncError);
             setSyncError(
-                purchasesSyncError?.message ||
-                "Não foi possível atualizar a Curva Compras."
+                databaseSyncError?.message ||
+                "Não foi possível atualizar o Banco de Dados."
             );
         } finally {
-            setSyncingPurchases(false);
+            setSyncingDatabase(false);
         }
     }
 
@@ -483,8 +439,7 @@ function SettingsGeneralPage() {
 
 
                     <p className="settings-general-description">
-                        Somente Administradores e Staff podem atualizar os dados
-                        de Produtos e Curva Compras.
+                        Atualiza Produtos e Curva Compras em uma única operação.
                     </p>
 
 
@@ -541,25 +496,12 @@ function SettingsGeneralPage() {
                         <button
                             type="button"
                             className="settings-general-primary-button"
-                            onClick={handleSyncProducts}
-                            disabled={syncingProducts}
+                            onClick={handleSyncDatabase}
+                            disabled={syncingDatabase}
                         >
-                            {syncingProducts
+                            {syncingDatabase
                                 ? "Atualizando..."
-                                : "Atualizar Produtos"}
-                        </button>
-
-
-
-                        <button
-                            type="button"
-                            className="settings-general-primary-button"
-                            onClick={handleSyncPurchases}
-                            disabled={syncingPurchases}
-                        >
-                            {syncingPurchases
-                                ? "Atualizando..."
-                                : "Atualizar Curva Compras"}
+                                : "Atualizar Banco de Dados"}
                         </button>
                     </div>
                 </section>
@@ -606,7 +548,6 @@ function SettingsGeneralPage() {
                             handleOpenAtLoginChange(event.target.checked)
                         }
                     />
-
 
 
                     <span>Iniciar o Alfadime junto com o Windows</span>
