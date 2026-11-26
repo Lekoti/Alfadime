@@ -92,15 +92,37 @@ function yieldToEventLoop() {
     });
 }
 
+function normalizeEan(value) {
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    let text = String(value).trim();
+
+    if (!text || text === "0") {
+        return "";
+    }
+
+    if (/^\d+(\.\d+)?([eE][+-]?\d+)?$/.test(text)) {
+        const number = Number(text);
+
+        if (Number.isFinite(number)) {
+            text = number.toFixed(0);
+        }
+    }
+
+    return text;
+}
+
 function buildUnionKey(branch, ean) {
     const normalizedBranch = String(branch || "").trim();
-    const normalizedEan = String(ean || "").trim();
+    const normalizedEan = normalizeEan(ean);
 
-    if (!normalizedBranch || !normalizedEan || normalizedEan === "0") {
+    if (!normalizedBranch || !normalizedEan) {
         return null;
     }
 
-    return normalizedBranch + "|" + normalizedEan;
+    return `${normalizedBranch}|ean|${normalizedEan}`;
 }
 
 async function synchronizeProductsExcel(filePath) {
@@ -206,11 +228,69 @@ async function synchronizeDatabaseExcel() {
     const startedAt = new Date().toISOString();
 
     const productsResult = await synchronizeProductsExcel(PRODUCTS_EXCEL_PATH);
-    const purchasesResult = purchasesImportService.synchronizePurchasesCurveExcel(PURCHASES_CURVE_EXCEL_PATH);
+    const purchasesReadResult = purchasesImportService.readPurchasesCurveRows(PURCHASES_CURVE_EXCEL_PATH);
+
+    const unifiedProducts = [];
+    const unifiedProductsByKey = new Map();
+    let fallbackIndex = 0;
+
+    function addOrUpdateUnifiedProduct(product, purchaseProduct = null) {
+        const key = buildUnionKey(product.branch, product.ean);
+        const mapKey = key || `sem-chave|${fallbackIndex++}`;
+        let existing = unifiedProductsByKey.get(mapKey);
+
+        if (!existing) {
+            existing = { ...product };
+            unifiedProductsByKey.set(mapKey, existing);
+            unifiedProducts.push(existing);
+        }
+
+        if (purchaseProduct) {
+            if (!existing.code && purchaseProduct.product_code) {
+                existing.code = purchaseProduct.product_code;
+            }
+
+            if (!existing.commercial_name && purchaseProduct.description) {
+                existing.commercial_name = purchaseProduct.description;
+            }
+        }
+
+        return existing;
+    }
+
+    for (const product of productsResult.products) {
+        addOrUpdateUnifiedProduct(product);
+    }
+
+    for (const purchaseProduct of purchasesReadResult.products) {
+        const branch = purchaseProduct.company;
+        const ean = purchaseProduct.barcode;
+
+        if (!branch || !ean) {
+            continue;
+        }
+
+        addOrUpdateUnifiedProduct({
+            branch,
+            ean,
+            code: purchaseProduct.product_code || null,
+            commercial_name: purchaseProduct.description || null,
+            active: 1
+        }, purchaseProduct);
+    }
+
+    const syncResult = await repository.syncProducts(unifiedProducts, {
+        fileName: productsResult.fileName,
+        filePath: PRODUCTS_EXCEL_PATH
+    });
+
+    const purchasesResult = await purchasesImportService.synchronizePurchasesCurveExcel(
+        PURCHASES_CURVE_EXCEL_PATH
+    );
 
     const unionKeys = new Set();
 
-    for (const product of productsResult.products) {
+    for (const product of unifiedProducts) {
         const key = buildUnionKey(product.branch, product.ean);
 
         if (key) {
@@ -236,10 +316,10 @@ async function synchronizeDatabaseExcel() {
             fileName: productsResult.fileName,
             totalRows: productsResult.totalRows,
             validRows: productsResult.validRows,
-            insertedRows: productsResult.insertedRows,
-            updatedRows: productsResult.updatedRows,
-            unchangedRows: productsResult.unchangedRows,
-            duplicateRows: productsResult.duplicateRows,
+            insertedRows: syncResult.inserted,
+            updatedRows: syncResult.updated,
+            unchangedRows: syncResult.unchanged,
+            duplicateRows: syncResult.duplicateRows,
             ignoredRows: productsResult.ignoredRows
         },
         purchases: {
