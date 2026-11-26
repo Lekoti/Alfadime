@@ -291,6 +291,36 @@ async function synchronizeDatabaseExcel() {
         }, purchaseProduct);
     }
 
+    const productKeys = new Set();
+    const purchaseKeys = new Set();
+
+    for (const product of productsResult.products) {
+        const key = buildUnionKey(product.branch, product.ean);
+
+        if (key) {
+            productKeys.add(key);
+        }
+    }
+
+    for (const product of purchasesReadResult.products) {
+        const key = buildUnionKey(product.company, product.barcode);
+
+        if (key) {
+            purchaseKeys.add(key);
+        }
+    }
+
+    const unionKeys = new Set([...productKeys, ...purchaseKeys]);
+
+    console.log("[UNIAO] produtos validos PRODUTOS.xlsx:", productsResult.products.length);
+    console.log("[UNIAO] chaves PRODUTOS.xlsx:", productKeys.size);
+    console.log("[UNIAO] amostra PRODUTOS.xlsx:", Array.from(productKeys).slice(0, 10));
+    console.log("[UNIAO] produtos validos CURVA COMPRAS.xlsx:", purchasesReadResult.products.length);
+    console.log("[UNIAO] chaves CURVA COMPRAS.xlsx:", purchaseKeys.size);
+    console.log("[UNIAO] amostra CURVA COMPRAS.xlsx:", Array.from(purchaseKeys).slice(0, 10));
+    console.log("[UNIAO] total final da uniao:", unionKeys.size);
+    console.log("[UNIAO] amostra final da uniao:", Array.from(unionKeys).slice(0, 10));
+
     const syncResult = await repository.syncProducts(unifiedProducts, {
         fileName: productsResult.fileName,
         filePath: PRODUCTS_EXCEL_PATH
@@ -299,24 +329,6 @@ async function synchronizeDatabaseExcel() {
     const purchasesResult = await purchasesImportService.synchronizePurchasesCurveExcel(
         PURCHASES_CURVE_EXCEL_PATH
     );
-
-    const unionKeys = new Set();
-
-    for (const product of unifiedProducts) {
-        const key = buildUnionKey(product.branch, product.ean);
-
-        if (key) {
-            unionKeys.add(key);
-        }
-    }
-
-    for (const product of purchasesResult.products) {
-        const key = buildUnionKey(product.company, product.barcode);
-
-        if (key) {
-            unionKeys.add(key);
-        }
-    }
 
     const quarantineResult = await repository.syncQuarantineFromKeys(Array.from(unionKeys));
 
