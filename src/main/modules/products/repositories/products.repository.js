@@ -16,6 +16,9 @@ const {
 } = require("../../../utils/laboratory-filter.utils");
 
 
+const MAX_FILTER_VALUES = 500;
+
+
 function buildProductsFilters(filters = {}) {
     let whereClause = `
         WHERE 1 = 1
@@ -105,40 +108,83 @@ function buildProductsFilters(filters = {}) {
     }
 
     if (filters.search) {
-        const search = `%${String(filters.search).trim()}%`;
+        const search = String(filters.search).trim();
 
-        whereClause += `
-            AND (
-                pc.branch LIKE ?
-                OR pc.ean LIKE ?
-                OR pc.sap_code LIKE ?
-                OR pc.active_ingredient LIKE ?
-                OR pc.commercial_name LIKE ?
-                OR pc.brand LIKE ?
-                OR pc.ms_registration LIKE ?
-                OR EXISTS (
-                    SELECT 1
-                    FROM product_purchase_curve AS search_curve
-                    WHERE search_curve.product_id = pc.id
-                        AND (
-                            search_curve.cod_prod LIKE ?
-                            OR search_curve.cod_prod_global LIKE ?
-                        )
+        if (/^\d+$/.test(search)) {
+            const numericSearch = `${search}%`;
+
+            whereClause += `
+                AND (
+                    pc.ean = ?
+                    OR pc.sap_code = ?
+                    OR pc.ean LIKE ?
+                    OR pc.sap_code LIKE ?
+                    OR pc.branch LIKE ?
+                    OR pc.active_ingredient LIKE ?
+                    OR pc.commercial_name LIKE ?
+                    OR pc.brand LIKE ?
+                    OR pc.ms_registration LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_purchase_curve AS search_curve
+                        WHERE search_curve.product_id = pc.id
+                            AND (
+                                search_curve.cod_prod LIKE ?
+                                OR search_curve.cod_prod_global LIKE ?
+                            )
+                    )
                 )
-            )
-        `;
+            `;
 
-        params.push(
-            search,
-            search,
-            search,
-            search,
-            search,
-            search,
-            search,
-            search,
-            search
-        );
+            params.push(
+                search,
+                search,
+                numericSearch,
+                numericSearch,
+                `%${search}%`,
+                `%${search}%`,
+                `%${search}%`,
+                `%${search}%`,
+                `%${search}%`,
+                numericSearch,
+                numericSearch
+            );
+        } else {
+            const textSearch = `%${search}%`;
+
+            whereClause += `
+                AND (
+                    pc.branch LIKE ?
+                    OR pc.ean LIKE ?
+                    OR pc.sap_code LIKE ?
+                    OR pc.active_ingredient LIKE ?
+                    OR pc.commercial_name LIKE ?
+                    OR pc.brand LIKE ?
+                    OR pc.ms_registration LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_purchase_curve AS search_curve
+                        WHERE search_curve.product_id = pc.id
+                            AND (
+                                search_curve.cod_prod LIKE ?
+                                OR search_curve.cod_prod_global LIKE ?
+                            )
+                    )
+                )
+            `;
+
+            params.push(
+                textSearch,
+                textSearch,
+                textSearch,
+                textSearch,
+                textSearch,
+                textSearch,
+                textSearch,
+                textSearch,
+                textSearch
+            );
+        }
     }
 
     return {
@@ -258,8 +304,9 @@ function getDistinctValues(field) {
             WHERE "${field}" IS NOT NULL
               AND TRIM("${field}") <> ''
             ORDER BY "${field}" ASC
+            LIMIT ?
         `)
-        .all()
+        .all(MAX_FILTER_VALUES)
         .map((row) => row.value);
 }
 
@@ -284,8 +331,9 @@ function getUniqueFilterValues(field) {
             WHERE "${field}" IS NOT NULL
               AND TRIM("${field}") <> ''
             ORDER BY "${field}" ASC
+            LIMIT ?
         `)
-        .all()
+        .all(MAX_FILTER_VALUES)
         .map((row) => row.value);
 
     const normalizedMap = new Map();
@@ -303,7 +351,9 @@ function getUniqueFilterValues(field) {
         }
     }
 
-    return Array.from(normalizedMap.values()).sort();
+    return Array.from(normalizedMap.values())
+        .sort()
+        .slice(0, MAX_FILTER_VALUES);
 }
 
 
