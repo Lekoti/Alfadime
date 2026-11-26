@@ -1,4 +1,4 @@
-﻿const {
+const {
     getDatabase
 } = require("../../database/connection");
 
@@ -16,6 +16,8 @@ const ALLOWED_FILTER_FIELDS = [
     "therapeutic_class_code"
 ];
 
+
+const MAX_FILTER_VALUES = 500;
 
 
 function getActiveProducts() {
@@ -86,7 +88,6 @@ function getActiveProducts() {
 }
 
 
-
 function getDistinctValues(field) {
     if (!ALLOWED_FILTER_FIELDS.includes(field)) {
         throw new Error(
@@ -108,11 +109,11 @@ function getDistinctValues(field) {
               AND "${field}" IS NOT NULL
               AND TRIM(CAST("${field}" AS TEXT)) <> ''
             ORDER BY "${field}" ASC
+            LIMIT ?
         `)
-        .all()
+        .all(MAX_FILTER_VALUES)
         .map((row) => row.value);
 }
-
 
 
 module.exports = {
