@@ -32,7 +32,7 @@ export function computeRows(rows,premises){
     const periods=getRollingPeriods(premises.closedMonth,premises.referenceDate);
     const prices=rows.map(row=>resolvePrice(row,premises.priceSource));
     const cheapest=new Map();
-    const keys=rows.map(row=>productPriceKey(row));
+    const keys=rows.map(row=>`${String(row.company||"").trim()}|${productPriceKey(row)}`);
 
     rows.forEach((row,index)=>{
         const price=prices[index];
@@ -85,7 +85,9 @@ export function computeRows(rows,premises){
         const key=keys[index];
         const low=cheapest.get(key);
         const chosen=premises.priceCriteria==="lowest"?low:base;
-        const selectedPrice=chosen?.price||0;
+        const selectedPrice=Number.isFinite(Number(chosen?.price))&&Number(chosen?.price)>0
+            ?Number(chosen.price)
+            :0;
         const pending=Number(row.pending)||0;
         const transferred=Number(row.transferred)||0;
         const consolidated=Number(row.stock||0)+Number(row.blocked||0)+pending+transferred;
@@ -118,8 +120,14 @@ export function applyOverrides(rows,overrides){
         const validated=validateManualQuantity(raw);
         const manual=raw!==undefined&&validated!==undefined;
         const finalQty=manual?validated:row.suggestedQty;
+        const selectedPrice=Number.isFinite(Number(row.selectedPrice))
+            ?Number(row.selectedPrice)
+            :0;
+        const finalValue=Number.isFinite(finalQty*selectedPrice)
+            ?finalQty*selectedPrice
+            :0;
 
-        return {...row,manual,finalQty,finalValue:finalQty*row.selectedPrice};
+        return {...row,manual,finalQty,finalValue};
     });
 }
 
@@ -157,10 +165,14 @@ export function summarizeRows(rows){
     return rows.reduce((summary,row)=>{
         summary.products++;
 
-        if(row.finalQty>0){summary.itemsToBuy++;summary.totalQty+=row.finalQty;}
+        const finalQty=Number.isFinite(Number(row.finalQty))?Number(row.finalQty):0;
+        const finalValue=Number.isFinite(Number(row.finalValue))?Number(row.finalValue):0;
+        const periodValue=Number.isFinite(Number(row.periodValue))?Number(row.periodValue):0;
 
-        summary.totalValue+=row.finalValue;
-        summary.periodValue+=row.periodValue;
+        if(finalQty>0){summary.itemsToBuy++;summary.totalQty+=finalQty;}
+
+        summary.totalValue+=finalValue;
+        summary.periodValue+=periodValue;
 
         if(row.selectedPrice<=0)summary.noPrice++;
         if(!row.boxValid)summary.invalidBox++;
