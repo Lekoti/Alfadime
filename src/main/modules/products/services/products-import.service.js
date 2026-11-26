@@ -256,6 +256,14 @@ async function synchronizeDatabaseExcel() {
             if (!existing.commercial_name && purchaseProduct.description) {
                 existing.commercial_name = purchaseProduct.description;
             }
+
+            if (existing.controls_lot === null || existing.controls_lot === undefined) {
+                existing.controls_lot = 0;
+            }
+
+            if (existing.active === null || existing.active === undefined) {
+                existing.active = 1;
+            }
         }
 
         return existing;
@@ -278,6 +286,7 @@ async function synchronizeDatabaseExcel() {
             ean,
             code: purchaseProduct.product_code || null,
             commercial_name: purchaseProduct.description || null,
+            controls_lot: 0,
             active: 1
         }, purchaseProduct);
     }
