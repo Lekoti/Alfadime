@@ -1,15 +1,17 @@
-﻿import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import {
-    Package,
+    Bell,
+    Boxes,
     ClipboardCheck,
     FilePen,
+    FileUp,
     ListChecks,
-    ShoppingCart,
-    Phone,
-    Bell,
     Mail,
-    Settings
+    Package,
+    Phone,
+    Settings,
+    ShoppingCart
 } from "lucide-react";
 
 import usePermissions from "../../auth/hooks/usePermissions";
@@ -20,15 +22,17 @@ import HomeState from "../components/HomeState";
 import "../styles/home.css";
 
 const MODULE_ICONS = {
-    Package,
+    Bell,
+    Boxes,
     ClipboardCheck,
     FilePen,
+    FileUp,
     ListChecks,
-    ShoppingCart,
-    Phone,
-    Bell,
     Mail,
-    Settings
+    Package,
+    Phone,
+    Settings,
+    ShoppingCart
 };
 
 function HomePage() {
