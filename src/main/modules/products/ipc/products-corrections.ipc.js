@@ -24,7 +24,52 @@ const {
 );
 
 
+const authHandler = require(
+    "../../auth/authHandler"
+);
+
+const {
+    USER_ROLES
+} = require(
+    "../../auth/userRoles.constants"
+);
+
+
 let registered = false;
+
+
+function getAuthenticatedUser() {
+    return authHandler.getAuthenticatedUser();
+}
+
+
+function requireCorrectionPermission() {
+    const user = getAuthenticatedUser();
+
+    if (!user) {
+        throw new Error(
+            "Usuário não autenticado."
+        );
+    }
+
+    const role = String(
+        user.role || ""
+    ).toLowerCase();
+
+    if (
+        ![
+            USER_ROLES.CREATOR,
+            USER_ROLES.ADMIN,
+            USER_ROLES.EDITOR
+        ].includes(role)
+    ) {
+        throw new Error(
+            "Você não tem permissão para alterar correções de produtos."
+        );
+    }
+
+    return user;
+}
 
 
 function registerProductCorrectionsIpc() {
@@ -55,6 +100,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:create",
         (event, data) => {
+            requireCorrectionPermission();
+
             return service.createCorrection(data);
         }
     );
@@ -63,6 +110,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:cancel",
         (event, id) => {
+            requireCorrectionPermission();
+
             return service.cancelCorrection(id);
         }
     );
@@ -71,6 +120,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:cancel-many",
         (event, ids = []) => {
+            requireCorrectionPermission();
+
             return service.cancelCorrections(ids);
         }
     );
@@ -79,6 +130,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:revert",
         (event, id) => {
+            requireCorrectionPermission();
+
             return service.revertCorrection(id);
         }
     );
@@ -87,6 +140,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:revert-many",
         (event, ids = []) => {
+            requireCorrectionPermission();
+
             return service.revertCorrections(ids);
         }
     );
@@ -95,6 +150,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:mark-sent",
         (event, correctionIds = []) => {
+            requireCorrectionPermission();
+
             return service.markCorrectionsAsSent(
                 correctionIds
             );
@@ -123,6 +180,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:bulk-targets",
         (event, ean, fields = []) => {
+            requireCorrectionPermission();
+
             return service.getBulkCorrectionTargets(
                 ean,
                 fields
@@ -134,6 +193,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:create-bulk",
         (event, data = {}) => {
+            requireCorrectionPermission();
+
             return service.createBulkCorrections(
                 data
             );
@@ -152,6 +213,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:export-csv",
         (event, branch) => {
+            requireCorrectionPermission();
+
             return exportCorrectionsCsv(branch);
         }
     );
@@ -160,6 +223,8 @@ function registerProductCorrectionsIpc() {
     ipcMain.handle(
         "product-corrections:export-csv-all",
         () => {
+            requireCorrectionPermission();
+
             return exportAllCorrectionsCsv();
         }
     );

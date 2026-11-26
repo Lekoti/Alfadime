@@ -25,6 +25,14 @@ const {
 
 
 
+const ALLOWED_EXPORT_MODULE_KEYS = [
+    "PRODUTOS"
+];
+
+const MAX_TEMPLATE_NAME_LENGTH = 80;
+
+
+
 function formatBoolean(value) {
     return toSafeNumber(value, 0) === 1
         ? "Sim"
@@ -293,7 +301,55 @@ async function exportProductsAdvanced(
 
 
 
+function validateTemplateInput(
+    moduleKey,
+    name
+) {
+    if (
+        !ALLOWED_EXPORT_MODULE_KEYS.includes(
+            moduleKey
+        )
+    ) {
+        throw new Error(
+            "Módulo de exportação inválido."
+        );
+    }
+
+    const normalizedName = String(
+        name || ""
+    ).trim();
+
+    if (!normalizedName) {
+        throw new Error(
+            "Informe o nome do template."
+        );
+    }
+
+    if (
+        normalizedName.length >
+        MAX_TEMPLATE_NAME_LENGTH
+    ) {
+        throw new Error(
+            `O nome do template deve ter no máximo ${MAX_TEMPLATE_NAME_LENGTH} caracteres.`
+        );
+    }
+
+    return normalizedName;
+}
+
+
+
 async function getExportTemplates(moduleKey) {
+    if (
+        !ALLOWED_EXPORT_MODULE_KEYS.includes(
+            moduleKey
+        )
+    ) {
+        throw new Error(
+            "Módulo de exportação inválido."
+        );
+    }
+
     const database = getDatabase();
 
     const templates = database
@@ -321,9 +377,14 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
     const database = getDatabase();
     const now = new Date().toISOString();
 
+    const validatedName = validateTemplateInput(
+        moduleKey,
+        name
+    );
+
     const existing = database
         .prepare(`SELECT id FROM exporttemplates WHERE modulekey = ? AND name = ?`)
-        .get(moduleKey, name);
+        .get(moduleKey, validatedName);
 
     if (existing) {
         throw new Error("Template com este nome ja existe.");
@@ -332,9 +393,9 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
     const template = {
         id: crypto.randomUUID(),
         modulekey: moduleKey,
-        name: name,
-        filters_json: JSON.stringify(filters),
-        columns_json: JSON.stringify(columns),
+        name: validatedName,
+        filters_json: JSON.stringify(filters || {}),
+        columns_json: JSON.stringify(columns || []),
         createdat: now
     };
 
@@ -359,6 +420,16 @@ async function saveExportTemplate(moduleKey, name, filters, columns) {
 
 
 async function deleteExportTemplate(moduleKey, templateId) {
+    if (
+        !ALLOWED_EXPORT_MODULE_KEYS.includes(
+            moduleKey
+        )
+    ) {
+        throw new Error(
+            "Módulo de exportação inválido."
+        );
+    }
+
     const database = getDatabase();
 
     const result = database
