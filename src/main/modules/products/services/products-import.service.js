@@ -240,7 +240,10 @@ async function synchronizeDatabaseExcel() {
         let existing = unifiedProductsByKey.get(mapKey);
 
         if (!existing) {
-            existing = { ...product };
+            existing = {
+                ...createEmptyMappedRow(),
+                ...product
+            };
             unifiedProductsByKey.set(mapKey, existing);
             unifiedProducts.push(existing);
         }
