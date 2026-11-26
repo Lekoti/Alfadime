@@ -1,11 +1,15 @@
 const { ipcMain } = require("electron");
 const repository = require("../repositories/products.repository");
 const { synchronizeDatabaseExcel } = require("../services/products-import.service");
+const { synchronizePurchasesCurveExcel } = require("../../purchases/purchases-import.service");
 const { exportProductsAdvanced, countProductsForExport, getExportTemplates, saveExportTemplate, deleteExportTemplate } = require("../services/products-export.service");
 const { PRODUCTS_EXCEL_PATH } = require("../constants/products.config");
 const authHandler = require("../../auth/authHandler");
 const { getSyncMetadata, setSyncMetadata } = require("../../../database/sync-metadata.repository");
 const { USER_ROLES } = require("../../auth/userRoles.constants");
+
+const PURCHASES_CURVE_EXCEL_PATH =
+    '\\\\10.0.0.20\\Compras\\1.COMPRAS\\SAULO\\ALFADIME\\CURVA COMPRAS\\CURVA COMPRAS.xlsx';
 
 let registered = false;
 
@@ -56,7 +60,7 @@ function registerProductsIpc() {
         const user = requireSyncPermission();
 
         try {
-            const result = await synchronizeDatabaseExcel();
+            const productsResult = await synchronizeDatabaseExcel();
 
             setSyncMetadata({
                 moduleKey: "products",
@@ -64,7 +68,20 @@ function registerProductsIpc() {
                 source: PRODUCTS_EXCEL_PATH
             });
 
-            return result;
+            const purchasesResult = await synchronizePurchasesCurveExcel(
+                PURCHASES_CURVE_EXCEL_PATH
+            );
+
+            setSyncMetadata({
+                moduleKey: "purchases",
+                syncedBy: user.username || user.name || "",
+                source: PURCHASES_CURVE_EXCEL_PATH
+            });
+
+            return {
+                products: productsResult,
+                purchases: purchasesResult
+            };
         } catch (error) {
             console.error("[DATABASE][SYNC] ERRO:", error.message);
             console.error("[DATABASE][SYNC] Stack:", error.stack);
