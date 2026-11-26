@@ -232,8 +232,25 @@ function synchronizeProductsExcel(filePath) {
 
         console.log('Resultado sync:', result);
 
-        const correctionResult =
-            correctionsService.confirmCorrectionsFromExcel();
+        let correctionResult = {
+            confirmed: 0
+        };
+
+        let correctionsWarning = null;
+
+        try {
+            correctionResult =
+                correctionsService.confirmCorrectionsFromExcel();
+        } catch (correctionError) {
+            correctionsWarning =
+                "Produtos sincronizados, mas houve falha ao confirmar correcoes: " +
+                correctionError.message;
+
+            console.error(
+                'ERRO ao confirmar correcoes:',
+                correctionError.message
+            );
+        }
 
         repository.finishImportHistory(
             importHistory.id,
@@ -241,8 +258,12 @@ function synchronizeProductsExcel(filePath) {
                 inserted_rows: result.inserted,
                 updated_rows: result.updated,
                 deactivated_rows: result.deactivated,
-                ignored_rows: errors.length,
-                status: "completed"
+                ignored_rows: errors.length +
+                    (result.skipped || 0),
+                status: correctionsWarning
+                    ? "completed_with_warnings"
+                    : "completed",
+                error_message: correctionsWarning
             }
         );
 
@@ -254,7 +275,8 @@ function synchronizeProductsExcel(filePath) {
 
             totalRows: readResult.rows.length,
             validRows: validProducts.length,
-            ignoredRows: errors.length,
+            ignoredRows: errors.length +
+                (result.skipped || 0),
 
             insertedRows: result.inserted,
             updatedRows: result.updated,
@@ -262,6 +284,8 @@ function synchronizeProductsExcel(filePath) {
 
             confirmedCorrections:
                 correctionResult.confirmed,
+
+            warning: correctionsWarning,
 
             recognizedHeaders:
                 readResult.recognizedHeaders,

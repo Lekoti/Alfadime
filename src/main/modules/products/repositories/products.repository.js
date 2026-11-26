@@ -403,9 +403,38 @@ function finishImportHistory(id, data = {}) {
 }
 
 
+function hasValue(value) {
+    return value !== null &&
+        value !== undefined &&
+        String(value).trim() !== "";
+}
+
+
+function isSyncableProduct(product = {}) {
+    return hasValue(product.branch) &&
+        (
+            hasValue(product.code) ||
+            hasValue(product.ean)
+        );
+}
+
+
 function syncProducts(products = [], source = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
+
+    const syncableProducts = products.filter(
+        isSyncableProduct
+    );
+
+    const skipped = products.length -
+        syncableProducts.length;
+
+    if (!syncableProducts.length) {
+        throw new Error(
+            "Nenhum produto valido para sincronizar. Nenhum registro foi alterado."
+        );
+    }
 
     const findExisting = database.prepare(`
         SELECT id
@@ -514,13 +543,13 @@ function syncProducts(products = [], source = {}) {
         let deactivated = 0;
 
         database.exec(`
-            CREATE TEMP TABLE IF NOT EXISTS imported_product_keys (
+            DROP TABLE IF EXISTS temp.imported_product_keys;
+
+            CREATE TEMP TABLE imported_product_keys (
                 branch TEXT NOT NULL,
                 code TEXT,
                 ean TEXT
             );
-
-            DELETE FROM imported_product_keys;
         `);
 
         const saveKey = database.prepare(`
@@ -531,7 +560,7 @@ function syncProducts(products = [], source = {}) {
             ) VALUES (?, ?, ?)
         `);
 
-        for (const product of products) {
+        for (const product of syncableProducts) {
             const item = {
                 ...product,
                 id: crypto.randomUUID(),
@@ -572,7 +601,8 @@ function syncProducts(products = [], source = {}) {
                 SET
                     active = 0,
                     updated_at = ?
-                WHERE NOT EXISTS (
+                WHERE active = 1
+                  AND NOT EXISTS (
                     SELECT 1
                     FROM imported_product_keys
                     WHERE imported_product_keys.branch =
@@ -593,10 +623,15 @@ function syncProducts(products = [], source = {}) {
 
         deactivated = result.changes;
 
+        database.exec(`
+            DROP TABLE IF EXISTS temp.imported_product_keys;
+        `);
+
         return {
             inserted,
             updated,
-            deactivated
+            deactivated,
+            skipped
         };
     });
 
