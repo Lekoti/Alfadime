@@ -3,12 +3,16 @@ const { calculatePurchaseSuggestion } = require("./purchases-calculation.service
 
 
 
-function buildCleanObservation(row, status) {
-    const quantity = Number(
-        row.suggestedQuantity ??
-        row.suggestedquantity ||
-        0
+function getSuggestedQuantity(row) {
+    return Number(
+        (row.suggestedQuantity ?? row.suggestedquantity) || 0
     );
+}
+
+
+
+function buildCleanObservation(row, status) {
+    const quantity = getSuggestedQuantity(row);
     const coverage = row.coverageDays;
     const target = Number(row.targetDays || 0);
     const hasCoverage = coverage !== null && coverage !== undefined;
@@ -146,11 +150,7 @@ function listPurchaseSuggestions(filters = {}) {
     const filteredRows = rows.filter((row) => {
         const coverageDays = row.coverageDays;
         const targetDays = Number(row.targetDays || 0);
-        const suggestedQuantity = Number(
-            row.suggestedQuantity ??
-            row.suggestedquantity ||
-            0
-        );
+        const suggestedQuantity = getSuggestedQuantity(row);
         const hasCoverage = coverageDays !== null && coverageDays !== undefined;
         const hasPrice = row.unitprice !== null && row.unitprice !== undefined && Number(row.unitprice) > 0;
 
@@ -211,11 +211,7 @@ function listPurchaseSuggestions(filters = {}) {
 
     const summary = filteredRows.reduce((total, row) => ({
         products: total.products + 1,
-        suggestedQuantity: total.suggestedQuantity + Number(
-            row.suggestedQuantity ??
-            row.suggestedquantity ||
-            0
-        ),
+        suggestedQuantity: total.suggestedQuantity + getSuggestedQuantity(row),
         suggestedValue: total.suggestedValue + Number(row.totalsuggestionvalue || 0),
         criticalProducts: total.criticalProducts + (row.isCritical ? 1 : 0)
     }), { products: 0, suggestedQuantity: 0, suggestedValue: 0, criticalProducts: 0 });
