@@ -342,6 +342,7 @@ async function syncQuarantineFromKeys(keys = []) {
 
     const missingProductIds = [];
     const restoredProductIds = [];
+    const dbSampleKeys = [];
 
     for (const product of existingProducts) {
         const eanKey = buildProductKey(product.branch, product.ean, "ean");
@@ -350,12 +351,21 @@ async function syncQuarantineFromKeys(keys = []) {
             continue;
         }
 
+        if (dbSampleKeys.length < 5) {
+            dbSampleKeys.push(eanKey);
+        }
+
         if (unionKeys.has(eanKey)) {
             restoredProductIds.push(product.id);
         } else {
             missingProductIds.push(product.id);
         }
     }
+
+    console.log("[QUARENTENA] chaves recebidas:", unionKeys.size);
+    console.log("[QUARENTENA] amostra recebidas:", Array.from(unionKeys).slice(0, 5));
+    console.log("[QUARENTENA] amostra banco:", dbSampleKeys);
+    console.log("[QUARENTENA] a quarentenar:", missingProductIds.length, "a restaurar:", restoredProductIds.length);
 
     const quarantineProduct = database.prepare("\n        INSERT INTO product_quarantine (\n            id,\n            product_id,\n            branch,\n            code,\n            ean,\n            commercial_name,\n            reason,\n            status,\n            detected_at,\n            created_at\n        )\n        SELECT\n            ?,\n            id,\n            branch,\n            code,\n            ean,\n            commercial_name,\n            'nao_encontrado_nas_planilhas',\n            'pendente',\n            ?,\n            ?\n        FROM product_catalog\n        WHERE id = ?\n          AND NOT EXISTS (\n              SELECT 1\n              FROM product_quarantine\n              WHERE product_id = ?\n                AND status = 'pendente'\n          )\n    ");
 
@@ -387,6 +397,8 @@ async function syncQuarantineFromKeys(keys = []) {
         restoreChunk(chunk);
         await yieldToEventLoop();
     }
+
+    console.log("[QUARENTENA] resultado:", { quarantined, restored });
 
     return { quarantined, restored };
 }
