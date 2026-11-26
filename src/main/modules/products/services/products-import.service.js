@@ -77,6 +77,9 @@ function readExcelProducts(filePath) {
     const headerResult = validateHeaders(rawHeaders);
     const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false });
 
+    console.log("[PRODUTOS] cabecalhos lidos:", rawHeaders);
+    console.log("[PRODUTOS] primeiras linhas:", matrix.slice(1, 4));
+
     return {
         sheetName: firstSheetName,
         rows,
