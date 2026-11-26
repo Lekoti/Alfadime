@@ -18,8 +18,33 @@ const BRANCHES = {
 
 
 const MAX_PAGE_SIZE = 10000;
+const MAX_FILTER_OPTIONS = 500;
 const RELATED_CHUNK_SIZE = 500;
 
+
+const FILTER_FIELDS = {
+    laboratoryname: "laboratory_name",
+    effectivecurve: "effective_curve",
+    productcode: "product_code",
+    curvevalue: "curve_value",
+    curveunit: "curve_unit",
+    company: "company",
+    description: "description",
+    currentstock: "current_stock",
+    blockedstock: "blocked_stock",
+    averagesale12m: "average_sale_12m",
+    averagesale6m: "average_sale_6m",
+    averagesale3m: "average_sale_3m",
+    lastpurchaseprice: "last_purchase_price",
+    penultimatepurchaseprice: "penultimate_purchase_price",
+    antepenultimatepurchaseprice: "antepenultimate_purchase_price",
+    averagecost: "average_cost",
+    standardbox: "standard_box",
+    sourcefilename: "source_file_name",
+    importedat: "imported_at",
+    createdat: "created_at",
+    updatedat: "updated_at"
+};
 
 
 function ensureQuantityOverrideColumn(database) {
@@ -43,7 +68,6 @@ function ensureQuantityOverrideColumn(database) {
 }
 
 
-
 function ensureContentHashColumn(database) {
     const columns = database
         .prepare("PRAGMA table_info(purchase_curve_products)")
@@ -65,7 +89,6 @@ function ensureContentHashColumn(database) {
 }
 
 
-
 function getValue(object, ...keys) {
     for (const key of keys) {
         if (
@@ -82,7 +105,6 @@ function getValue(object, ...keys) {
 }
 
 
-
 function normalizeText(value) {
     if (value === null || value === undefined) {
         return null;
@@ -96,7 +118,6 @@ function normalizeText(value) {
 
     return text || null;
 }
-
 
 
 function normalizeNumber(value, fallback = 0) {
@@ -118,7 +139,6 @@ function normalizeNumber(value, fallback = 0) {
         ? number
         : fallback;
 }
-
 
 
 function buildWhereClause(filters = {}) {
@@ -225,7 +245,6 @@ function buildWhereClause(filters = {}) {
 }
 
 
-
 function getRelatedRowsByProductCodes(
     database,
     productCodes
@@ -288,7 +307,6 @@ function getRelatedRowsByProductCodes(
 }
 
 
-
 function buildRelatedRowsByProduct(relatedRows) {
     const branchByCompany = Object.fromEntries(
         Object.entries(BRANCHES)
@@ -330,7 +348,6 @@ function buildRelatedRowsByProduct(relatedRows) {
 
     return relatedByProduct;
 }
-
 
 
 function decorateCurveRow(
@@ -414,7 +431,6 @@ function decorateCurveRow(
             null
     };
 }
-
 
 
 function listCurveProducts(filters = {}) {
@@ -564,7 +580,6 @@ function listCurveProducts(filters = {}) {
 }
 
 
-
 function listAllCurveProducts(filters = {}) {
     const database = getDatabase();
 
@@ -636,35 +651,16 @@ function listAllCurveProducts(filters = {}) {
 }
 
 
-
 function getFilterOptions(field) {
-    const fieldMap = {
-        laboratoryname: "laboratory_name",
-        effectivecurve: "effective_curve",
-        productcode: "product_code",
-        curvevalue: "curve_value",
-        curveunit: "curve_unit",
-        company: "company",
-        description: "description",
-        currentstock: "current_stock",
-        blockedstock: "blocked_stock",
-        averagesale12m: "average_sale_12m",
-        averagesale6m: "average_sale_6m",
-        averagesale3m: "average_sale_3m",
-        lastpurchaseprice: "last_purchase_price",
-        penultimatepurchaseprice: "penultimate_purchase_price",
-        antepenultimatepurchaseprice: "antepenultimate_purchase_price",
-        averagecost: "average_cost",
-        standardbox: "standard_box",
-        sourcefilename: "source_file_name",
-        importedat: "imported_at",
-        createdat: "created_at",
-        updatedat: "updated_at"
-    };
+    const actualField = FILTER_FIELDS[field];
 
 
 
-    const actualField = fieldMap[field] || field;
+    if (!actualField) {
+        throw new Error(
+            `Campo de filtro nao permitido: ${field}`
+        );
+    }
 
 
 
@@ -676,16 +672,16 @@ function getFilterOptions(field) {
 
     return getDatabase()
         .prepare(`
-            SELECT DISTINCT ${actualField} AS value
+            SELECT DISTINCT "${actualField}" AS value
             FROM purchase_curve_products
-            WHERE ${actualField} IS NOT NULL
-              AND TRIM(CAST(${actualField} AS TEXT)) <> ''
-            ORDER BY ${actualField} ASC
+            WHERE "${actualField}" IS NOT NULL
+              AND TRIM(CAST("${actualField}" AS TEXT)) <> ''
+            ORDER BY "${actualField}" ASC
+            LIMIT ?
         `)
-        .all()
+        .all(MAX_FILTER_OPTIONS)
         .map((row) => row.value);
 }
-
 
 
 function upsertCurveProducts(products, source = {}) {
@@ -705,8 +701,6 @@ function upsertCurveProducts(products, source = {}) {
 
 
 
-    console.log("Carregando produtos em memória...");
-    const loadStart = Date.now();
     const allProducts = database.prepare(`
         SELECT id, branch, code, ean
         FROM product_catalog
@@ -746,16 +740,6 @@ function upsertCurveProducts(products, source = {}) {
             );
         }
     }
-
-
-
-    const loadTime = ((Date.now() - loadStart) / 1000).toFixed(2);
-
-
-
-    console.log(
-        `Produtos carregados: ${allProducts.length} em ${loadTime}s`
-    );
 
 
 
@@ -1070,7 +1054,6 @@ function upsertCurveProducts(products, source = {}) {
 }
 
 
-
 function createImportHistory(data = {}) {
     const database = getDatabase();
     const now = new Date().toISOString();
@@ -1157,7 +1140,6 @@ function createImportHistory(data = {}) {
 }
 
 
-
 function finishImportHistory(id, data = {}) {
     getDatabase()
         .prepare(`
@@ -1183,7 +1165,6 @@ function finishImportHistory(id, data = {}) {
             id
         );
 }
-
 
 
 function getPurchaseSuggestionsByIds(selectedIds) {
@@ -1264,7 +1245,6 @@ function getPurchaseSuggestionsByIds(selectedIds) {
 }
 
 
-
 function setQuantityOverride(id, quantity) {
     const database = getDatabase();
 
@@ -1301,7 +1281,6 @@ function setQuantityOverride(id, quantity) {
 }
 
 
-
 function getQuantityOverridesCount() {
     const database = getDatabase();
 
@@ -1321,7 +1300,6 @@ function getQuantityOverridesCount() {
         .get()
         .total;
 }
-
 
 
 function clearQuantityOverrides() {
@@ -1348,7 +1326,6 @@ function clearQuantityOverrides() {
         removed: result.changes
     };
 }
-
 
 
 module.exports = {
