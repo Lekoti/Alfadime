@@ -8,6 +8,10 @@ const {
     CORRECTABLE_PRODUCT_FIELDS
 } = require("../constants/products-corrections.constants");
 
+const MAX_PRODUCTS_BY_EAN = 500;
+const DEFAULT_CORRECTIONS_PAGE_SIZE = 100;
+const MAX_CORRECTIONS_PAGE_SIZE = 500;
+
 function getProductById(productId) {
     const database = getDatabase();
 
@@ -328,9 +332,68 @@ function listCorrections(filters = {}) {
         params
     } = buildCorrectionsQuery(filters);
 
-    return database
-        .prepare(query)
-        .all(...params);
+    const hasPagination =
+        filters.page !== undefined &&
+        filters.page !== null &&
+        filters.page !== "";
+
+    if (!hasPagination) {
+        return database
+            .prepare(query)
+            .all(...params);
+    }
+
+    const pageSize = Math.min(
+        Math.max(
+            Number(filters.pageSize) ||
+                DEFAULT_CORRECTIONS_PAGE_SIZE,
+            1
+        ),
+        MAX_CORRECTIONS_PAGE_SIZE
+    );
+
+    const total = database
+        .prepare(`
+            SELECT COUNT(*) AS total
+            FROM (${query})
+        `)
+        .get(...params)
+        .total;
+
+    const totalPages = Math.max(
+        Math.ceil(total / pageSize),
+        1
+    );
+
+    const currentPage = Math.min(
+        Math.max(Number(filters.page) || 1, 1),
+        totalPages
+    );
+
+    const offset = (currentPage - 1) * pageSize;
+
+    const rows = database
+        .prepare(`
+            ${query}
+            LIMIT ?
+            OFFSET ?
+        `)
+        .all(
+            ...params,
+            pageSize,
+            offset
+        );
+
+    return {
+        rows,
+        pagination: {
+            page: currentPage,
+            pageSize,
+            total,
+            totalPages,
+            offset
+        }
+    };
 }
 
 function getCorrectionFilterOptions() {
@@ -911,8 +974,12 @@ function getProductsByEan(ean) {
             WHERE active = 1
               AND ean = ?
             ORDER BY branch ASC, code ASC
+            LIMIT ?
         `)
-        .all(normalizedEan);
+        .all(
+            normalizedEan,
+            MAX_PRODUCTS_BY_EAN
+        );
 }
 
 function createCorrectionsBatch(items = []) {
