@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const crypto = require("node:crypto");
 
 const {
     PRODUCTS_EXCEL_PATH,
@@ -16,6 +17,10 @@ class ProductsFileMonitor {
         this.timer = null;
         this.running = false;
         this.lastSignature = null;
+        this.lastContentHash = null;
+        this.consecutiveErrors = 0;
+        this.maxConsecutiveErrors = 5;
+        this.currentBackoffMs = PRODUCTS_EXCEL_POLLING_INTERVAL;
     }
 
     start() {
@@ -61,6 +66,21 @@ class ProductsFileMonitor {
         ].join("-");
     }
 
+    getFileContentHash() {
+        if (!fs.existsSync(PRODUCTS_EXCEL_PATH)) {
+            return null;
+        }
+
+        const buffer = fs.readFileSync(
+            PRODUCTS_EXCEL_PATH
+        );
+
+        return crypto
+            .createHash("sha256")
+            .update(buffer)
+            .digest("hex");
+    }
+
     async isFileStable() {
         const firstSignature =
             this.getFileSignature();
@@ -85,6 +105,16 @@ class ProductsFileMonitor {
         );
     }
 
+    scheduleNextScan() {
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+
+        this.timer = setTimeout(() => {
+            this.scan();
+        }, this.currentBackoffMs);
+    }
+
     async scan() {
         if (this.running) {
             return;
@@ -97,14 +127,10 @@ class ProductsFileMonitor {
                 this.getFileSignature();
 
             if (!signature) {
-                this.onError(
-                    new Error(
-                        "Arquivo Excel nao encontrado: " +
-                        PRODUCTS_EXCEL_PATH
-                    )
+                throw new Error(
+                    "Arquivo Excel nao encontrado: " +
+                    PRODUCTS_EXCEL_PATH
                 );
-
-                return;
             }
 
             if (
@@ -124,12 +150,28 @@ class ProductsFileMonitor {
             const stableSignature =
                 this.getFileSignature();
 
+            const contentHash =
+                this.getFileContentHash();
+
+            if (
+                this.lastContentHash &&
+                this.lastContentHash === contentHash
+            ) {
+                this.lastSignature = stableSignature;
+                return;
+            }
+
             const result = await this.onChanged({
                 filePath: PRODUCTS_EXCEL_PATH,
-                signature: stableSignature
+                signature: stableSignature,
+                contentHash
             });
 
             this.lastSignature = stableSignature;
+            this.lastContentHash = contentHash;
+            this.consecutiveErrors = 0;
+            this.currentBackoffMs =
+                PRODUCTS_EXCEL_POLLING_INTERVAL;
 
             return result;
         } catch (error) {
@@ -138,9 +180,24 @@ class ProductsFileMonitor {
                 error
             );
 
+            this.consecutiveErrors++;
+
+            if (
+                this.consecutiveErrors >=
+                this.maxConsecutiveErrors
+            ) {
+                this.currentBackoffMs =
+                    PRODUCTS_EXCEL_POLLING_INTERVAL * 6;
+            } else {
+                this.currentBackoffMs =
+                    PRODUCTS_EXCEL_POLLING_INTERVAL *
+                    this.consecutiveErrors;
+            }
+
             this.onError(error);
         } finally {
             this.running = false;
+            this.scheduleNextScan();
         }
     }
 }
