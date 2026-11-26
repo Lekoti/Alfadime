@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     Bell,
+    Boxes,
     ClipboardCheck,
     FilePen,
+    FileUp,
     Home,
     ListChecks,
     Mail,
@@ -34,11 +36,11 @@ function Sidebar({ collapsed = false, onToggle }) {
         { key: "/", label: "Início", icon: Home, exact: true },
         { key: "/product-audit", label: "Auditoria de Produtos", icon: ClipboardCheck },
         { key: "/purchases", label: "Compras", icon: ShoppingCart },
-        { key: "/merchandise-purchases", label: "Compras de Mercadorias", icon: ShoppingCart },
+        { key: "/merchandise-purchases", label: "Compras de Mercadorias", icon: Boxes },
         { key: "/industry-contacts", label: "Contatos", icon: Phone },
         { key: "/product-corrections", label: "Correções de Produtos", icon: FilePen },
         { key: "/email", label: "E-mail", icon: Mail },
-        { key: "/nf-import", label: "Importação NF", icon: ShoppingCart },
+        { key: "/nf-import", label: "Importação NF", icon: FileUp },
         { key: "/notifications", label: "Notificações", icon: Bell },
         { key: "/price-pending", label: "Preços e Pendências", icon: ListChecks },
         { key: "/products", label: "Produtos", icon: Package }
