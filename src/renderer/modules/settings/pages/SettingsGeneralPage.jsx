@@ -250,7 +250,7 @@ function SettingsGeneralPage() {
 
     async function handleSyncDatabase() {
         const confirmed = window.confirm(
-            "Atualizar Banco de Dados com base nas planilhas de Produtos e Curva Compras agora?"
+            "Atualizar Produtos e Compras com base nas planilhas agora?"
         );
 
 
@@ -278,12 +278,12 @@ function SettingsGeneralPage() {
 
             setProductsLastSync(productsResult?.last_sync_at || null);
             setPurchasesLastSync(purchasesResult?.last_sync_at || null);
-            setSyncResult("Banco de Dados atualizado com sucesso.");
+            setSyncResult("Produtos e Compras atualizados com sucesso.");
         } catch (databaseSyncError) {
             console.error(databaseSyncError);
             setSyncError(
                 databaseSyncError?.message ||
-                "Não foi possível atualizar o Banco de Dados."
+                "Não foi possível atualizar Produtos e Compras."
             );
         } finally {
             setSyncingDatabase(false);
@@ -501,7 +501,7 @@ function SettingsGeneralPage() {
                         >
                             {syncingDatabase
                                 ? "Atualizando..."
-                                : "Atualizar Banco de Dados"}
+                                : "Atualizar Produtos e Compras"}
                         </button>
                     </div>
                 </section>
