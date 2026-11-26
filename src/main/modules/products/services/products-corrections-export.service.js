@@ -9,19 +9,14 @@ const {
 );
 
 const {
-    PRODUCT_FIELD_LABELS
+    PRODUCT_FIELD_LABELS,
+    CORRECTION_STATUS_LABELS
 } = require(
     "../constants/products-corrections.constants"
 );
 
 function getStatusLabel(status) {
-    const labels = {
-        pending_excel: "Pendente no Excel",
-        confirmed_in_excel: "Confirmada no Excel",
-        cancelled: "Cancelada"
-    };
-
-    return labels[status] || status;
+    return CORRECTION_STATUS_LABELS[status] || status;
 }
 
 function formatGroupOrCategory(fieldName, value) {
@@ -48,7 +43,8 @@ function formatGroupOrCategory(fieldName, value) {
     return text;
 }
 
-function formatDate(value) {    if (!value) {
+function formatDate(value) {
+    if (!value) {
         return "";
     }
 
@@ -58,8 +54,15 @@ function formatDate(value) {    if (!value) {
 }
 
 function getCorrectionsForExport(filters = {}) {
+    const exportFilters = {
+        ...filters
+    };
+
+    delete exportFilters.page;
+    delete exportFilters.pageSize;
+
     const corrections = repository.listCorrections(
-        filters
+        exportFilters
     );
 
     return corrections.map((correction) => ({

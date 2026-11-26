@@ -20,12 +20,6 @@ const {
     "../constants/products.config"
 );
 
-const {
-    PURCHASES_CONFIG
-} = require(
-    "../../../config/app.config"
-);
-
 
 const BRANCH_EXPORTS = PRODUCT_CSV_BRANCH_EXPORTS;
 
@@ -474,6 +468,20 @@ function getAvailableBranchesForExport() {
 }
 
 
+function assertWritableDirectory(directory) {
+    try {
+        fs.accessSync(
+            directory,
+            fs.constants.W_OK
+        );
+    } catch {
+        throw new Error(
+            `A pasta selecionada nao permite gravacao: ${directory}`
+        );
+    }
+}
+
+
 async function chooseDestinationDirectory() {
     const result = await dialog.showOpenDialog({
         title: "Selecione a pasta para salvar os CSVs",
@@ -492,6 +500,11 @@ async function chooseDestinationDirectory() {
     ) {
         return null;
     }
+
+
+    assertWritableDirectory(
+        result.filePaths[0]
+    );
 
 
     return result.filePaths[0];
@@ -607,6 +620,7 @@ async function exportAllCorrectionsCsv() {
 
 
     const files = [];
+    const emptyBranches = [];
     let totalProducts = 0;
 
 
@@ -619,6 +633,7 @@ async function exportAllCorrectionsCsv() {
 
 
         if (!rows.length) {
+            emptyBranches.push(branch);
             continue;
         }
 
@@ -656,6 +671,7 @@ async function exportAllCorrectionsCsv() {
         cancelled: false,
         destinationDirectory,
         files,
+        emptyBranches,
         totalProducts
     };
 }

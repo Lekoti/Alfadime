@@ -42,12 +42,21 @@ const PRODUCT_FIELD_LABELS = {
 
 const CORRECTION_STATUS = {
     PENDING_EXCEL: "pending_excel",
+    SENT_INTERNAL: "sent_internal",
     CONFIRMED_IN_EXCEL: "confirmed_in_excel",
     CANCELLED: "cancelled"
+};
+
+const CORRECTION_STATUS_LABELS = {
+    pending_excel: "Pendente no Excel",
+    sent_internal: "Feito / Atualizado",
+    confirmed_in_excel: "Confirmada no Excel",
+    cancelled: "Cancelada"
 };
 
 module.exports = {
     CORRECTABLE_PRODUCT_FIELDS,
     PRODUCT_FIELD_LABELS,
-    CORRECTION_STATUS
+    CORRECTION_STATUS,
+    CORRECTION_STATUS_LABELS
 };
