@@ -5,8 +5,8 @@ const {
 } = require("../../../database/connection");
 
 const {
-    PRODUCT_CATALOG_FIELDS
-} = require("../constants/products.constants");
+    CORRECTABLE_PRODUCT_FIELDS
+} = require("../constants/products-corrections.constants");
 
 function getProductById(productId) {
     const database = getDatabase();
@@ -22,7 +22,7 @@ function getProductById(productId) {
 }
 
 function assertEditableField(fieldName) {
-    if (!PRODUCT_CATALOG_FIELDS.includes(fieldName)) {
+    if (!CORRECTABLE_PRODUCT_FIELDS.includes(fieldName)) {
         throw new Error(
             `Campo nao permitido: ${fieldName}`
         );
@@ -103,6 +103,8 @@ function getPendingCorrection(
 }
 
 function createCorrection(data) {
+    assertEditableField(data.field_name);
+
     const database = getDatabase();
     const now = new Date().toISOString();
 
@@ -559,6 +561,15 @@ function revertCorrection(correctionId) {
 
     assertEditableField(correction.field_name);
 
+    if (
+        correction.old_value === null ||
+        correction.old_value === undefined
+    ) {
+        throw new Error(
+            "Valor anterior nao encontrado para reverter a correcao."
+        );
+    }
+
     const product = getProductById(
         correction.product_id
     );
@@ -673,10 +684,24 @@ function markCorrectionsAsSent(correctionIds = []) {
         );
     }
 
+    const uniqueIds = [
+        ...new Set(
+            correctionIds
+                .map((id) => String(id || "").trim())
+                .filter(Boolean)
+        )
+    ];
+
+    if (!uniqueIds.length) {
+        throw new Error(
+            "Nenhuma correcao valida foi selecionada."
+        );
+    }
+
     const database = getDatabase();
     const now = new Date().toISOString();
 
-    const placeholders = correctionIds
+    const placeholders = uniqueIds
         .map(() => "?")
         .join(", ");
 
@@ -687,22 +712,30 @@ function markCorrectionsAsSent(correctionIds = []) {
             WHERE id IN (${placeholders})
               AND status = 'pending_excel'
         `)
-        .all(...correctionIds);
+        .all(...uniqueIds);
+
+    let updated = 0;
+    let skipped = 0;
 
     const transaction = database.transaction(() => {
         for (const correction of corrections) {
             assertEditableField(correction.field_name);
 
-            const product = database
-                .prepare(`
-                    SELECT *
-                    FROM product_catalog
-                    WHERE id = ?
-                    LIMIT 1
-                `)
-                .get(correction.product_id);
+            const newValue = String(
+                correction.new_value ?? ""
+            ).trim();
+
+            if (!newValue) {
+                skipped++;
+                continue;
+            }
+
+            const product = getProductById(
+                correction.product_id
+            );
 
             if (!product) {
+                skipped++;
                 continue;
             }
 
@@ -719,7 +752,7 @@ function markCorrectionsAsSent(correctionIds = []) {
                     WHERE id = ?
                 `)
                 .run(
-                    correction.new_value,
+                    newValue,
                     now,
                     correction.product_id
                 );
@@ -746,7 +779,7 @@ function markCorrectionsAsSent(correctionIds = []) {
                 source: "alfadime",
                 field_name: correction.field_name,
                 old_value: String(oldValue),
-                new_value: correction.new_value,
+                new_value: newValue,
                 reason:
                     "Correcao aplicada ao banco local do Alfadime.",
                 changed_by: null
@@ -759,11 +792,13 @@ function markCorrectionsAsSent(correctionIds = []) {
                 source: "alfadime",
                 field_name: correction.field_name,
                 old_value: String(oldValue),
-                new_value: correction.new_value,
+                new_value: newValue,
                 reason:
                     "Correcao marcada como feito/atualizado.",
                 changed_by: null
             });
+
+            updated++;
         }
     });
 
@@ -771,7 +806,8 @@ function markCorrectionsAsSent(correctionIds = []) {
 
     return {
         success: true,
-        updated: corrections.length
+        updated,
+        skipped
     };
 }
 

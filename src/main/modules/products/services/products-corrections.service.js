@@ -14,6 +14,13 @@ function normalizeValue(value) {
         .trim();
 }
 
+function normalizeComparableValue(value) {
+    return String(value ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toUpperCase();
+}
+
 function createCorrection(data = {}) {
     if (!data.product_id) {
         throw new Error(
@@ -124,26 +131,6 @@ function getCorrectableFields() {
     );
 }
 
-module.exports = {
-    createCorrection,
-    listCorrections,
-    getCorrectionFilterOptions,
-    cancelCorrection,
-    cancelCorrections,
-    revertCorrection,
-    revertCorrections,
-    markCorrectionsAsSent,
-    getPendingCorrectionsForProducts,
-    confirmCorrectionsFromExcel,
-    getCorrectableFields
-};
-function normalizeComparableValue(value) {
-    return String(value ?? "")
-        .trim()
-        .replace(/\s+/g, " ")
-        .toUpperCase();
-}
-
 function getBulkCorrectionTargets(ean, fields = []) {
     const normalizedEan = String(ean ?? "").trim();
 
@@ -219,13 +206,29 @@ function createBulkCorrections(data = {}) {
         );
     }
 
-    const selectedProductIds = Array.isArray(
+    const requestedIds = Array.isArray(
         data.product_ids
-    ) && data.product_ids.length
-        ? new Set(data.product_ids)
-        : new Set(
-            products.map((product) => product.id)
+    )
+        ? data.product_ids
+        : [];
+
+    const availableIds = new Set(
+        products.map((product) => product.id)
+    );
+
+    const invalidIds = requestedIds.filter(
+        (id) => !availableIds.has(id)
+    );
+
+    if (invalidIds.length) {
+        throw new Error(
+            "Existem produtos selecionados que nao pertencem ao EAN informado."
         );
+    }
+
+    const selectedProductIds = requestedIds.length
+        ? new Set(requestedIds)
+        : availableIds;
 
     const selectedProducts = products.filter(
         (product) => selectedProductIds.has(product.id)
@@ -238,6 +241,7 @@ function createBulkCorrections(data = {}) {
     }
 
     const items = [];
+    let skipped = 0;
 
     for (const product of selectedProducts) {
         for (const correction of corrections) {
@@ -251,6 +255,7 @@ function createBulkCorrections(data = {}) {
                     correction.new_value
                 )
             ) {
+                skipped++;
                 continue;
             }
 
@@ -258,12 +263,12 @@ function createBulkCorrections(data = {}) {
                 product_id: product.id,
                 branch: product.branch,
                 code: String(
-                product.code ??
-                product.product_code ??
-                product.internal_code ??
-                product.sirius_code ??
-                ""
-            ).trim(),
+                    product.code ??
+                    product.product_code ??
+                    product.internal_code ??
+                    product.sirius_code ??
+                    ""
+                ).trim(),
                 ean: product.ean,
                 field_name: correction.field_name,
                 old_value: currentValue,
@@ -279,7 +284,7 @@ function createBulkCorrections(data = {}) {
         return {
             success: true,
             created: 0,
-            skipped: selectedProducts.length,
+            skipped,
             corrections: []
         };
     }
@@ -291,13 +296,23 @@ function createBulkCorrections(data = {}) {
     return {
         success: true,
         created: created.length,
-        skipped: 0,
+        skipped,
         corrections: created
     };
 }
 
-module.exports.getBulkCorrectionTargets =
-    getBulkCorrectionTargets;
-
-module.exports.createBulkCorrections =
-    createBulkCorrections;
+module.exports = {
+    createCorrection,
+    listCorrections,
+    getCorrectionFilterOptions,
+    cancelCorrection,
+    cancelCorrections,
+    revertCorrection,
+    revertCorrections,
+    markCorrectionsAsSent,
+    getPendingCorrectionsForProducts,
+    confirmCorrectionsFromExcel,
+    getCorrectableFields,
+    getBulkCorrectionTargets,
+    createBulkCorrections
+};
