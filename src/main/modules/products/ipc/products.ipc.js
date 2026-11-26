@@ -35,9 +35,7 @@ const {
 
 const {
     USER_ROLES
-} = require(
-    "../../auth/userRoles.constants"
-);
+} = require("../../auth/userRoles.constants");
 
 let registered = false;
 
@@ -116,13 +114,13 @@ function registerProductsIpc() {
     ipcMain.handle(
         "products:sync-excel",
         async () => {
-            console.log('[PRODUCTS][SYNC] Iniciando sincronizacao...');
-            console.log('[PRODUCTS][SYNC] Caminho:', PRODUCTS_EXCEL_PATH);
+            console.log("[PRODUCTS][SYNC] Iniciando sincronizacao...");
+            console.log("[PRODUCTS][SYNC] Caminho:", PRODUCTS_EXCEL_PATH);
 
             const user = requireSyncPermission();
 
             try {
-                const result = synchronizeProductsExcel(
+                const result = await synchronizeProductsExcel(
                     PRODUCTS_EXCEL_PATH
                 );
 
@@ -132,11 +130,11 @@ function registerProductsIpc() {
                     source: PRODUCTS_EXCEL_PATH
                 });
 
-                console.log('[PRODUCTS][SYNC] Sucesso:', result);
+                console.log("[PRODUCTS][SYNC] Sucesso:", result);
                 return result;
             } catch (error) {
-                console.error('[PRODUCTS][SYNC] ERRO:', error.message);
-                console.error('[PRODUCTS][SYNC] Stack:', error.stack);
+                console.error("[PRODUCTS][SYNC] ERRO:", error.message);
+                console.error("[PRODUCTS][SYNC] Stack:", error.stack);
                 throw error;
             }
         }
@@ -178,6 +176,7 @@ function registerProductsIpc() {
         }
     );
 }
+
 
 module.exports = {
     registerProductsIpc

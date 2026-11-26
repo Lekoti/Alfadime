@@ -20,11 +20,13 @@ const {
     validateProductCatalogRow
 } = require("../mappers/products-import.mapper");
 
+
 function normalizeHeader(value) {
     return String(value || "")
         .trim()
         .replace(/\s+/g, " ");
 }
+
 
 function createEmptyMappedRow() {
     return PRODUCT_CATALOG_FIELDS.reduce(
@@ -36,6 +38,7 @@ function createEmptyMappedRow() {
         {}
     );
 }
+
 
 function mapExcelRow(excelRow = {}) {
     const mapped = createEmptyMappedRow();
@@ -51,6 +54,7 @@ function mapExcelRow(excelRow = {}) {
 
     return mapped;
 }
+
 
 function validateHeaders(headers = []) {
     const normalizedHeaders = headers.map(
@@ -98,6 +102,7 @@ function validateHeaders(headers = []) {
         )
     };
 }
+
 
 function readExcelProducts(filePath) {
     const workbook = XLSX.readFile(filePath, {
@@ -155,11 +160,19 @@ function readExcelProducts(filePath) {
     };
 }
 
-function synchronizeProductsExcel(filePath) {
-    console.log('=== INICIANDO IMPORTACAO PRODUTOS ===');
-    console.log('Caminho:', filePath);
-    console.log('Arquivo existe:', require('fs').existsSync(filePath));
-    
+
+function yieldToEventLoop() {
+    return new Promise((resolve) => {
+        setImmediate(resolve);
+    });
+}
+
+
+async function synchronizeProductsExcel(filePath) {
+    console.log("=== INICIANDO IMPORTACAO PRODUTOS ===");
+    console.log("Caminho:", filePath);
+    console.log("Arquivo existe:", require("fs").existsSync(filePath));
+
     const fileName = path.basename(filePath);
     const startedAt = new Date().toISOString();
 
@@ -168,9 +181,9 @@ function synchronizeProductsExcel(filePath) {
     try {
         const readResult = readExcelProducts(filePath);
 
-        console.log('Planilha lida:', readResult.sheetName);
-        console.log('Total de linhas:', readResult.rows.length);
-        console.log('Colunas reconhecidas:', readResult.recognizedHeaders);
+        console.log("Planilha lida:", readResult.sheetName);
+        console.log("Total de linhas:", readResult.rows.length);
+        console.log("Colunas reconhecidas:", readResult.recognizedHeaders);
 
         const validProducts = [];
         const errors = [];
@@ -201,10 +214,16 @@ function synchronizeProductsExcel(filePath) {
             }
 
             validProducts.push(product);
+
+            if (
+                validProducts.length % 500 === 0
+            ) {
+                await yieldToEventLoop();
+            }
         }
 
-        console.log('Produtos validos:', validProducts.length);
-        console.log('Erros de validacao:', errors.length);
+        console.log("Produtos validos:", validProducts.length);
+        console.log("Erros de validacao:", errors.length);
 
         if (validProducts.length === 0) {
             throw new Error(
@@ -222,7 +241,7 @@ function synchronizeProductsExcel(filePath) {
                 status: "processing"
             });
 
-        const result = repository.syncProducts(
+        const result = await repository.syncProducts(
             validProducts,
             {
                 fileName,
@@ -230,7 +249,7 @@ function synchronizeProductsExcel(filePath) {
             }
         );
 
-        console.log('Resultado sync:', result);
+        console.log("Resultado sync:", result);
 
         let correctionResult = {
             confirmed: 0
@@ -247,7 +266,7 @@ function synchronizeProductsExcel(filePath) {
                 correctionError.message;
 
             console.error(
-                'ERRO ao confirmar correcoes:',
+                "ERRO ao confirmar correcoes:",
                 correctionError.message
             );
         }
@@ -259,7 +278,8 @@ function synchronizeProductsExcel(filePath) {
                 updated_rows: result.updated,
                 deactivated_rows: result.deactivated,
                 ignored_rows: errors.length +
-                    (result.skipped || 0),
+                    (result.skipped || 0) +
+                    (result.duplicateRows || 0),
                 status: correctionsWarning
                     ? "completed_with_warnings"
                     : "completed",
@@ -276,10 +296,15 @@ function synchronizeProductsExcel(filePath) {
             totalRows: readResult.rows.length,
             validRows: validProducts.length,
             ignoredRows: errors.length +
-                (result.skipped || 0),
+                (result.skipped || 0) +
+                (result.duplicateRows || 0),
 
             insertedRows: result.inserted,
             updatedRows: result.updated,
+            unchangedRows: result.unchanged,
+            duplicateRows: result.duplicateRows,
+            quarantinedRows: result.quarantined,
+            restoredRows: result.restored,
             deactivatedRows: result.deactivated,
 
             confirmedCorrections:
@@ -299,8 +324,8 @@ function synchronizeProductsExcel(filePath) {
             finishedAt: new Date().toISOString()
         };
     } catch (error) {
-        console.log('ERRO na importacao:', error.message);
-        
+        console.log("ERRO na importacao:", error.message);
+
         if (importHistory) {
             repository.finishImportHistory(
                 importHistory.id,
@@ -314,6 +339,7 @@ function synchronizeProductsExcel(filePath) {
         throw error;
     }
 }
+
 
 module.exports = {
     readExcelProducts,

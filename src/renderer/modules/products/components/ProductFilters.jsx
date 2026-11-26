@@ -213,6 +213,7 @@ function ProductFilters({ filters, onFiltersChange }) {
                     <option value="">Todos</option>
                     <option value="1">Ativos</option>
                     <option value="0">Inativos</option>
+                    <option value="quarantine">Quarentena</option>
                 </select>
             </div>
 
