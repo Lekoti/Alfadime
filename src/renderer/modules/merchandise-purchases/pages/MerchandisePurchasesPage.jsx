@@ -1,4 +1,4 @@
-﻿import {useEffect,useMemo,useState} from "react";
+import {useEffect,useMemo,useState} from "react";
 import MerchandiseFilters from "../components/MerchandiseFilters";
 import MerchandiseImportPanel from "../components/MerchandiseImportPanel";
 import MerchandisePremises from "../components/MerchandisePremises";
@@ -13,6 +13,7 @@ import "../styles/merchandise-columns.css";
 import {useMerchandisePurchases} from "../hooks/useMerchandisePurchases";
 import {buildMerchandiseReports} from "../services/merchandiseReport.service";
 import {exportMerchandiseExcel} from "../services/merchandiseExport.service";
+import {useModuleState} from "../../../hooks/useModuleState";
 import "../styles/merchandise-purchases.css";
 import "../styles/merchandise-dashboard.css";
 import "../styles/merchandise-policy.css";
@@ -30,9 +31,16 @@ export default function MerchandisePurchasesPage(){
         imported,loading,error,premises,setPremises,filters,setFilters,options,rows,allRows,setQuantity,importFile,clearImport,policySnapshot,policyLoading,policyError
     }=useMerchandisePurchases();
 
-    const [tab,setTab]=useState("filters");
-    const [page,setPage]=useState(1);
-    const [selectedIds,setSelectedIds]=useState(()=>new Set());
+    const [interfaceState,setInterfaceField]=useModuleState("merchandise-purchases",{
+        tab:"filters",
+        page:1,
+        selectedIds:[]
+    });
+
+    const tab=interfaceState.tab||"filters";
+    const page=interfaceState.page||1;
+    const selectedIdsArray=Array.isArray(interfaceState.selectedIds)?interfaceState.selectedIds:[];
+    const selectedIds=new Set(selectedIdsArray);
     const [exporting,setExporting]=useState(false);
     const [exportError,setExportError]=useState(null);
     const [exportOpen,setExportOpen]=useState(false);
@@ -45,16 +53,17 @@ export default function MerchandisePurchasesPage(){
     const pageRows=useMemo(()=>rows.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE),[rows,currentPage]);
     const allSelected=rows.length>0&&rows.every(row=>selectedIds.has(row.id));
 
-    useEffect(()=>{setPage(1);setSelectedIds(new Set());},[filters,imported]);
+    useEffect(()=>{
+        setInterfaceField("page",1);
+        setInterfaceField("selectedIds",[]);
+    },[filters,imported]);
 
     const expired=allRows.filter(row=>row.policyExpired).length;
 
     function toggle(id){
-        setSelectedIds(current=>{
-            const next=new Set(current);
-            next.has(id)?next.delete(id):next.add(id);
-            return next;
-        });
+        setInterfaceField("selectedIds",selectedIds.has(id)
+            ?selectedIdsArray.filter(item=>item!==id)
+            :[...selectedIdsArray,id]);
     }
 
     async function handleExport(mode){
@@ -106,7 +115,7 @@ export default function MerchandisePurchasesPage(){
 
             <nav className="mp-dashboard-tabs" aria-label="Abas de compras">
                 {TABS.map(([key,title])=>(
-                    <button key={key} type="button" className={tab===key?"active":""} aria-current={tab===key?"page":undefined} onClick={()=>setTab(key)}>{title}</button>
+                    <button key={key} type="button" className={tab===key?"active":""} aria-current={tab===key?"page":undefined} onClick={()=>setInterfaceField("tab",key)}>{title}</button>
                 ))}
             </nav>
 
@@ -122,12 +131,12 @@ export default function MerchandisePurchasesPage(){
                         <MerchandiseColumnSelector columns={columns} preferences={preferences} onToggle={toggleColumn} onReorder={reorderColumn}/>
                     </div>
 
-                    <MerchandiseTable rows={pageRows} columns={visibleColumns} selectedIds={selectedIds} allSelected={allSelected} onToggleSelection={toggle} onToggleAll={()=>setSelectedIds(allSelected?new Set():new Set(rows.map(row=>row.id)))} onQuantityChange={setQuantity}/>
+                    <MerchandiseTable rows={pageRows} columns={visibleColumns} selectedIds={selectedIds} allSelected={allSelected} onToggleSelection={toggle} onToggleAll={()=>setInterfaceField("selectedIds",allSelected?[]:rows.map(row=>row.id))} onQuantityChange={setQuantity}/>
 
                     <div className="mp-pagination">
                         <span>Página {currentPage} de {totalPages}</span>
-                        <button disabled={currentPage<=1} onClick={()=>setPage(currentPage-1)}>Anterior</button>
-                        <button disabled={currentPage>=totalPages} onClick={()=>setPage(currentPage+1)}>Próxima</button>
+                        <button disabled={currentPage<=1} onClick={()=>setInterfaceField("page",currentPage-1)}>Anterior</button>
+                        <button disabled={currentPage>=totalPages} onClick={()=>setInterfaceField("page",currentPage+1)}>Próxima</button>
                     </div>
                 </section>
             ):(
@@ -152,4 +161,3 @@ export default function MerchandisePurchasesPage(){
         </main>
     );
 }
-
