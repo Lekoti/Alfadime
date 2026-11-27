@@ -198,13 +198,12 @@ function consolidateDuplicateProducts(database, existingProducts) {
     for (const product of existingProducts) {
         const branch = normalizeComparisonValue(product.branch);
         const ean = normalizeComparisonValue(product.ean);
-        const sapCode = normalizeComparisonValue(product.sap_code);
 
-        if (!branch || !ean || !sapCode) {
+        if (!branch || !ean) {
             continue;
         }
 
-        const key = `${branch}|${ean}|${sapCode}`;
+        const key = `${branch}|${ean}`;
 
         if (!groups.has(key)) {
             groups.set(key, []);
@@ -232,7 +231,16 @@ function consolidateDuplicateProducts(database, existingProducts) {
             }
 
             const primary = products.find((product) => hasValue(product.code)) || products[0];
-            const duplicates = products.filter((product) => product.id !== primary.id);
+            const primaryName = normalizeComparisonValue(primary.commercial_name);
+            const duplicates = products.filter((product) => {
+                if (product.id === primary.id) {
+                    return false;
+                }
+
+                const duplicateName = normalizeComparisonValue(product.commercial_name);
+
+                return !primaryName || !duplicateName || primaryName === duplicateName;
+            });
 
             if (!duplicates.length) {
                 continue;
