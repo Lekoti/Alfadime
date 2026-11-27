@@ -42,7 +42,7 @@ function buildProductsFilters(filters = {}) {
         const laboratoryValues = getMatchingGlobalLaboratoryCodes(getDatabase(), laboratory);
 
         if (laboratoryValues.length) {
-            whereClause += "\n                AND EXISTS (\n                    SELECT 1\n                    FROM product_purchase_curve AS laboratory\n                    WHERE laboratory.product_id = pc.id\n                        AND laboratory.lab IN (" + laboratoryValues.map(() => "?").join(", ") + ")\n                )\n            ";
+            whereClause += "\n            AND EXISTS (\n                SELECT 1\n                FROM product_purchase_curve AS laboratory\n                WHERE laboratory.product_id = pc.id\n                    AND laboratory.lab IN (" + laboratoryValues.map(() => "?").join(", ") + ")\n            )\n        ";
             params.push(...laboratoryValues);
         } else {
             whereClause += " AND 1 = 0";
@@ -59,11 +59,11 @@ function buildProductsFilters(filters = {}) {
 
         if (/^\d+$/.test(search)) {
             const numericSearch = search + "%";
-            whereClause += "\n                AND (\n                    pc.ean = ?\n                    OR pc.sap_code = ?\n                    OR pc.ean LIKE ?\n                    OR pc.sap_code LIKE ?\n                    OR pc.branch LIKE ?\n                    OR pc.active_ingredient LIKE ?\n                    OR pc.commercial_name LIKE ?\n                    OR pc.brand LIKE ?\n                    OR pc.ms_registration LIKE ?\n                    OR EXISTS (\n                        SELECT 1\n                        FROM product_purchase_curve AS search_curve\n                        WHERE search_curve.product_id = pc.id\n                            AND (\n                                search_curve.cod_prod LIKE ?\n                                OR search_curve.cod_prod_global LIKE ?\n                            )\n                    )\n                )\n            ";
+            whereClause += "\n            AND (\n                pc.ean = ?\n                OR pc.sap_code = ?\n                OR pc.ean LIKE ?\n                OR pc.sap_code LIKE ?\n                OR pc.branch LIKE ?\n                OR pc.active_ingredient LIKE ?\n                OR pc.commercial_name LIKE ?\n                OR pc.brand LIKE ?\n                OR pc.ms_registration LIKE ?\n                OR EXISTS (\n                    SELECT 1\n                    FROM product_purchase_curve AS search_curve\n                    WHERE search_curve.product_id = pc.id\n                        AND (\n                            search_curve.cod_prod LIKE ?\n                            OR search_curve.cod_prod_global LIKE ?\n                        )\n                )\n            )\n        ";
             params.push(search, search, numericSearch, numericSearch, "%" + search + "%", "%" + search + "%", "%" + search + "%", "%" + search + "%", "%" + search + "%", numericSearch, numericSearch);
         } else {
             const textSearch = "%" + search + "%";
-            whereClause += "\n                AND (\n                    pc.branch LIKE ?\n                    OR pc.ean LIKE ?\n                    OR pc.sap_code LIKE ?\n                    OR pc.active_ingredient LIKE ?\n                    OR pc.commercial_name LIKE ?\n                    OR pc.brand LIKE ?\n                    OR pc.ms_registration LIKE ?\n                    OR EXISTS (\n                        SELECT 1\n                        FROM product_purchase_curve AS search_curve\n                        WHERE search_curve.product_id = pc.id\n                            AND (\n                                search_curve.cod_prod LIKE ?\n                                OR search_curve.cod_prod_global LIKE ?\n                            )\n                    )\n                )\n            ";
+            whereClause += "\n            AND (\n                pc.branch LIKE ?\n                OR pc.ean LIKE ?\n                OR pc.sap_code LIKE ?\n                OR pc.active_ingredient LIKE ?\n                OR pc.commercial_name LIKE ?\n                OR pc.brand LIKE ?\n                OR pc.ms_registration LIKE ?\n                OR EXISTS (\n                    SELECT 1\n                    FROM product_purchase_curve AS search_curve\n                    WHERE search_curve.product_id = pc.id\n                        AND (\n                            search_curve.cod_prod LIKE ?\n                            OR search_curve.cod_prod_global LIKE ?\n                        )\n                )\n            )\n        ";
             params.push(textSearch, textSearch, textSearch, textSearch, textSearch, textSearch, textSearch, textSearch, textSearch);
         }
     }
@@ -338,34 +338,28 @@ async function syncQuarantineFromKeys(keys = []) {
     const database = getDatabase();
     const now = new Date().toISOString();
     const unionKeys = new Set(keys);
-    const existingProducts = database.prepare("\n            SELECT id, branch, ean\n            FROM product_catalog\n        ").all();
+    const existingProducts = database.prepare("\n            SELECT id, branch, code, ean, sap_code\n            FROM product_catalog\n        ").all();
 
     const missingProductIds = [];
     const restoredProductIds = [];
-    const dbSampleKeys = [];
 
     for (const product of existingProducts) {
-        const eanKey = buildProductKey(product.branch, product.ean, "ean");
+        const productKeys = [
+            buildProductKey(product.branch, product.ean, "ean"),
+            buildProductKey(product.branch, product.code, "code"),
+            buildProductKey(product.branch, product.sap_code, "sap")
+        ].filter(Boolean);
 
-        if (!eanKey) {
+        if (!productKeys.length) {
             continue;
         }
 
-        if (dbSampleKeys.length < 5) {
-            dbSampleKeys.push(eanKey);
-        }
-
-        if (unionKeys.has(eanKey)) {
+        if (productKeys.some((key) => unionKeys.has(key))) {
             restoredProductIds.push(product.id);
         } else {
             missingProductIds.push(product.id);
         }
     }
-
-    console.log("[QUARENTENA] chaves recebidas:", unionKeys.size);
-    console.log("[QUARENTENA] amostra recebidas:", Array.from(unionKeys).slice(0, 5));
-    console.log("[QUARENTENA] amostra banco:", dbSampleKeys);
-    console.log("[QUARENTENA] a quarentenar:", missingProductIds.length, "a restaurar:", restoredProductIds.length);
 
     const quarantineProduct = database.prepare("\n        INSERT INTO product_quarantine (\n            id,\n            product_id,\n            branch,\n            code,\n            ean,\n            commercial_name,\n            reason,\n            status,\n            detected_at,\n            created_at\n        )\n        SELECT\n            ?,\n            id,\n            branch,\n            code,\n            ean,\n            commercial_name,\n            'nao_encontrado_nas_planilhas',\n            'pendente',\n            ?,\n            ?\n        FROM product_catalog\n        WHERE id = ?\n          AND NOT EXISTS (\n              SELECT 1\n              FROM product_quarantine\n              WHERE product_id = ?\n                AND status = 'pendente'\n          )\n    ");
 
