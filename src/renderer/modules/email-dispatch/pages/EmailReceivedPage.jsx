@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import '../EmailDispatch.css';
+import '../styles/EmailDispatch.css';
 
 function formatDate(value) {
     if (!value) return '-';
