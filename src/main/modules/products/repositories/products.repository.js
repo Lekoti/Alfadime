@@ -192,6 +192,80 @@ function buildProductKey(branch, value, type) {
     return [String(branch || "").trim(), type, String(value).trim()].join("|");
 }
 
+function consolidateDuplicateProducts(database, existingProducts) {
+    const groups = new Map();
+
+    for (const product of existingProducts) {
+        const branch = normalizeComparisonValue(product.branch);
+        const ean = normalizeComparisonValue(product.ean);
+        const sapCode = normalizeComparisonValue(product.sap_code);
+
+        if (!branch || !ean || !sapCode) {
+            continue;
+        }
+
+        const key = `${branch}|${ean}|${sapCode}`;
+
+        if (!groups.has(key)) {
+            groups.set(key, []);
+        }
+
+        groups.get(key).push(product);
+    }
+
+    const deleteQuarantine = database.prepare("DELETE FROM product_quarantine WHERE product_id = ?");
+    const deletePurchaseCurve = database.prepare("DELETE FROM product_purchase_curve WHERE product_id = ?");
+    const deleteProduct = database.prepare("DELETE FROM product_catalog WHERE id = ?");
+
+    const updateProduct = database.prepare("\n        UPDATE product_catalog\n        SET\n            code = @code,\n            sirius_code = @sirius_code,\n            ean = @ean,\n            sap_code = @sap_code,\n            group_code = @group_code,\n            active_ingredient = @active_ingredient,\n            commercial_name = @commercial_name,\n            manufacturer_code = @manufacturer_code,\n            brand = @brand,\n            unit = @unit,\n            standard_box = @standard_box,\n            controls_lot = @controls_lot,\n            ms_registration = @ms_registration,\n            reference_code = @reference_code,\n            therapeutic_class_code = @therapeutic_class_code,\n            height = @height,\n            width = @width,\n            length = @length,\n            category_code = @category_code,\n            active = @active\n        WHERE id = @id\n    ");
+
+    const mergeValue = (primary, duplicate, field) => {
+        return hasValue(primary[field]) ? primary[field] : duplicate[field];
+    };
+
+    const removedIds = new Set();
+
+    const consolidate = database.transaction(() => {
+        for (const products of groups.values()) {
+            if (products.length < 2) {
+                continue;
+            }
+
+            const primary = products.find((product) => hasValue(product.code)) || products[0];
+            const duplicates = products.filter((product) => product.id !== primary.id);
+
+            if (!duplicates.length) {
+                continue;
+            }
+
+            for (const duplicate of duplicates) {
+                for (const field of PRODUCT_CATALOG_FIELDS) {
+                    if (field === "id" || field === "branch") {
+                        continue;
+                    }
+
+                    primary[field] = mergeValue(primary, duplicate, field);
+                }
+            }
+
+            updateProduct.run(primary);
+
+            for (const duplicate of duplicates) {
+                deleteQuarantine.run(duplicate.id);
+                deletePurchaseCurve.run(duplicate.id);
+                deleteProduct.run(duplicate.id);
+                removedIds.add(duplicate.id);
+            }
+        }
+    });
+
+    consolidate();
+
+    const remainingProducts = existingProducts.filter((product) => !removedIds.has(product.id));
+    existingProducts.length = 0;
+    existingProducts.push(...remainingProducts);
+}
+
 function chunkItems(items, size) {
     const chunks = [];
 
@@ -219,6 +293,8 @@ async function syncProducts(products = [], source = {}) {
     }
 
     const existingProducts = database.prepare("\n            SELECT *\n            FROM product_catalog\n        ").all();
+
+    consolidateDuplicateProducts(database, existingProducts);
 
     const productsByCode = new Map();
     const productsByEan = new Map();
