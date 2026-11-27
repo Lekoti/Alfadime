@@ -237,7 +237,7 @@ async function synchronizeDatabaseExcel() {
     function getUnifiedProductKeys(product) {
         return [
             buildUnionKey(product.branch, product.ean, "ean"),
-            buildUnionKey(product.branch, product.ean, "code"),
+            buildUnionKey(product.branch, product.code, "code"),
             buildUnionKey(product.branch, product.sap_code, "sap")
         ].filter(Boolean);
     }
