@@ -12,6 +12,7 @@ import {
 } from "../constants/contacts.constants";
 import ContactChargeFavoriteForm from "../components/ContactChargeFavoriteForm";
 import ContactChargeModal from "../components/ContactChargeModal";
+import { useModuleState } from "../../../hooks/useModuleState";
 
 
 export default function ContactChargeFavoritesPage() {
@@ -19,12 +20,17 @@ export default function ContactChargeFavoritesPage() {
     const [contacts, setContacts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [formOpen, setFormOpen] = useState(false);
-    const [form, setForm] = useState({ ...EMPTY_CONTACT_CHARGE_FAVORITE });
+    const [draftState, setDraftField] = useModuleState("industry-contacts-charge-favorites", {
+        formOpen: false,
+        form: { ...EMPTY_CONTACT_CHARGE_FAVORITE }
+    });
     const [chargeFavorite, setChargeFavorite] = useState(null);
     const [chargeOpen, setChargeOpen] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
+    const formOpen = Boolean(draftState.formOpen);
+    const form = draftState.form || { ...EMPTY_CONTACT_CHARGE_FAVORITE };
 
 
     async function loadData() {
@@ -56,20 +62,20 @@ export default function ContactChargeFavoritesPage() {
 
 
     function openCreateForm() {
-        setForm({ ...EMPTY_CONTACT_CHARGE_FAVORITE });
-        setFormOpen(true);
+        setDraftField("form", { ...EMPTY_CONTACT_CHARGE_FAVORITE });
+        setDraftField("formOpen", true);
         setError("");
         setSuccess("");
     }
 
 
     function openEditForm(favorite) {
-        setForm({
+        setDraftField("form", {
             ...EMPTY_CONTACT_CHARGE_FAVORITE,
             ...favorite,
             save_recipients: Boolean(favorite.save_recipients)
         });
-        setFormOpen(true);
+        setDraftField("formOpen", true);
         setError("");
         setSuccess("");
     }
@@ -84,7 +90,7 @@ export default function ContactChargeFavoritesPage() {
         try {
             await saveChargeFavorite(data);
             await loadData();
-            setFormOpen(false);
+            setDraftField("formOpen", false);
             setSuccess("Favorito de cobrança salvo com sucesso.");
         } catch (saveError) {
             console.error("Erro ao salvar favorito:", saveError);
@@ -176,9 +182,9 @@ export default function ContactChargeFavoritesPage() {
                         form={form}
                         contacts={contacts}
                         saving={saving}
-                        onChange={setForm}
+                        onChange={(nextForm) => setDraftField("form", nextForm)}
                         onSubmit={handleSubmit}
-                        onCancel={() => setFormOpen(false)}
+                        onCancel={() => setDraftField("formOpen", false)}
                     />
                 </section>
             )}
