@@ -80,6 +80,7 @@ function mapCurveRow(row) {
     return {
         company,
         product_code,
+        supplier_code: normalizeText(findColumn(row, ["Cod Fornec", "Cód. Fornec.", "Cód Fornec", "Codigo Fornec", "Código Fornec", "Cod. Fornec.", "Cod Fornecedor", "Código Fornecedor"])),
         cod_prod_global: normalizeText(findColumn(row, ["Cod_Prod_Global", "Cod Prod Global", "Codigo Prod Global", "Cód. Prod. Global", "Cod Sirius", "Código Sirius"])),
         cod_fabr_global: normalizeText(findColumn(row, ["Cod Fabr Global", "Codigo Fabr Global", "Cod_Fabr_Global", "Cód. Fabr. Global", "Fabr Global", "Fabricante Global", "Manufacturer Global", "Global Manufacturer Code", "CodFabrGlobal", "ManufacturerGlobalCode"])),
         barcode: normalizeText(findColumn(row, ["Cod Barras", "Codigo Barras", "EAN", "Cod. Barras"])),
