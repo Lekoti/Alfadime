@@ -77,9 +77,6 @@ function readExcelProducts(filePath) {
     const headerResult = validateHeaders(rawHeaders);
     const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: false });
 
-    console.log("[PRODUTOS] cabecalhos lidos:", rawHeaders);
-    console.log("[PRODUTOS] primeiras linhas:", matrix.slice(1, 4));
-
     return {
         sheetName: firstSheetName,
         rows,
@@ -95,7 +92,7 @@ function yieldToEventLoop() {
     });
 }
 
-function normalizeEan(value) {
+function normalizeKeyValue(value) {
     if (value === null || value === undefined) {
         return "";
     }
@@ -117,15 +114,15 @@ function normalizeEan(value) {
     return text;
 }
 
-function buildUnionKey(branch, ean) {
+function buildUnionKey(branch, value, type) {
     const normalizedBranch = String(branch || "").trim();
-    const normalizedEan = normalizeEan(ean);
+    const normalizedValue = normalizeKeyValue(value);
 
-    if (!normalizedBranch || !normalizedEan) {
+    if (!normalizedBranch || !normalizedValue) {
         return null;
     }
 
-    return `${normalizedBranch}|ean|${normalizedEan}`;
+    return `${normalizedBranch}|${type}|${normalizedValue}`;
 }
 
 async function synchronizeProductsExcel(filePath) {
@@ -237,23 +234,64 @@ async function synchronizeDatabaseExcel() {
     const unifiedProductsByKey = new Map();
     let fallbackIndex = 0;
 
+    function getUnifiedProductKeys(product) {
+        return [
+            buildUnionKey(product.branch, product.ean, "ean"),
+            buildUnionKey(product.branch, product.ean, "code"),
+            buildUnionKey(product.branch, product.sap_code, "sap")
+        ].filter(Boolean);
+    }
+
+    function getPurchaseProductKeys(purchaseProduct) {
+        return [
+            buildUnionKey(purchaseProduct.company, purchaseProduct.barcode, "ean"),
+            buildUnionKey(purchaseProduct.company, purchaseProduct.product_code, "code"),
+            buildUnionKey(purchaseProduct.company, purchaseProduct.supplier_code, "sap")
+        ].filter(Boolean);
+    }
+
+    function registerUnifiedProduct(product, keys) {
+        for (const key of keys) {
+            if (key && !unifiedProductsByKey.has(key)) {
+                unifiedProductsByKey.set(key, product);
+            }
+        }
+    }
+
     function addOrUpdateUnifiedProduct(product, purchaseProduct = null) {
-        const key = buildUnionKey(product.branch, product.ean);
-        const mapKey = key || `sem-chave|${fallbackIndex++}`;
-        let existing = unifiedProductsByKey.get(mapKey);
+        const productKeys = getUnifiedProductKeys(product);
+        let existing = null;
+
+        for (const key of productKeys) {
+            existing = unifiedProductsByKey.get(key);
+
+            if (existing) {
+                break;
+            }
+        }
 
         if (!existing) {
             existing = {
                 ...createEmptyMappedRow(),
                 ...product
             };
-            unifiedProductsByKey.set(mapKey, existing);
             unifiedProducts.push(existing);
+            registerUnifiedProduct(existing, productKeys);
         }
 
         if (purchaseProduct) {
+            const purchaseKeys = getPurchaseProductKeys(purchaseProduct);
+
             if (!existing.code && purchaseProduct.product_code) {
                 existing.code = purchaseProduct.product_code;
+            }
+
+            if (!existing.ean && purchaseProduct.barcode) {
+                existing.ean = purchaseProduct.barcode;
+            }
+
+            if (!existing.sap_code && purchaseProduct.supplier_code) {
+                existing.sap_code = purchaseProduct.supplier_code;
             }
 
             if (!existing.commercial_name && purchaseProduct.description) {
@@ -267,6 +305,8 @@ async function synchronizeDatabaseExcel() {
             if (existing.active === null || existing.active === undefined) {
                 existing.active = 1;
             }
+
+            registerUnifiedProduct(existing, purchaseKeys);
         }
 
         return existing;
@@ -277,52 +317,45 @@ async function synchronizeDatabaseExcel() {
     }
 
     for (const purchaseProduct of purchasesReadResult.products) {
-        const branch = purchaseProduct.company;
-        const ean = purchaseProduct.barcode;
+        const purchaseKeys = getPurchaseProductKeys(purchaseProduct);
+        let existing = null;
 
-        if (!branch || !ean) {
-            continue;
+        for (const key of purchaseKeys) {
+            existing = unifiedProductsByKey.get(key);
+
+            if (existing) {
+                break;
+            }
         }
 
-        addOrUpdateUnifiedProduct({
-            branch,
-            ean,
-            code: purchaseProduct.product_code || null,
-            commercial_name: purchaseProduct.description || null,
-            controls_lot: 0,
-            active: 1
-        }, purchaseProduct);
-    }
-
-    const productKeys = new Set();
-    const purchaseKeys = new Set();
-
-    for (const product of productsResult.products) {
-        const key = buildUnionKey(product.branch, product.ean);
-
-        if (key) {
-            productKeys.add(key);
+        if (existing) {
+            addOrUpdateUnifiedProduct(existing, purchaseProduct);
+        } else {
+            addOrUpdateUnifiedProduct({
+                branch: purchaseProduct.company,
+                ean: purchaseProduct.barcode || null,
+                code: purchaseProduct.product_code || null,
+                sap_code: purchaseProduct.supplier_code || null,
+                commercial_name: purchaseProduct.description || null,
+                controls_lot: 0,
+                active: 1
+            }, purchaseProduct);
         }
     }
 
-    for (const product of purchasesReadResult.products) {
-        const key = buildUnionKey(product.company, product.barcode);
+    const unionKeys = new Set();
 
-        if (key) {
-            purchaseKeys.add(key);
+    for (const product of unifiedProducts) {
+        for (const key of [
+            buildUnionKey(product.branch, product.ean, "ean"),
+            buildUnionKey(product.branch, product.code, "code"),
+            buildUnionKey(product.branch, product.sap_code, "sap")
+        ]) {
+            if (key) {
+                unionKeys.add(key);
+            }
         }
     }
-
-    const unionKeys = new Set([...productKeys, ...purchaseKeys]);
-
-    console.log("[UNIAO] produtos validos PRODUTOS.xlsx:", productsResult.products.length);
-    console.log("[UNIAO] chaves PRODUTOS.xlsx:", productKeys.size);
-    console.log("[UNIAO] amostra PRODUTOS.xlsx:", Array.from(productKeys).slice(0, 10));
-    console.log("[UNIAO] produtos validos CURVA COMPRAS.xlsx:", purchasesReadResult.products.length);
-    console.log("[UNIAO] chaves CURVA COMPRAS.xlsx:", purchaseKeys.size);
-    console.log("[UNIAO] amostra CURVA COMPRAS.xlsx:", Array.from(purchaseKeys).slice(0, 10));
-    console.log("[UNIAO] total final da uniao:", unionKeys.size);
-    console.log("[UNIAO] amostra final da uniao:", Array.from(unionKeys).slice(0, 10));
 
     const syncResult = await repository.syncProducts(unifiedProducts, {
         fileName: productsResult.fileName,
